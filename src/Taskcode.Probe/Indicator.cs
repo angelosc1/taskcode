@@ -77,8 +77,8 @@ namespace Taskcode.Probe
                 if (showWeekly)
                 {
                     int second = SecondProviderX(style, true);
-                    DrawWeeklyProvider(g, font, text, "Claude", Value(usage, 0), Value(usage, 1), theme.Claude, 36, style, theme);
-                    DrawWeeklyProvider(g, font, text, "Codex", Value(usage, 2), Value(usage, 3), theme.Codex, second, style, theme);
+                    DrawWeeklyProvider(g, font, bold, text, "Claude", Value(usage, 0), Value(usage, 1), theme.Claude, 36, style, theme);
+                    DrawWeeklyProvider(g, font, bold, text, "Codex", Value(usage, 2), Value(usage, 3), theme.Codex, second, style, theme);
                     using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 12, 3, second - 12, 31);
                     DrawSpeedHint(g, theme.Claude, 36, style, true, pulseKey & 3, (pulseKey >> 2) & 3);
                     DrawSpeedHint(g, theme.Codex, second, style, true, (pulseKey >> 4) & 3, (pulseKey >> 6) & 3);
@@ -115,7 +115,7 @@ namespace Taskcode.Probe
         {
             SpeedArrows.Draw(g, color, count, new RectangleF(x - 0.5f, y, 17, 6));
         }
-        private static void DrawWeeklyProvider(Graphics g, Font font, Brush text, string name, int shortRemaining, int weeklyRemaining, Color color, int x, IndicatorStyle style, TaskbarTheme theme)
+        private static void DrawWeeklyProvider(Graphics g, Font font, Font bold, Brush text, string name, int shortRemaining, int weeklyRemaining, Color color, int x, IndicatorStyle style, TaskbarTheme theme)
         {
             using (var accent = new SolidBrush(color))
             using (var track = new SolidBrush(theme.Track))
@@ -129,7 +129,7 @@ namespace Taskcode.Probe
                     int remaining = row == 0 ? shortRemaining : weeklyRemaining;
                     g.DrawString(row == 0 ? "5h" : "7d", periodFont, muted, x + 23, y + 2);
                     if (style == IndicatorStyle.Essential)
-                    { g.DrawString(Percentage(remaining), font, text, x + 43, y); continue; }
+                    { g.DrawString(Percentage(remaining), bold, text, x + 43, y); continue; }
                     if (style == IndicatorStyle.Lines)
                     {
                         g.FillRectangle(track, x + 40, y + 6, 44, 3);
@@ -140,7 +140,7 @@ namespace Taskcode.Probe
                         for (int block = 0; block < 10; block++)
                             g.FillRectangle(block < (int)Math.Round(remaining / 10.0) ? accent : track, x + 40 + block * 4.4f, y + 5, 3.4f, 5);
                     }
-                    g.DrawString(Percentage(remaining), font, text, x + 91, y);
+                    g.DrawString(Percentage(remaining), bold, text, x + 91, y);
                 }
             }
         }
@@ -152,20 +152,20 @@ namespace Taskcode.Probe
                 if (style == IndicatorStyle.Essential)
                 {
                     DrawMark(g, font, accent, name, x);
-                    g.DrawString(Percentage(remaining), font, text, x + 26, 10);
+                    g.DrawString(Percentage(remaining), bold, text, x + 26, 10);
                     return;
                 }
                 if (style == IndicatorStyle.Lines)
                 {
                     g.DrawString(name, font, text, x, 4);
-                    g.DrawString(Percentage(remaining), font, text, x + 53, 4);
+                    g.DrawString(Percentage(remaining), bold, text, x + 53, 4);
                     g.FillRectangle(track, x + 1, 24, 88, 3);
                     if (remaining >= 0) g.FillRectangle(accent, x + 1, 24, 88 * remaining / 100f, 3);
                     return;
                 }
                 DrawMark(g, font, accent, name, x);
                 for (int i = 0; i < 10; i++) g.FillRectangle(i < (int)Math.Round(remaining / 10.0) ? accent : track, x + 25 + i * 5, 13, 4, 8);
-                g.DrawString(Percentage(remaining), font, text, x + 78, 10);
+                g.DrawString(Percentage(remaining), bold, text, x + 78, 10);
             }
         }
         private static void DrawMark(Graphics g, Font font, Brush accent, string name, int x)
