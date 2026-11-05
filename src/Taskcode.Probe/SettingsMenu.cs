@@ -36,7 +36,20 @@ namespace Taskcode.Probe
             name.MouseDown += drag; logo.MouseDown += drag;
             MouseDown += delegate(object sender, MouseEventArgs e) { if (e.Y < 64) drag(sender, e); };
             if (!live) MenuLabel(this, "Demo", 176, 25, 64, 18, "muted");
-            var close = MenuButton(this, "×", 474, 16, 30, 30, "ghost"); close.Font = new Font("Segoe UI", 14f); close.AccessibleName = "Close settings"; close.Click += delegate { Hide(); };
+            var close = MenuButton(this, "", 474, 16, 30, 30, "ghost"); close.AccessibleName = "Close settings"; close.Click += delegate { Hide(); };
+            close.Paint += delegate(object sender, PaintEventArgs e)
+            {
+                // Center the symbol geometrically, independently of font baseline and DPI.
+                float scale = close.ClientSize.Width / 30f;
+                float x = close.ClientSize.Width / 2f, y = close.ClientSize.Height / 2f, radius = 4 * scale;
+                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                using (var pen = new Pen(close.ForeColor, 1.3f * scale))
+                {
+                    pen.StartCap = pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
+                    e.Graphics.DrawLine(pen, x - radius, y - radius, x + radius, y + radius);
+                    e.Graphics.DrawLine(pen, x + radius, y - radius, x - radius, y + radius);
+                }
+            };
             AddDivider(this, 16, 63, 488);
             string[] titles = { "Appearance", "Accounts", "General" };
             for (int index = 0; index < 3; index++)
