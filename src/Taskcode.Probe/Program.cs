@@ -64,12 +64,13 @@ namespace Taskcode.Probe
                         window.OpenSettings();
                         Assert(window.Visible && !window.ShowInTaskbar, "Settings must open without creating a taskbar button.");
                         Assert((Native.GetStyle(window.Handle, -20).ToInt64() & 0x40000L) == 0, "The native settings window must not request a taskbar app button.");
-                        foreach (Control control in window.Controls)
+                        foreach (Control control in SettingsMenuChecks.Descendants(window))
                         {
                             var startup = control as CheckBox;
                             if (startup != null && startup.Text == "Start with Windows")
                                 Assert(startup.Checked == startupBefore, "Startup checkbox must reflect the existing registration without enabling it.");
                         }
+                        SettingsMenuChecks.Run(window, AppDomain.CurrentDomain.BaseDirectory, startupBefore);
                         using (var preview = new Bitmap(window.Width, window.Height))
                         {
                             window.DrawToBitmap(preview, new Rectangle(Point.Empty, preview.Size));
@@ -85,7 +86,7 @@ namespace Taskcode.Probe
                         Assert(!window.Visible && !window.IsDisposed && window.TrayVisible, "Closing settings must hide them while keeping the tray application alive.");
                         Assert(startupBefore == StartupRegistration.IsEnabled(Application.ExecutablePath), "Opening and closing the app must not enable startup.");
                         Assert(StartupRegistration.CommandFor(@"C:\Program Files\Taskcode\Taskcode.exe") == "\"C:\\Program Files\\Taskcode\\Taskcode.exe\" --tray", "Startup must quote paths containing spaces and launch in tray mode.");
-                        result = "PASS: tray lifecycle, unchanged startup registration, quoted startup command, and isolated Claude/Codex details.";
+                        result = "PASS: themed settings navigation and bounds in both palettes, tray lifecycle, unchanged startup registration, quoted startup command, and isolated Claude/Codex details.";
                         success = true;
                     }
                     catch (Exception ex) { result = "FAIL: " + ex.Message; }

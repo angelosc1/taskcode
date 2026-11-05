@@ -30,7 +30,7 @@
 - [x] Render the taskbar indicator without an opaque background.
 - [x] Add provider-colored Ripple for observed local execution, with motion preferences and idle handling.
 - [x] Use the Claude symbol in compact styles and details.
-- [ ] Refine the full settings window appearance for both themes.
+- [x] Refactor settings into compact themed navigation with smaller typography and simpler labels.
 
 ## 4. Connect providers
 

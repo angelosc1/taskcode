@@ -37,7 +37,7 @@ The details also show animated, filled consumption-speed arrows and approximate 
 
 **Show weekly quota in the indicator** is an optional setting, unchecked by default. Enabling it shows two compact rows per provider, labeled `5h` and `7d`, with provider symbols and remaining percentages. Lines adds thin meters; Blocks uses segmented meters; Essential shows numbers. Disabling it restores the original five-hour-only layout. The preference is saved, the preview updates immediately, and the detail panel continues to include weekly quota in either mode. The optional layout uses a little more horizontal space while retaining the same height.
 
-The actual taskbar indicator has a per-pixel transparent background. Its colors follow the Windows taskbar's light/dark setting, including theme changes while running. The preview uses a solid sample background to make each palette visible; that sample background is not applied to the taskbar indicator. The control window itself still uses the prototype's dark appearance.
+The taskbar indicator retains its transparent appearance. The settings menu, previews, details, and connection windows follow the Windows taskbar's light/dark palette, including theme changes while running. A subtle filled preview area makes the indicator readable inside settings; that fill is not applied to the taskbar strip.
 
 Placement changes how the indicator is hosted, not its appearance: **Embedded** attaches it as a child of the taskbar window; **Overlay** keeps it as an independent window over the same measured gap. Both modes use the same style, transparent surface, and theme palette.
 
@@ -46,6 +46,8 @@ The indicator uses a 117% content scale, in addition to one monitor-DPI transfor
 ## Tray and Windows startup
 
 Taskcode has a tray icon instead of a normal taskbar application button. Left-click the tray icon to open settings, or right-click for **Open settings** and **Exit**. Windows may place a new tray icon under the hidden-icons arrow. Closing or minimizing settings hides the window while the quota indicator keeps running. Running the executable again reopens the existing instance's settings rather than creating another instance.
+
+The compact settings menu has **Appearance**, **Accounts**, and **General** sections. It uses smaller typography and themed native selectors, with one section visible at a time. Drag its header to reposition it; the close button and Escape hide it. Status text is kept short, with placement diagnostics and full connection messages available on hover. **Start with Windows** remains in General and is never enabled by opening the menu.
 
 Right-clicking anywhere inside the taskbar indicator opens Taskcode's own settings/exit menu. It does not open Explorer's taskbar menu. Hover details pause while the menu is visible, and dismissing it refreshes the indicator without hiding it.
 

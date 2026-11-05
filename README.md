@@ -38,9 +38,9 @@ Details are compact borderless cards without an app title, close button, legend,
 
 ### Settings
 
-![Current Taskcode settings with optional weekly readings and Windows startup](docs/images/current-settings.png)
+![Taskcode settings sections in dark and light themes](docs/images/current-settings.png)
 
-Settings open from the tray icon. Windows startup is opt-in; closing the settings window keeps Taskcode running in the tray.
+Settings open from the tray icon as a compact menu that follows the taskbar theme. **Appearance** contains the indicator style, detail trigger, weekly quota, and previews. **Accounts** contains connections and refresh. **General** contains visibility, Windows startup, and placement. Closing the menu or pressing Escape keeps Taskcode running in the tray; startup remains opt-in.
 
 **Connect Claude** and **Connect Codex** open dedicated account windows. Choose **Sign in** to select an account through the official login, or **Use existing CLI account**. New sign-ins use separate Taskcode profiles and preserve your regular CLI login. The windows show progress, errors, account identity when available, cancellation, and an official CLI installer if needed. Read [connection instructions](docs/ACCOUNTS.md).
 

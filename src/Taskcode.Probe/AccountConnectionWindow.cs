@@ -18,8 +18,8 @@ namespace Taskcode.Probe
             string name = provider == 0 ? "Claude" : "Codex";
             Text = "Taskcode - Connect " + name; ShowInTaskbar = false; StartPosition = FormStartPosition.CenterParent;
             ClientSize = new Size(540, 432); FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = MinimizeBox = false;
-            BackColor = Color.FromArgb(25, 28, 33); ForeColor = Color.FromArgb(237, 240, 244); Font = new Font("Segoe UI", 10);
-            Controls.Add(new Label { Text = "Connect " + name, Location = new Point(22, 20), Size = new Size(496, 36), Font = new Font("Segoe UI", 18, FontStyle.Bold) });
+            BackColor = Color.FromArgb(25, 28, 33); ForeColor = Color.FromArgb(237, 240, 244); Font = new Font("Segoe UI", 9);
+            Controls.Add(new Label { Text = "Connect " + name, Location = new Point(22, 20), Size = new Size(496, 36), Font = new Font("Segoe UI", 14, FontStyle.Bold) });
             Controls.Add(new Label { Text = provider == 0 ? "Sign in with your Claude subscription in the official Claude Code window. It opens your browser; paste a code there if requested." : "Sign in with ChatGPT in your browser. You can choose your account without replacing your regular Codex CLI login.", Location = new Point(22, 67), Size = new Size(496, 62) });
             progress.Location = new Point(22, 141); progress.Size = new Size(496, 66); progress.ForeColor = provider == 0 ? IndicatorView.Claude : IndicatorView.Codex; Controls.Add(progress);
             identity.Location = new Point(22, 212); identity.Size = new Size(496, 28); identity.AutoEllipsis = true; Controls.Add(identity);
@@ -37,7 +37,20 @@ namespace Taskcode.Probe
             cancel.Click += delegate { if (provider == 0 || connections.ClaudeAuth.Busy) connections.ClaudeAuth.Cancel(); else connections.CancelCodex(); RefreshState(); };
             close.Click += delegate { Close(); };
             timer.Tick += delegate { RefreshState(); }; Shown += delegate { timer.Start(); RefreshState(); };
-            FormClosed += delegate { timer.Dispose(); }; RefreshState();
+            FormClosed += delegate { timer.Dispose(); }; ApplyTheme(TaskbarTheme.Read()); RefreshState();
+        }
+        internal void ApplyTheme(TaskbarTheme palette)
+        {
+            BackColor = palette.PreviewBackground; ForeColor = palette.Text;
+            foreach (Control control in Controls)
+            {
+                var button = control as Button;
+                if (button == null) continue;
+                button.FlatStyle = FlatStyle.Flat; button.UseVisualStyleBackColor = false; button.FlatAppearance.BorderSize = 0; button.Tag = "action";
+            }
+            MainWindow.ApplyMenuColors(this, palette);
+            progress.ForeColor = provider == 0 ? palette.Claude : palette.Codex;
+            identity.ForeColor = palette.Muted;
         }
         private void TryAction(Action action)
         {

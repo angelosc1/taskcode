@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 namespace Taskcode.Probe
 {
-    internal sealed class MainWindow : Form
+    internal sealed partial class MainWindow : Form
     {
         internal const string WindowTitle = "Taskcode settings";
         internal static readonly uint OpenSettingsMessage = Native.RegisterWindowMessage("Taskcode.OpenSettings");
@@ -34,7 +34,7 @@ namespace Taskcode.Probe
         private readonly Icon trayImage;
         private bool startInTray, exiting;
         private readonly AccountConnections connections;
-        private readonly Label accountNotice;
+        private readonly Label[] accountLabels = new Label[2];
         private readonly AccountConnectionWindow[] accountWindows = new AccountConnectionWindow[2];
         private DateTime ripplePreviewUntil;
         private int CurrentActivity { get { return DateTime.UtcNow < ripplePreviewUntil ? 3 : usage.ActivityAt(DateTime.UtcNow); } }
@@ -59,50 +59,12 @@ namespace Taskcode.Probe
             Text = WindowTitle;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(590, 762);
-            MinimumSize = Size;
-            MaximumSize = Size;
             MaximizeBox = false;
-            BackColor = Color.FromArgb(25, 28, 33);
-            ForeColor = Color.FromArgb(237, 240, 244);
-            Font = new Font("Segoe UI", 10f);
-            AddLabel("Taskcode", 24, 20, 23, FontStyle.Bold, 540, 45);
-            AddLabel("AI quota monitor", 26, 70, 11, FontStyle.Regular, 540, 26);
-            accountNotice = AddLabel(connectAccounts ? "Account data / Connecting..." : "DEMO DATA / Offline preview", 26, 108, 9, FontStyle.Regular, 540, 42);
-            accountNotice.ForeColor = IndicatorView.Claude;
-            AddLabel("Indicator style", 26, 154, 10, FontStyle.Regular, 180, 26);
-            var style = new ComboBox { Location = new Point(220, 150), Width = 340, DropDownStyle = ComboBoxStyle.DropDownList, AccessibleName = "Indicator style" };
-            style.Items.AddRange(new object[] { "Lines (default)", "Essential", "Blocks" });
-            style.SelectedIndex = (int)settings.Style;
-            Controls.Add(style);
-            AddLabel("Placement", 26, 197, 10, FontStyle.Regular, 180, 26);
-            var mode = new ComboBox { Location = new Point(220, 193), Width = 340, DropDownStyle = ComboBoxStyle.DropDownList, AccessibleName = "Placement mode" };
-            mode.Items.AddRange(new object[] { "Embedded (experimental)", "Overlay" });
-            mode.SelectedIndex = (int)settings.Mode;
-            Controls.Add(mode);
-            AddLabel("Open details", 26, 240, 10, FontStyle.Regular, 180, 26);
-            var trigger = new ComboBox { Location = new Point(220, 236), Width = 340, DropDownStyle = ComboBoxStyle.DropDownList, AccessibleName = "Open details" };
-            trigger.Items.AddRange(new object[] { "Hover (default)", "Click only" });
-            trigger.SelectedIndex = (int)settings.DetailsTrigger;
-            Controls.Add(trigger);
-            AddLabel("Preview", 26, 287, 10, FontStyle.Regular, 180, 26);
-            preview.Location = new Point(220, 282);
-            preview.Size = new Size(IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly), IndicatorView.LogicalHeight);
-            preview.Style = settings.Style;
-            preview.ShowWeekly = settings.ShowWeekly;
-            preview.AccessibleName = IndicatorView.LiveAccessibleText(usage, settings.ShowWeekly);
-            preview.Theme = theme;
-            preview.Usage = usage;
-            preview.BackColor = theme.PreviewBackground;
-            Controls.Add(preview);
-            enabled.Text = "Show indicator on the primary taskbar";
-            enabled.Location = new Point(26, 343);
-            enabled.Size = new Size(520, 28);
-            enabled.Checked = true;
-            Controls.Add(enabled);
-            var weekly = new CheckBox { Text = "Show weekly quota in the indicator", Location = new Point(26, 375), Size = new Size(520, 28), Checked = settings.ShowWeekly };
-            Controls.Add(weekly);
-            var startup = new CheckBox { Text = "Start with Windows", Location = new Point(26, 407), Size = new Size(520, 28) };
+            var menu = BuildSettingsMenu(connectAccounts);
+            var style = menu.Style; var mode = menu.Placement; var trigger = menu.Trigger;
+            var weekly = menu.Weekly; var startup = menu.Startup;
+            var detailsButton = menu.Details; var exit = menu.Exit; var simulate = menu.Refresh;
+            var claudeConnect = menu.Claude; var codexConnect = menu.Codex; var disconnect = menu.Disconnect;
             try { startup.Checked = StartupRegistration.IsEnabled(Application.ExecutablePath); }
             catch (Exception ex)
             {
@@ -110,7 +72,7 @@ namespace Taskcode.Probe
                 startup.Enabled = false;
                 saveError = "Windows startup settings are unavailable.";
             }
-            Controls.Add(startup);
+
             bool restoringStartup = false;
             startup.CheckedChanged += delegate
             {
@@ -127,16 +89,6 @@ namespace Taskcode.Probe
                 }
                 TickLayout();
             };
-            status.Location = new Point(26, 447);
-            status.Size = new Size(534, 74);
-            status.ForeColor = Color.FromArgb(184, 194, 207);
-            Controls.Add(status);
-            var detailsButton = new Button { Text = "Details", Location = new Point(26, 702), Size = new Size(145, 34) };
-            var exit = new Button { Text = "Exit Taskcode", Location = new Point(415, 702), Size = new Size(145, 34) };
-            Controls.Add(detailsButton);
-            Controls.Add(exit);
-            var simulate = new Button { Text = connectAccounts ? "Refresh accounts" : "Simulate speed", Location = new Point(185, 702), Size = new Size(210, 34) };
-            Controls.Add(simulate);
             simulate.Click += delegate
             {
                 if (connections != null) { connections.Refresh(); return; }
@@ -145,12 +97,6 @@ namespace Taskcode.Probe
                 TickLayout();
                 ShowDetails(true, true, selectedProvider);
             };
-            AddLabel("Accounts", 26, 534, 11, FontStyle.Bold, 520, 25);
-            var claudeConnect = new Button { Text = "Connect Claude", Location = new Point(26, 569), Size = new Size(168, 34), Enabled = connectAccounts };
-            var codexConnect = new Button { Text = "Connect Codex", Location = new Point(210, 569), Size = new Size(168, 34), Enabled = connectAccounts };
-            var disconnect = new Button { Text = "Disconnect...", Location = new Point(394, 569), Size = new Size(166, 34), Enabled = connectAccounts };
-            Controls.Add(claudeConnect); Controls.Add(codexConnect); Controls.Add(disconnect);
-            AddLabel("Connect opens account sign-in and connection status.\nChoose a browser sign-in or use an existing CLI account.", 26, 617, 9, FontStyle.Regular, 534, 60);
             claudeConnect.Click += delegate
             {
                 OpenAccountConnection(0);
@@ -178,7 +124,7 @@ namespace Taskcode.Probe
             {
                 settings.Style = (IndicatorStyle)style.SelectedIndex;
                 preview.Style = settings.Style;
-                preview.Width = IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly);
+                ResizeIndicatorPreview();
                 preview.Invalidate();
                 Save();
                 TickLayout();
@@ -188,7 +134,7 @@ namespace Taskcode.Probe
                 settings.ShowWeekly = weekly.Checked;
                 preview.ShowWeekly = settings.ShowWeekly;
                 preview.AccessibleName = IndicatorView.LiveAccessibleText(usage, settings.ShowWeekly);
-                preview.Width = IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly);
+                ResizeIndicatorPreview();
                 preview.Invalidate();
                 Save();
                 TickLayout();
@@ -278,6 +224,7 @@ namespace Taskcode.Probe
                     else { settings.CodexEnabled = true; settings.CodexPrivateProfile = signIn; connections.ConnectCodex(signIn); }
                     Save();
                 });
+            accountWindows[provider].ApplyTheme(theme);
             accountWindows[provider].Show(this); accountWindows[provider].Activate();
         }
         internal void PreviewAnimation() { ripplePreviewUntil = DateTime.UtcNow.AddSeconds(8); TickLayout(); }
@@ -289,12 +236,6 @@ namespace Taskcode.Probe
             Activate();
         }
         internal void RequestExit() { exiting = true; Close(); }
-        private Label AddLabel(string text, int x, int y, float size, FontStyle style, int width, int height)
-        {
-            var value = new Label { Text = text, Location = new Point(x, y), Size = new Size(width, height), Font = new Font("Segoe UI", size, style) };
-            Controls.Add(value);
-            return value;
-        }
         private void Save()
         {
             try { settings.Save(); saveError = null; }
@@ -331,14 +272,14 @@ namespace Taskcode.Probe
             indicatorBounds = Rectangle.Empty;
             hoverSince = null;
             hoverProvider = -1;
-            status.Text = reason + (saveError == null ? "" : "\n" + saveError);
+            SetSettingsStatus(reason + (saveError == null ? "" : "\n" + saveError), true);
         }
         private void TickLayout()
         {
             if (connections != null)
             {
                 connections.Tick(usage);
-                accountNotice.Text = "Claude: " + usage.AccountStatus[0] + "\nCodex: " + usage.AccountStatus[1];
+                UpdateAccountLabels();
                 preview.AccessibleName = IndicatorView.LiveAccessibleText(usage, settings.ShowWeekly);
                 preview.Invalidate();
             }
@@ -352,9 +293,8 @@ namespace Taskcode.Probe
             {
                 nextThemeCheck = DateTime.UtcNow.AddSeconds(1);
                 var current = TaskbarTheme.Read();
-                if (current.Dark != theme.Dark || current.HighContrast != theme.HighContrast) theme = current;
+                if (current.Dark != theme.Dark || current.HighContrast != theme.HighContrast) { theme = current; ApplySettingsTheme(theme); }
                 preview.Theme = theme;
-                preview.BackColor = theme.PreviewBackground;
                 preview.Invalidate();
                 foreach (var panel in providerDetails) panel.ApplyTheme(theme);
             }
@@ -405,7 +345,7 @@ namespace Taskcode.Probe
             if (!indicator.RenderAlpha())
             { PauseIndicator("Windows rejected the transparent surface. Try the other placement mode."); return; }
             indicatorBounds = slot;
-            status.Text = (expected == IntPtr.Zero ? "Overlay active" : "Embedded child window active") + " · " + layout.Dpi + " DPI · " + (theme.Dark ? "Dark" : "Light") + " taskbar\n" + (usage.IsLive ? "Account data · -- means unavailable or stale" : "DEMO · Recent-history scenario: " + usage.ScenarioName) + (saveError == null ? "" : "\n" + saveError);
+            SetSettingsStatus((expected == IntPtr.Zero ? "Overlay active" : "Embedded child window active") + " · " + layout.Dpi + " DPI" + (saveError == null ? "" : "\n" + saveError), saveError != null);
             // The alpha surface has real transparent gaps between glyphs. Track the
             // complete indicator rectangle so those gaps do not reset hover dwell.
             if (trayMenu.Visible) { hoverSince = null; hoverProvider = -1; return; }

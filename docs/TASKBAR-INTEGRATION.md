@@ -66,7 +66,7 @@ Right-click is handled by Taskcode and opens its own settings/exit menu, includi
 Windows passes clicks through alpha-zero pixels in layered windows. The live input surface therefore uses a minimum alpha of 1/255 in otherwise empty pixels, tinted to the taskbar palette. This is visually transparent, without an opaque panel, while preserving the whole indicator's mouse area. Offscreen artwork retains alpha-zero backgrounds. Regression checks cover the input surface across all styles/themes and context-menu routing in Embedded and Overlay using an isolated host window. See [Microsoft's layered-window hit-testing documentation](https://learn.microsoft.com/en-us/windows/win32/winmsg/window-features#layered-windows).
 
 - Primary horizontal taskbar only.
-- Indicator and details adapt to light/dark taskbar mode; the settings window remains dark.
+- Indicator, Details, settings menu, and connection windows adapt to the taskbar's light/dark palette.
 - The indicator is transparent rather than a separate acrylic surface. Exact blending on the actual taskbar still needs visual confirmation after this change.
 - Does not reserve space or move Windows controls; may hide on a crowded taskbar.
 - Overlay does not yet suppress itself for fullscreen applications.

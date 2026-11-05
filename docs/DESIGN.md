@@ -16,6 +16,8 @@ Weekly readings are opt-in through **Show weekly quota in the indicator**, disab
 
 The **Indicator style** setting provides an immediate preview and saves the selection. The indicator palette follows the Windows taskbar's light/dark mode.
 
+Settings use a compact borderless menu with Appearance, Accounts, and General navigation. Body text uses Segoe UI 9pt; the application heading is 14pt. Settings, selectors, previews, and account windows share the taskbar palette and respond to theme changes. Verbose instructions and placement diagnostics are kept out of the primary layout; necessary context remains available in tooltips. The close control hides settings, and Exit ends the tray application.
+
 ## Data semantics
 
 Percentages represent remaining quota and must be labeled accordingly in the details panel. Claude and Codex use the same convention. Do not mix remaining and consumed percentages.
