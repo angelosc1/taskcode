@@ -67,11 +67,15 @@ namespace Taskcode.Probe
                         }
                         using (var icon = window.Icon.ToBitmap())
                             icon.Save(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tray-icon-check.png"), System.Drawing.Imaging.ImageFormat.Png);
+                        window.ShowDetails(true, true, 0);
+                        Assert(window.VisibleDetailProvider == 0 && window.VisibleDetailCount == 1, "Selecting Claude must open only Claude details.");
+                        window.ShowDetails(true, true, 1);
+                        Assert(window.VisibleDetailProvider == 1 && window.VisibleDetailCount == 1, "Selecting Codex must replace Claude details without showing both.");
                         window.Close();
                         Assert(!window.Visible && !window.IsDisposed && window.TrayVisible, "Closing settings must hide them while keeping the tray application alive.");
                         Assert(startupBefore == StartupRegistration.IsEnabled(Application.ExecutablePath), "Opening and closing the app must not enable startup.");
                         Assert(StartupRegistration.CommandFor(@"C:\Program Files\Taskcode\Taskcode.exe") == "\"C:\\Program Files\\Taskcode\\Taskcode.exe\" --tray", "Startup must quote paths containing spaces and launch in tray mode.");
-                        result = "PASS: tray startup, reopen, close-to-tray, no taskbar button, unchanged startup registration, and quoted startup command.";
+                        result = "PASS: tray lifecycle, unchanged startup registration, quoted startup command, and isolated Claude/Codex details.";
                         success = true;
                     }
                     catch (Exception ex) { result = "FAIL: " + ex.Message; }
@@ -99,6 +103,17 @@ namespace Taskcode.Probe
                 Assert(!Placement.TrySlot(new Rectangle(0, 0, 48, 1080), tray, 0, 248, 34, 8, out slot), "Vertical taskbars are not supported by this probe.");
                 Assert(Placement.TrySlot(new Rectangle(-1920, 0, 1920, 48), new Rectangle(-270, 0, 270, 48), -1000, 248, 34, 8, out slot) && slot.Left == -526, "Negative monitor coordinates must work.");
                 Assert(Placement.TrySlot(new Rectangle(0, 1560, 2880, 60), new Rectangle(2475, 1560, 405, 60), 1800, 310, 43, 10, out slot) && slot.Right == 2465, "Scaled coordinates must preserve the tray gap.");
+                foreach (IndicatorStyle style in Enum.GetValues(typeof(IndicatorStyle)))
+                foreach (bool weekly in new[] { false, true })
+                {
+                    var size = new Size((int)Math.Round(IndicatorView.LogicalWidth(style, weekly) * 1.25), 50);
+                    Assert(IndicatorView.ProviderAt(new Point(4, 25), size, style, weekly) == 0, "The Claude region must route to Claude in every layout.");
+                    Assert(IndicatorView.ProviderAt(new Point(size.Width - 4, 25), size, style, weekly) == 1, "The Codex region must route to Codex in every layout.");
+                    Assert(IndicatorView.ProviderAt(new Point(size.Width + 1, 25), size, style, weekly) == -1, "Points outside the indicator must not route to a provider.");
+                    var left = IndicatorView.ProviderBounds(0, size, style, weekly);
+                    var right = IndicatorView.ProviderBounds(1, size, style, weekly);
+                    Assert(left.Right == right.Left && left.Width + right.Width == size.Width, "Provider regions must partition the displayed layout without overlap.");
+                }
                 var start = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
                 var period = new QuotaPeriod { StartUtc = start, EndUtc = start.AddHours(5), Remaining = 50 };
                 Assert(period.ElapsedAt(start.AddHours(-1)) == 0, "Time before reset must clamp to the start.");
@@ -116,7 +131,7 @@ namespace Taskcode.Probe
                 Assert(period.ElapsedAt(start) == null, "Invalid period bounds must hide the marker.");
                 SpeedChecks.Run();
                 RenderChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
-                File.WriteAllText(output, "PASS: 7 placement assertions.\nPASS: 10 time-progress and budget-pace assertions.\nPASS: 26 recent-speed, projection, and sequential-fade assertions.\nPASS: all 3 styles in light/dark palettes, transparent backgrounds, visible vector/text content, and palette contrast.\n");
+                File.WriteAllText(output, "PASS: 7 placement assertions.\nPASS: provider routing in all 3 styles, with weekly off/on and scaled coordinates.\nPASS: 10 time-progress and budget-pace assertions.\nPASS: 26 recent-speed, projection, and sequential-fade assertions.\nPASS: all 3 styles in light/dark palettes, transparent backgrounds, visible vector/text content, and palette contrast.\n");
                 return 0;
             }
             catch (Exception ex) { File.WriteAllText(output, "FAIL: " + ex.Message); return 1; }

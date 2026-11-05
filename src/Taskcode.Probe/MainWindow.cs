@@ -19,7 +19,9 @@ namespace Taskcode.Probe
         private readonly CheckBox enabled = new CheckBox();
         private IndicatorWindow indicator;
         private readonly UsageDemo usage = new UsageDemo();
-        private readonly DetailWindow details;
+        private readonly DetailWindow[] providerDetails;
+        private DetailWindow details;
+        private int selectedProvider, hoverProvider = -1;
         private IntPtr attachedParent;
         private Rectangle indicatorBounds;
         private DateTime leftAt = DateTime.UtcNow;
@@ -36,7 +38,8 @@ namespace Taskcode.Probe
         internal MainWindow(bool startInTray = false)
         {
             this.startInTray = startInTray;
-            details = new DetailWindow(usage);
+            providerDetails = new[] { new DetailWindow(usage, 0), new DetailWindow(usage, 1) };
+            details = providerDetails[0];
             Text = WindowTitle;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterScreen;
@@ -122,10 +125,17 @@ namespace Taskcode.Probe
                 usage.Cycle(DateTime.UtcNow);
                 details.RefreshUsage();
                 TickLayout();
-                ShowDetails(true, true);
+                ShowDetails(true, true, selectedProvider);
             };
-            detailsButton.Click += delegate { ShowDetails(true, true); };
-            preview.Click += delegate { ShowDetails(true, true); };
+            var detailsMenu = new ContextMenuStrip();
+            detailsMenu.Items.Add("Claude details", null, delegate { ShowDetails(true, true, 0); });
+            detailsMenu.Items.Add("Codex details", null, delegate { ShowDetails(true, true, 1); });
+            detailsButton.Click += delegate { detailsMenu.Show(detailsButton, new Point(0, detailsButton.Height)); };
+            preview.Click += delegate
+            {
+                int provider = IndicatorView.ProviderAt(preview.PointToClient(Cursor.Position), preview.ClientSize, settings.Style, settings.ShowWeekly);
+                ShowDetails(true, true, provider < 0 ? selectedProvider : provider);
+            };
             exit.Click += delegate { RequestExit(); };
             style.SelectedIndexChanged += delegate
             {
@@ -151,6 +161,7 @@ namespace Taskcode.Probe
             {
                 settings.DetailsTrigger = (DetailsTrigger)trigger.SelectedIndex;
                 hoverSince = null;
+                hoverProvider = -1;
                 pinned = false;
                 details.Hide();
                 Save();
@@ -183,7 +194,8 @@ namespace Taskcode.Probe
             {
                 timer.Stop(); timer.Dispose(); animationTimer.Dispose(); watcher.Dispose();
                 if (indicator != null && !indicator.IsDisposed) indicator.Dispose();
-                details.Dispose();
+                foreach (var panel in providerDetails) panel.Dispose();
+                detailsMenu.Dispose();
                 tray.Visible = false; tray.Dispose(); trayMenu.Dispose(); trayImage.Dispose();
             };
             // Keep the host alive even when startup suppresses the settings window.
@@ -228,8 +240,17 @@ namespace Taskcode.Probe
             if (indicator != null && !indicator.IsDisposed) indicator.Dispose();
             attachedParent = IntPtr.Zero;
             indicator = new IndicatorWindow();
-            indicator.Click += delegate { ShowDetails(true, false); };
-            indicator.MouseHover += delegate { ShowDetails(false, false); };
+            indicator.MouseClick += delegate(object sender, MouseEventArgs e)
+            {
+                if (e.Button != MouseButtons.Left) return;
+                int provider = IndicatorView.ProviderAt(e.Location, indicator.ClientSize, settings.Style, settings.ShowWeekly);
+                if (provider >= 0) ShowDetails(true, false, provider);
+            };
+            indicator.MouseHover += delegate
+            {
+                int provider = IndicatorView.ProviderAt(indicator.PointToClient(Cursor.Position), indicator.ClientSize, settings.Style, settings.ShowWeekly);
+                if (provider >= 0) ShowDetails(false, false, provider);
+            };
         }
         private void PauseIndicator(string reason)
         {
@@ -237,6 +258,7 @@ namespace Taskcode.Probe
             if (!pinned) details.Hide();
             indicatorBounds = Rectangle.Empty;
             hoverSince = null;
+            hoverProvider = -1;
             status.Text = reason + (saveError == null ? "" : "\n" + saveError);
         }
         private void TickLayout()
@@ -253,7 +275,7 @@ namespace Taskcode.Probe
                 preview.Theme = theme;
                 preview.BackColor = theme.PreviewBackground;
                 preview.Invalidate();
-                details.ApplyTheme(theme);
+                foreach (var panel in providerDetails) panel.ApplyTheme(theme);
             }
             if (!enabled.Checked) { PauseIndicator("Indicator paused. The preview is still available."); return; }
             var layout = watcher.Latest;
@@ -308,23 +330,37 @@ namespace Taskcode.Probe
                 leftAt = DateTime.UtcNow;
                 if (settings.DetailsTrigger == DetailsTrigger.Hover)
                 {
+                    int provider = IndicatorView.ProviderAt(new Point(Cursor.Position.X - indicatorBounds.X, Cursor.Position.Y - indicatorBounds.Y), indicatorBounds.Size, settings.Style, settings.ShowWeekly);
+                    if (provider != hoverProvider) { hoverProvider = provider; hoverSince = DateTime.UtcNow; }
                     if (!hoverSince.HasValue) hoverSince = DateTime.UtcNow;
-                    if (!details.Visible && DateTime.UtcNow - hoverSince.Value > TimeSpan.FromMilliseconds(400)) ShowDetails(false, false);
+                    if ((!details.Visible || selectedProvider != provider) && DateTime.UtcNow - hoverSince.Value > TimeSpan.FromMilliseconds(400)) ShowDetails(false, false, provider);
                 }
-                else hoverSince = null;
+                else { hoverSince = null; hoverProvider = -1; }
             }
             else
             {
                 hoverSince = null;
+                hoverProvider = -1;
                 if (details.Visible && details.Bounds.Contains(Cursor.Position)) leftAt = DateTime.UtcNow;
                 else if (!pinned && DateTime.UtcNow - leftAt > TimeSpan.FromMilliseconds(550)) details.Hide();
             }
         }
-        private void ShowDetails(bool focus, bool fromPreview)
+        internal int VisibleDetailProvider { get { return details.Visible ? details.ProviderIndex : -1; } }
+        internal int VisibleDetailCount { get { int count = 0; foreach (var panel in providerDetails) if (panel.Visible) count++; return count; } }
+        internal void ShowDetails(bool focus, bool fromPreview, int provider = 0)
         {
             // Both native MouseHover and rectangle-based dwell share this guard.
-            if (!focus && (settings.DetailsTrigger != DetailsTrigger.Hover || details.Visible)) return;
+            if (provider < 0 || provider > 1) return;
+            if (!focus && (settings.DetailsTrigger != DetailsTrigger.Hover || (details.Visible && selectedProvider == provider))) return;
+            if (selectedProvider != provider)
+            {
+                details.Hide();
+                selectedProvider = provider;
+                details = providerDetails[provider];
+            }
             Rectangle anchor = fromPreview || indicatorBounds.IsEmpty ? RectangleToScreen(preview.Bounds) : indicatorBounds;
+            var providerAnchor = IndicatorView.ProviderBounds(provider, anchor.Size, settings.Style, settings.ShowWeekly);
+            anchor = new Rectangle(anchor.X + providerAnchor.X, anchor.Y, providerAnchor.Width, anchor.Height);
             var area = Screen.FromRectangle(anchor).WorkingArea;
             int x = Math.Max(area.Left, Math.Min(anchor.Right - details.Width, area.Right - details.Width));
             int y = anchor.Top - details.Height - 8;

@@ -28,7 +28,7 @@ Weekly readings are optional and disabled by default. Enabling them adds labeled
 
 ![Current details panel in dark and light mode](docs/images/current-details.png)
 
-The panel shows five-hour and weekly quota, elapsed-period markers, and recent-consumption projections with animated filled arrows. Percentages show remaining quota; period dates and usage histories are currently simulated.
+Each provider has its own panel with five-hour and weekly quota, elapsed-period markers, and recent-consumption projections with animated filled arrows. Hovering or clicking Claude opens Claude's panel; Codex opens its own. Only one panel is visible at a time. The preview above shows both provider windows in both themes. Percentages show remaining quota; period dates and usage histories are currently simulated.
 
 ### Settings
 

@@ -39,6 +39,20 @@ namespace Taskcode.Probe
                 "Taskcode demo: Claude 68 percent remaining, Codex 42 percent remaining";
         }
         internal static int LogicalHeight { get { return (int)Math.Ceiling(34 * IndicatorScale); } }
+        private static int SecondProviderX(IndicatorStyle style, bool weekly)
+        { return weekly ? (style == IndicatorStyle.Essential ? 132 : 172) : style == IndicatorStyle.Essential ? 120 : style == IndicatorStyle.Blocks ? 162 : 148; }
+        internal static Rectangle ProviderBounds(int provider, Size size, IndicatorStyle style, bool weekly)
+        {
+            if (provider < 0 || provider > 1 || size.Width <= 0 || size.Height <= 0) return Rectangle.Empty;
+            float scale = Math.Min(size.Width / (float)ContentWidth(style, weekly), size.Height / 34f);
+            int split = (int)Math.Round((SecondProviderX(style, weekly) - (weekly ? 12 : 11) - 32) * scale);
+            return provider == 0 ? new Rectangle(0, 0, split, size.Height) : new Rectangle(split, 0, size.Width - split, size.Height);
+        }
+        internal static int ProviderAt(Point point, Size size, IndicatorStyle style, bool weekly)
+        {
+            if (!new Rectangle(Point.Empty, size).Contains(point)) return -1;
+            return ProviderBounds(0, size, style, weekly).Contains(point) ? 0 : 1;
+        }
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
@@ -61,7 +75,7 @@ namespace Taskcode.Probe
             {
                 if (showWeekly)
                 {
-                    int second = style == IndicatorStyle.Essential ? 132 : 172;
+                    int second = SecondProviderX(style, true);
                     DrawWeeklyProvider(g, font, text, "Claude", 68, 81, theme.Claude, 36, style, theme);
                     DrawWeeklyProvider(g, font, text, "Codex", 42, 63, theme.Codex, second, style, theme);
                     using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 12, 3, second - 12, 31);
@@ -70,7 +84,7 @@ namespace Taskcode.Probe
                 }
                 else
                 {
-                    int second = style == IndicatorStyle.Essential ? 120 : style == IndicatorStyle.Blocks ? 162 : 148;
+                    int second = SecondProviderX(style, false);
                     DrawProvider(g, font, bold, text, "Claude", 68, theme.Claude, 36, style, theme);
                     DrawProvider(g, font, bold, text, "Codex", 42, theme.Codex, second, style, theme);
                     using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 11, 9, second - 11, 25);
@@ -262,29 +276,31 @@ namespace Taskcode.Probe
         private readonly Timer animationTimer = new Timer { Interval = 33 };
         private readonly ToolTip hints = new ToolTip();
         private readonly UsageDemo usage;
-        internal DetailWindow(UsageDemo usage = null)
+        internal readonly int ProviderIndex;
+        internal DetailWindow(UsageDemo usage = null, int providerIndex = 0)
         {
+            if (providerIndex < 0 || providerIndex > 1) throw new ArgumentOutOfRangeException("providerIndex");
+            ProviderIndex = providerIndex;
             this.usage = usage ?? new UsageDemo();
-            Text = "Taskcode - demo details";
+            string provider = providerIndex == 0 ? "Claude" : "Codex";
+            Text = "Taskcode - " + provider + " details";
             FormBorderStyle = FormBorderStyle.FixedToolWindow;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.Manual;
-            ClientSize = new Size(330, 532);
+            ClientSize = new Size(330, 324);
             BackColor = Color.FromArgb(29, 32, 36);
             ForeColor = Color.FromArgb(238, 241, 245);
             Font = new Font("Segoe UI", 10f);
             KeyPreview = true;
             AddText("Taskcode", 18, 14, 13, FontStyle.Bold, ForeColor);
             AddText("DEMO DATA  /  Remaining quota", 18, 49, 9, FontStyle.Regular, Color.LightGray);
-            AddText("Claude", 42, 80, 10, FontStyle.Bold, IndicatorView.Claude);
-            AddQuota(this.usage.Readings[0], 110);
-            AddQuota(this.usage.Readings[1], 196);
-            AddText(">_", 18, 292, 10, FontStyle.Bold, IndicatorView.Codex);
-            AddText("Codex", 42, 292, 10, FontStyle.Bold, IndicatorView.Codex);
-            AddQuota(this.usage.Readings[2], 322);
-            AddQuota(this.usage.Readings[3], 408);
-            AddText("Gray: used · Color: remaining · ▼: time", 18, 494, 8, FontStyle.Regular, Color.LightGray);
-            AddText("Simulated usage history. No accounts connected.", 18, 513, 7.5f, FontStyle.Regular, Color.LightGray);
+            var providerColor = providerIndex == 0 ? IndicatorView.Claude : IndicatorView.Codex;
+            AddText(provider, 42, 80, 10, FontStyle.Bold, providerColor);
+            if (providerIndex == 1) AddText(">_", 18, 80, 10, FontStyle.Bold, providerColor);
+            AddQuota(this.usage.Readings[providerIndex * 2], 110);
+            AddQuota(this.usage.Readings[providerIndex * 2 + 1], 196);
+            AddText("Gray: used · Color: remaining · ▼: time", 18, 286, 8, FontStyle.Regular, Color.LightGray);
+            AddText("Simulated usage history. No accounts connected.", 18, 305, 7.5f, FontStyle.Regular, Color.LightGray);
             KeyDown += delegate(object sender, KeyEventArgs e) { if (e.KeyCode == Keys.Escape) Hide(); };
             FormClosing += delegate(object sender, FormClosingEventArgs e) { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } };
             periodTimer.Tick += delegate { RefreshPeriods(); };
@@ -369,7 +385,8 @@ namespace Taskcode.Probe
         {
             base.OnPaint(e);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var brush = new SolidBrush(theme.Claude)) BrandMarks.DrawClaude(e.Graphics, brush, new RectangleF(18, 84, 16, 16));
+            if (ProviderIndex == 0)
+                using (var brush = new SolidBrush(theme.Claude)) BrandMarks.DrawClaude(e.Graphics, brush, new RectangleF(18, 84, 16, 16));
         }
         protected override bool ShowWithoutActivation { get { return true; } }
     }

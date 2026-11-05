@@ -30,7 +30,7 @@ Prototype values are not real readings. Displayed reset times and limits will de
 
 ## Behavior
 
-- Hover opens a panel with both providers and their quota details.
+- Hover opens a panel containing only the selected provider's five-hour and weekly details. The hit regions follow each rendered style and optional weekly layout. Moving to another provider replaces the current panel; both panels are never shown together.
 - **Open details** defaults to **Hover**, with a saved **Click only** alternative. Click-only mode disables both native hover events and dwell-based opening. Changing the preference dismisses the current panel immediately.
 - Support click and keyboard access rather than relying exclusively on hover.
 - Show the last update time and connection state.

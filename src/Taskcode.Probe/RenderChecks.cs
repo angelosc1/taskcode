@@ -56,22 +56,35 @@ namespace Taskcode.Probe
                 }
                 board.Save(Path.Combine(directory, pulse == 0 ? "appearance-check.png" : "speed-check.png"), ImageFormat.Png);
             }
-            using (var details = new DetailWindow())
+            var usage = new UsageDemo();
+            using (var claude = new DetailWindow(usage, 0))
+            using (var codex = new DetailWindow(usage, 1))
             {
                 // Realize child controls outside the visible desktop for DrawToBitmap.
                 // A never-shown form omits its hidden children from that rendering API.
-                details.Location = new Point(-30000, -30000);
-                details.Show();
-                using (var board = new Bitmap(details.Width * 2, details.Height))
+                var panels = new[] { claude, codex };
+                foreach (var panel in panels) { panel.Location = new Point(-30000, -30000); panel.Show(); }
+                using (var board = new Bitmap(claude.Width * 2, claude.Height + codex.Height))
                 using (var canvas = Graphics.FromImage(board))
                 {
+                    for (int provider = 0; provider < 2; provider++)
                     for (int column = 0; column < 2; column++)
                     {
+                        var details = panels[provider];
+                        int bars = 0;
+                        foreach (System.Windows.Forms.Control control in details.Controls)
+                        {
+                            var bar = control as QuotaBar;
+                            if (bar == null) continue;
+                            bars++;
+                            if (bar.Reading.Provider != (provider == 0 ? "Claude" : "Codex")) throw new InvalidOperationException("A provider panel exposed another provider's data.");
+                        }
+                        if (bars != 2) throw new InvalidOperationException("Each provider needs exactly five-hour and weekly quota bars.");
                         details.ApplyTheme(TaskbarTheme.Create(column == 0));
                         using (var surface = new Bitmap(details.Width, details.Height))
                         {
                             details.DrawToBitmap(surface, new Rectangle(Point.Empty, surface.Size));
-                            canvas.DrawImageUnscaled(surface, column * details.Width, 0);
+                            canvas.DrawImageUnscaled(surface, column * details.Width, provider * claude.Height);
                         }
                     }
                     board.Save(Path.Combine(directory, "details-check.png"), ImageFormat.Png);
