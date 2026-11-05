@@ -16,6 +16,12 @@ namespace Taskcode.Probe
             if (Array.IndexOf(args, "--accounts-check") >= 0) return AccountChecks.Probe(false);
             if (Array.IndexOf(args, "--activity-check") >= 0) return AccountChecks.ProbeActivity();
             if (Array.IndexOf(args, "--connect-claude") >= 0) return AccountChecks.Probe(true);
+            if (Array.IndexOf(args, "--preview-animation") >= 0)
+            {
+                var running = Native.FindWindow(null, MainWindow.WindowTitle);
+                if (running != IntPtr.Zero) Native.PostMessage(running, MainWindow.PreviewAnimationMessage, IntPtr.Zero, IntPtr.Zero);
+                return 0;
+            }
             if (Array.IndexOf(args, "--exit") >= 0)
             {
                 var running = Native.FindWindow(null, MainWindow.WindowTitle);

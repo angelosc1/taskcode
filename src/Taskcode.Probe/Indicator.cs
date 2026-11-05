@@ -93,8 +93,8 @@ namespace Taskcode.Probe
                     DrawSpeedHint(g, theme.Claude, 36, style, false, pulseKey & 3, 0);
                     DrawSpeedHint(g, theme.Codex, second, style, false, (pulseKey >> 4) & 3, 0);
                 }
-                if ((activityKey & 1) != 0) ActivityRipple.Draw(g, theme.Claude, new PointF(44, 17), activitySeconds);
-                if ((activityKey & 2) != 0) ActivityRipple.Draw(g, theme.Codex, new PointF(SecondProviderX(style, showWeekly) + 8, 17), activitySeconds);
+                if ((activityKey & 1) != 0) ActivityRipple.Draw(g, theme.Claude, MarkCenter(36), activitySeconds);
+                if ((activityKey & 2) != 0) ActivityRipple.Draw(g, theme.Codex, MarkCenter(SecondProviderX(style, showWeekly)), activitySeconds);
             }
             g.Restore(state);
         }
@@ -174,9 +174,12 @@ namespace Taskcode.Probe
         }
         private static void DrawMark(Graphics g, Font font, Brush accent, string name, int x)
         {
-            if (name == "Claude") BrandMarks.DrawClaude(g, accent, new RectangleF(x, 9, 16, 16));
-            else using (var symbol = new Font("Segoe UI", 13f, FontStyle.Regular, GraphicsUnit.Pixel)) g.DrawString(">_", symbol, accent, x, 8);
+            var bounds = MarkBounds(x);
+            if (name == "Claude") BrandMarks.DrawClaude(g, accent, bounds);
+            else BrandMarks.DrawCodex(g, accent, bounds);
         }
+        internal static RectangleF MarkBounds(int x) { return new RectangleF(x, 9, 16, 16); }
+        internal static PointF MarkCenter(int x) { var bounds = MarkBounds(x); return new PointF(bounds.X + bounds.Width / 2, bounds.Y + bounds.Height / 2); }
         protected override void OnKeyDown(KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Space) { OnClick(EventArgs.Empty); e.Handled = true; }
@@ -338,7 +341,6 @@ namespace Taskcode.Probe
             sourceLabel = AddText("DEMO DATA  /  Remaining quota", 18, 49, 9, FontStyle.Regular, Color.LightGray);
             var providerColor = providerIndex == 0 ? IndicatorView.Claude : IndicatorView.Codex;
             AddText(provider, 42, 80, 10, FontStyle.Bold, providerColor);
-            if (providerIndex == 1) AddText(">_", 18, 80, 10, FontStyle.Bold, providerColor);
             AddQuota(this.usage.Readings[providerIndex * 2], 110);
             AddQuota(this.usage.Readings[providerIndex * 2 + 1], 196);
             AddText("Gray: used · Color: remaining · ▼: time", 18, 286, 8, FontStyle.Regular, Color.LightGray);
@@ -435,6 +437,7 @@ namespace Taskcode.Probe
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             if (ProviderIndex == 0)
                 using (var brush = new SolidBrush(theme.Claude)) BrandMarks.DrawClaude(e.Graphics, brush, new RectangleF(18, 84, 16, 16));
+            else using (var brush = new SolidBrush(theme.Codex)) BrandMarks.DrawCodex(e.Graphics, brush, new RectangleF(18, 84, 16, 16));
         }
         protected override bool ShowWithoutActivation { get { return true; } }
     }

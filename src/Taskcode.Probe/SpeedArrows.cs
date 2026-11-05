@@ -9,6 +9,7 @@ namespace Taskcode.Probe
     internal static class SpeedArrows
     {
         private static readonly Stopwatch Clock = Stopwatch.StartNew();
+        internal static double Seconds { get { return Clock.Elapsed.TotalSeconds; } }
         private static DateTime nextPreferenceRead;
         private static bool animationsEnabled = true;
         internal static bool IsAnimated

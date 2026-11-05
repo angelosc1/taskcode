@@ -1,14 +1,15 @@
 using System;
-using System.Diagnostics;
 using System.Drawing;
 
 namespace Taskcode.Probe
 {
     internal static class ActivityRipple
     {
-        private static readonly Stopwatch Clock = Stopwatch.StartNew();
-        internal static double Seconds { get { return Clock.Elapsed.TotalSeconds; } }
-        internal static double PhaseAt(double seconds, int ring) { return ((seconds / 2.21 - ring * 0.5) % 1 + 1) % 1; }
+        internal const double Duration = 2.4;
+        internal static double Seconds { get { return SpeedArrows.Seconds; } }
+        internal static double PhaseAt(double seconds, int ring) { return ((seconds / Duration - ring * 0.5) % 1 + 1) % 1; }
+        internal static float RadiusAt(double phase) { return (float)(5.5 + phase * 6.0); }
+        internal static int AlphaAt(double phase) { double wave = Math.Sin(Math.PI * phase); return (int)Math.Round(190 * wave * wave); }
         internal static void Draw(Graphics graphics, Color color, PointF center, double seconds = -1)
         {
             if (!SpeedArrows.IsAnimated && seconds < 0)
@@ -20,9 +21,9 @@ namespace Taskcode.Probe
             for (int ring = 0; ring < 2; ring++)
             {
                 double phase = PhaseAt(seconds, ring);
-                float radius = (float)(7.8 + phase * 4.2);
-                int alpha = (int)Math.Round(140 * Math.Pow(1 - phase, 1.6));
-                using (var pen = new Pen(Color.FromArgb(alpha, color), 0.85f))
+                float radius = RadiusAt(phase);
+                int alpha = AlphaAt(phase);
+                using (var pen = new Pen(Color.FromArgb(alpha, color), 1f))
                     graphics.DrawEllipse(pen, center.X - radius, center.Y - radius, radius * 2, radius * 2);
             }
         }

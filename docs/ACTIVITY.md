@@ -2,7 +2,9 @@
 
 While a provider has an observed running turn, two soft rings expand and fade around its symbol. Claude uses its peach accent and Codex its mint accent. Each provider works independently. A quota refresh, an open application, and a change in quota are not treated as proof of a running turn.
 
-The cycle lasts 2.21 seconds, with the two rings half a cycle apart. The strip keeps its transparent background. The effect uses the existing 30 FPS timer only while activity or a temporary speed hint needs animation. When Windows disables client-area animations or high contrast is active, a small static activity dot replaces moving rings. Idle or unknown activity has no ripple.
+The cycle lasts 2.4 seconds, with the two rings half a cycle apart. Each ring expands continuously and uses a smooth sine-squared opacity envelope: fully faded at both ends, brightest in the middle. Animation and frame caching share the same monotonic clock. Both provider symbols use explicit vector bounds, including a centered terminal mark for Codex, so font padding cannot displace the ripple. The strip keeps its transparent appearance. The effect uses the existing 30 FPS timer only while activity or a temporary speed hint needs animation. When Windows disables client-area animations or high contrast is active, a small static activity dot replaces moving rings. Idle or unknown activity has no ripple.
+
+Right-click the indicator or tray icon and choose **Preview animation (8 seconds)** to inspect both colors without changing account readings or real activity state. The preview ends automatically. No incoming Claude activity records means no live Claude ripple; use the preview to distinguish a drawing problem from a missing activity signal.
 
 Lines now includes the provider symbols alongside the names so the same ripple has a symbol to surround in every style. Essential, Blocks, and the weekly layouts keep their existing arrangement. Existing recent-consumption arrows describe quota velocity and remain separate from execution activity.
 
@@ -24,6 +26,6 @@ An already-running turn whose start is outside the initial tail may remain unkno
 
 ## Verification
 
-Self-tests cover start, stop, permission waiting, event order, stale activity, malformed records, message spoofing, hook idempotency/restoration, staggered rings, and transparent rendering. `out/probe/ripple-check.png` is an offscreen comparison across styles and themes. `--activity-check` writes only a sanitized working/idle-or-unavailable summary to the ignored output directory.
+Self-tests cover start, stop, permission waiting, event order, stale activity, malformed records, message spoofing, hook idempotency/restoration, smooth cycle boundaries, visible outer expansion, centered Codex ink, staggered rings, and transparent rendering. `out/probe/ripple-check.png` compares styles and themes; `ripple-cycle-check.png` samples a complete cycle for both providers in both themes. `--activity-check` writes only a sanitized working/idle-or-unavailable summary to the ignored output directory. `--preview-animation` requests the same eight-second preview from a running instance.
 
 Offline `--demo` mode animates both providers for fifteen seconds on startup and after **Simulate speed** in active scenarios. It is explicitly simulated and does not write live activity files.

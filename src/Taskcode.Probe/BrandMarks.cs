@@ -39,5 +39,19 @@ namespace Taskcode.Probe
             using (var transform = new System.Drawing.Drawing2D.Matrix(bounds.Width / 24f, 0, 0, bounds.Height / 24f, bounds.X, bounds.Y))
             { path.Transform(transform); graphics.FillPath(brush, path); }
         }
+        internal static void DrawCodex(Graphics graphics, System.Drawing.Brush brush, RectangleF bounds)
+        {
+            // A centered terminal mark avoids font side bearings and baseline offsets.
+            var state = graphics.Save();
+            graphics.TranslateTransform(bounds.X, bounds.Y);
+            graphics.ScaleTransform(bounds.Width / 16f, bounds.Height / 16f);
+            graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            using (var pen = new System.Drawing.Pen(brush, 1.15f) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = System.Drawing.Drawing2D.LineJoin.Round })
+            {
+                graphics.DrawLines(pen, new[] { new PointF(2.5f, 4), new PointF(6.8f, 8), new PointF(2.5f, 12) });
+                graphics.DrawLine(pen, 9, 12, 13.5f, 12);
+            }
+            graphics.Restore(state);
+        }
     }
 }

@@ -10,6 +10,7 @@ namespace Taskcode.Probe
         internal const string WindowTitle = "Taskcode settings";
         internal static readonly uint OpenSettingsMessage = Native.RegisterWindowMessage("Taskcode.OpenSettings");
         internal static readonly uint ExitMessage = Native.RegisterWindowMessage("Taskcode.Exit");
+        internal static readonly uint PreviewAnimationMessage = Native.RegisterWindowMessage("Taskcode.PreviewAnimation");
         private readonly Settings settings = Settings.Load();
         private readonly TaskbarWatcher watcher = new TaskbarWatcher();
         private readonly Timer timer = new Timer { Interval = 250 };
@@ -36,6 +37,8 @@ namespace Taskcode.Probe
         private bool startInTray, exiting;
         private readonly AccountConnections connections;
         private readonly Label accountNotice;
+        private DateTime ripplePreviewUntil;
+        private int CurrentActivity { get { return DateTime.UtcNow < ripplePreviewUntil ? 3 : usage.ActivityAt(DateTime.UtcNow); } }
 
         internal MainWindow(bool startInTray = false, bool connectAccounts = true)
         {
@@ -207,7 +210,7 @@ namespace Taskcode.Probe
             animationTimer.Tick += delegate
             {
                 int key = usage.PulseKey(DateTime.UtcNow, settings.ShowWeekly);
-                int activity = usage.ActivityAt(DateTime.UtcNow);
+                int activity = CurrentActivity;
                 preview.PulseKey = key;
                 preview.ActivityKey = activity;
                 preview.Invalidate();
@@ -219,6 +222,7 @@ namespace Taskcode.Probe
             Icon = trayImage;
             trayMenu = new ContextMenuStrip();
             trayMenu.Items.Add("Open settings", null, delegate { OpenSettings(); });
+            trayMenu.Items.Add("Preview animation (8 seconds)", null, delegate { PreviewAnimation(); });
             trayMenu.Items.Add(new ToolStripSeparator());
             trayMenu.Items.Add("Exit", null, delegate { RequestExit(); });
             trayMenu.Closed += delegate
@@ -257,9 +261,11 @@ namespace Taskcode.Probe
         {
             if (message.Msg == OpenSettingsMessage) { OpenSettings(); return; }
             if (message.Msg == ExitMessage) { RequestExit(); return; }
+            if (message.Msg == PreviewAnimationMessage) { PreviewAnimation(); return; }
             base.WndProc(ref message);
         }
         internal bool TrayVisible { get { return tray.Visible; } }
+        internal void PreviewAnimation() { ripplePreviewUntil = DateTime.UtcNow.AddSeconds(8); TickLayout(); }
         internal void OpenSettings()
         {
             startInTray = false;
@@ -323,7 +329,7 @@ namespace Taskcode.Probe
             }
             usage.Tick(DateTime.UtcNow);
             int pulse = usage.PulseKey(DateTime.UtcNow, settings.ShowWeekly);
-            int activityKey = usage.ActivityAt(DateTime.UtcNow);
+            int activityKey = CurrentActivity;
             animationTimer.Enabled = (pulse != 0 || activityKey != 0) && enabled.Checked && SpeedArrows.IsAnimated;
             if (preview.ActivityKey != activityKey) { preview.ActivityKey = activityKey; preview.Invalidate(); }
             if (preview.PulseKey != pulse) { preview.PulseKey = pulse; preview.Invalidate(); }

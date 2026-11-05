@@ -32,6 +32,19 @@ namespace Taskcode.Probe
             ClaudeBridge.ConfigureActivityHooks(settings, false); string restored = AccountJson.Encode(settings);
             Check(restored.Contains("keep-me") && restored.Contains("unrelated") && !restored.Contains("--activity-"), "Removing activity hooks must preserve user hooks and other settings.");
             Check(Math.Abs(ActivityRipple.PhaseAt(0.5, 0) - ActivityRipple.PhaseAt(0.5, 1)) > 0.49, "Ripple rings must have staggered phases.");
+            Check(ActivityRipple.AlphaAt(0) == 0 && ActivityRipple.AlphaAt(1) == 0, "Each ring must start and end fully faded.");
+            Check(ActivityRipple.AlphaAt(0.5) == 190 && ActivityRipple.AlphaAt(0.75) > 90, "The ring must remain visible through the outer half of its expansion.");
+            Check(ActivityRipple.AlphaAt(0.01) <= 1 && ActivityRipple.AlphaAt(0.99) <= 1, "The cycle boundary must not flash or snap.");
+            Check(ActivityRipple.RadiusAt(0) < ActivityRipple.RadiusAt(0.5) && ActivityRipple.RadiusAt(0.5) < ActivityRipple.RadiusAt(1), "Ripple must expand through its entire cycle.");
+            Check(IndicatorView.MarkCenter(36) == new PointF(44, 17), "The symbol and ripple must share their exact center.");
+            using (var mark = new Bitmap(80, 80))
+            {
+                using (var g = Graphics.FromImage(mark)) using (var brush = new SolidBrush(Color.White)) BrandMarks.DrawCodex(g, brush, new RectangleF(20, 20, 40, 40));
+                int left = 80, top = 80, right = -1, bottom = -1;
+                for (int y = 0; y < 80; y++) for (int x = 0; x < 80; x++) if (mark.GetPixel(x, y).A > 16)
+                { left = Math.Min(left, x); top = Math.Min(top, y); right = Math.Max(right, x); bottom = Math.Max(bottom, y); }
+                Check(Math.Abs((left + right) / 2.0 - 40) <= 1 && Math.Abs((top + bottom) / 2.0 - 40) <= 1, "The Codex symbol's visible ink must be centered without font padding.");
+            }
             string originalHome = Environment.GetEnvironmentVariable("CODEX_HOME");
             string fixtureHome = Path.Combine(directory, "activity-fixture");
             string fixtureDay = Path.Combine(fixtureHome, "sessions", now.ToString("yyyy/MM/dd", System.Globalization.CultureInfo.InvariantCulture));
@@ -74,6 +87,33 @@ namespace Taskcode.Probe
                     }
                 }
                 board.Save(Path.Combine(directory, "ripple-check.png"), System.Drawing.Imaging.ImageFormat.Png);
+            }
+            using (var board = new Bitmap(936, 320))
+            using (var graphics = Graphics.FromImage(board))
+            using (var font = new Font("Segoe UI", 11, FontStyle.Regular, GraphicsUnit.Pixel))
+            {
+                for (int palette = 0; palette < 2; palette++)
+                {
+                    var theme = TaskbarTheme.Create(palette == 0);
+                    using (var bg = new SolidBrush(theme.PreviewBackground)) graphics.FillRectangle(bg, 0, palette * 160, 936, 160);
+                    for (int frame = 0; frame <= 8; frame++)
+                    {
+                        double seconds = frame * ActivityRipple.Duration / 8;
+                        using (var label = new SolidBrush(theme.Text)) graphics.DrawString(seconds.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + "s", font, label, frame * 104 + 30, palette * 160 + 10);
+                        for (int provider = 0; provider < 2; provider++)
+                        {
+                            var saved = graphics.Save();
+                            graphics.TranslateTransform(frame * 104 + 24, palette * 160 + 35 + provider * 60); graphics.ScaleTransform(2, 2);
+                            var color = provider == 0 ? theme.Claude : theme.Codex;
+                            using (var brush = new SolidBrush(color))
+                                if (provider == 0) BrandMarks.DrawClaude(graphics, brush, new RectangleF(6, 6, 16, 16)); else BrandMarks.DrawCodex(graphics, brush, new RectangleF(6, 6, 16, 16));
+                            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                            ActivityRipple.Draw(graphics, color, new PointF(14, 14), seconds);
+                            graphics.Restore(saved);
+                        }
+                    }
+                }
+                board.Save(Path.Combine(directory, "ripple-cycle-check.png"), System.Drawing.Imaging.ImageFormat.Png);
             }
         }
         private static string Event(string type, DateTime at) { return AccountJson.Encode(new { type = "event_msg", timestamp = at.ToString("o"), payload = new { type = type } }); }
