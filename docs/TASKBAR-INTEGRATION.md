@@ -67,7 +67,7 @@ The desktop inspection tool captures the prototype control window and its relate
 - Does not reserve space or move Windows controls; may hide on a crowded taskbar.
 - Overlay does not yet suppress itself for fullscreen applications.
 - Taskbar class names and accessibility structure can change with Windows updates.
-- The settings window is the control surface. No installer, auto-start, updater, or production tray menu.
+- Settings open from a tray icon, without a normal taskbar app button. Windows startup is opt-in and launches hidden; no installer or updater is provided yet.
 - Functional controls and hover/click details are prototypes, not the final mockup implementation.
 
 ## Next checks

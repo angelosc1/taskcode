@@ -14,4 +14,7 @@ if /i "%~1"=="--test" (
   start "" /wait "%taskcodeRoot%\out\probe\Taskcode.Probe.exe" --self-test
   if errorlevel 1 exit /b 1
   type "%taskcodeRoot%\out\probe\self-test.txt"
+  start "" /wait "%taskcodeRoot%\out\probe\Taskcode.Probe.exe" --tray-test
+  if errorlevel 1 exit /b 1
+  type "%taskcodeRoot%\out\probe\tray-test.txt"
 )

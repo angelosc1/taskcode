@@ -7,6 +7,9 @@ namespace Taskcode.Probe
 {
     internal sealed class MainWindow : Form
     {
+        internal const string WindowTitle = "Taskcode settings";
+        internal static readonly uint OpenSettingsMessage = Native.RegisterWindowMessage("Taskcode.OpenSettings");
+        internal static readonly uint ExitMessage = Native.RegisterWindowMessage("Taskcode.Exit");
         private readonly Settings settings = Settings.Load();
         private readonly TaskbarWatcher watcher = new TaskbarWatcher();
         private readonly Timer timer = new Timer { Interval = 250 };
@@ -25,13 +28,19 @@ namespace Taskcode.Probe
         private TaskbarTheme theme = TaskbarTheme.Read();
         private DateTime nextThemeCheck;
         private DateTime? hoverSince;
+        private readonly NotifyIcon tray;
+        private readonly ContextMenuStrip trayMenu;
+        private readonly Icon trayImage;
+        private bool startInTray, exiting;
 
-        internal MainWindow()
+        internal MainWindow(bool startInTray = false)
         {
+            this.startInTray = startInTray;
             details = new DetailWindow(usage);
-            Text = "Taskcode - positioning prototype";
+            Text = WindowTitle;
+            ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(590, 567);
+            ClientSize = new Size(590, 599);
             MinimumSize = Size;
             MaximumSize = Size;
             MaximizeBox = false;
@@ -73,15 +82,40 @@ namespace Taskcode.Probe
             Controls.Add(enabled);
             var weekly = new CheckBox { Text = "Show weekly quota in the indicator", Location = new Point(26, 375), Size = new Size(520, 28), Checked = settings.ShowWeekly };
             Controls.Add(weekly);
-            status.Location = new Point(26, 415);
+            var startup = new CheckBox { Text = "Start with Windows", Location = new Point(26, 407), Size = new Size(520, 28) };
+            try { startup.Checked = StartupRegistration.IsEnabled(Application.ExecutablePath); }
+            catch (Exception ex)
+            {
+                if (!(ex is IOException || ex is UnauthorizedAccessException || ex is System.Security.SecurityException)) throw;
+                startup.Enabled = false;
+                saveError = "Windows startup settings are unavailable.";
+            }
+            Controls.Add(startup);
+            bool restoringStartup = false;
+            startup.CheckedChanged += delegate
+            {
+                if (restoringStartup) return;
+                bool requested = startup.Checked;
+                try { StartupRegistration.SetEnabled(Application.ExecutablePath, requested); saveError = null; }
+                catch (Exception ex)
+                {
+                    if (!(ex is IOException || ex is UnauthorizedAccessException || ex is System.Security.SecurityException)) throw;
+                    restoringStartup = true;
+                    startup.Checked = !requested;
+                    restoringStartup = false;
+                    saveError = "Could not change Windows startup settings.";
+                }
+                TickLayout();
+            };
+            status.Location = new Point(26, 447);
             status.Size = new Size(534, 74);
             status.ForeColor = Color.FromArgb(184, 194, 207);
             Controls.Add(status);
-            var detailsButton = new Button { Text = "Demo details", Location = new Point(26, 507), Size = new Size(145, 34) };
-            var exit = new Button { Text = "Exit prototype", Location = new Point(415, 507), Size = new Size(145, 34) };
+            var detailsButton = new Button { Text = "Demo details", Location = new Point(26, 539), Size = new Size(145, 34) };
+            var exit = new Button { Text = "Exit Taskcode", Location = new Point(415, 539), Size = new Size(145, 34) };
             Controls.Add(detailsButton);
             Controls.Add(exit);
-            var simulate = new Button { Text = "Simulate speed", Location = new Point(185, 507), Size = new Size(210, 34) };
+            var simulate = new Button { Text = "Simulate speed", Location = new Point(185, 539), Size = new Size(210, 34) };
             Controls.Add(simulate);
             simulate.Click += delegate
             {
@@ -92,7 +126,7 @@ namespace Taskcode.Probe
             };
             detailsButton.Click += delegate { ShowDetails(true, true); };
             preview.Click += delegate { ShowDetails(true, true); };
-            exit.Click += delegate { Close(); };
+            exit.Click += delegate { RequestExit(); };
             style.SelectedIndexChanged += delegate
             {
                 settings.Style = (IndicatorStyle)style.SelectedIndex;
@@ -132,14 +166,51 @@ namespace Taskcode.Probe
                 { indicator.PulseKey = key; indicator.RenderAlpha(); }
                 if (key == 0) animationTimer.Stop();
             };
-            Shown += delegate { RecreateIndicator(); timer.Start(); };
+            trayImage = TrayArtwork.Create();
+            Icon = trayImage;
+            trayMenu = new ContextMenuStrip();
+            trayMenu.Items.Add("Open settings", null, delegate { OpenSettings(); });
+            trayMenu.Items.Add(new ToolStripSeparator());
+            trayMenu.Items.Add("Exit", null, delegate { RequestExit(); });
+            tray = new NotifyIcon { Icon = trayImage, Text = "Taskcode - AI quota monitor", ContextMenuStrip = trayMenu, Visible = true };
+            tray.MouseClick += delegate(object sender, MouseEventArgs e) { if (e.Button == MouseButtons.Left) OpenSettings(); };
+            Resize += delegate { if (WindowState == FormWindowState.Minimized) Hide(); };
+            FormClosing += delegate(object sender, FormClosingEventArgs e)
+            {
+                if (!exiting && e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); }
+            };
             FormClosed += delegate
             {
                 timer.Stop(); timer.Dispose(); animationTimer.Dispose(); watcher.Dispose();
                 if (indicator != null && !indicator.IsDisposed) indicator.Dispose();
                 details.Dispose();
+                tray.Visible = false; tray.Dispose(); trayMenu.Dispose(); trayImage.Dispose();
             };
+            // Keep the host alive even when startup suppresses the settings window.
+            CreateHandle();
+            RecreateIndicator();
+            timer.Start();
         }
+        protected override void SetVisibleCore(bool value)
+        {
+            if (value && startInTray) { startInTray = false; base.SetVisibleCore(false); return; }
+            base.SetVisibleCore(value);
+        }
+        protected override void WndProc(ref Message message)
+        {
+            if (message.Msg == OpenSettingsMessage) { OpenSettings(); return; }
+            if (message.Msg == ExitMessage) { RequestExit(); return; }
+            base.WndProc(ref message);
+        }
+        internal bool TrayVisible { get { return tray.Visible; } }
+        internal void OpenSettings()
+        {
+            startInTray = false;
+            WindowState = FormWindowState.Normal;
+            Show();
+            Activate();
+        }
+        internal void RequestExit() { exiting = true; Close(); }
         private Label AddLabel(string text, int x, int y, float size, FontStyle style, int width, int height)
         {
             var value = new Label { Text = text, Location = new Point(x, y), Size = new Size(width, height), Font = new Font("Segoe UI", size, style) };

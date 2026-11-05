@@ -12,15 +12,77 @@ namespace Taskcode.Probe
         private static int Main(string[] args)
         {
             if (Array.IndexOf(args, "--self-test") >= 0) return SelfTest();
+            if (Array.IndexOf(args, "--tray-test") >= 0) return TraySelfTest();
+            if (Array.IndexOf(args, "--exit") >= 0)
+            {
+                var running = Native.FindWindow(null, MainWindow.WindowTitle);
+                if (running != IntPtr.Zero) Native.PostMessage(running, MainWindow.ExitMessage, IntPtr.Zero, IntPtr.Zero);
+                return 0;
+            }
+            bool startInTray = Array.IndexOf(args, "--tray") >= 0;
             bool created;
             using (var instance = new Mutex(true, "Local\\Taskcode.PositioningProbe", out created))
             {
-                if (!created) { MessageBox.Show("The Taskcode prototype is already running.", "Taskcode"); return 0; }
+                if (!created)
+                {
+                    var running = Native.FindWindow(null, MainWindow.WindowTitle);
+                    if (!startInTray && running != IntPtr.Zero) Native.PostMessage(running, MainWindow.OpenSettingsMessage, IntPtr.Zero, IntPtr.Zero);
+                    return 0;
+                }
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
-                Application.Run(new MainWindow());
+                Application.Run(new MainWindow(startInTray));
             }
             return 0;
+        }
+        private static int TraySelfTest()
+        {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            bool success = false;
+            string result = "FAIL: tray lifecycle test did not run.";
+            bool startupBefore = StartupRegistration.IsEnabled(Application.ExecutablePath);
+            var window = new MainWindow(true) { StartPosition = FormStartPosition.Manual, Location = new Point(-30000, -30000) };
+            using (var check = new System.Windows.Forms.Timer { Interval = 200 })
+            {
+                check.Tick += delegate
+                {
+                    check.Stop();
+                    try
+                    {
+                        Assert(!window.Visible && !window.ShowInTaskbar && window.TrayVisible, "Startup must keep settings hidden and the tray icon available.");
+                        window.OpenSettings();
+                        Assert(window.Visible && !window.ShowInTaskbar, "Settings must open without creating a taskbar button.");
+                        Assert((Native.GetStyle(window.Handle, -20).ToInt64() & 0x40000L) == 0, "The native settings window must not request a taskbar app button.");
+                        foreach (Control control in window.Controls)
+                        {
+                            var startup = control as CheckBox;
+                            if (startup != null && startup.Text == "Start with Windows")
+                                Assert(startup.Checked == startupBefore, "Startup checkbox must reflect the existing registration without enabling it.");
+                        }
+                        using (var preview = new Bitmap(window.Width, window.Height))
+                        {
+                            window.DrawToBitmap(preview, new Rectangle(Point.Empty, preview.Size));
+                            preview.Save(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings-check.png"), System.Drawing.Imaging.ImageFormat.Png);
+                        }
+                        using (var icon = window.Icon.ToBitmap())
+                            icon.Save(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tray-icon-check.png"), System.Drawing.Imaging.ImageFormat.Png);
+                        window.Close();
+                        Assert(!window.Visible && !window.IsDisposed && window.TrayVisible, "Closing settings must hide them while keeping the tray application alive.");
+                        Assert(startupBefore == StartupRegistration.IsEnabled(Application.ExecutablePath), "Opening and closing the app must not enable startup.");
+                        Assert(StartupRegistration.CommandFor(@"C:\Program Files\Taskcode\Taskcode.exe") == "\"C:\\Program Files\\Taskcode\\Taskcode.exe\" --tray", "Startup must quote paths containing spaces and launch in tray mode.");
+                        result = "PASS: tray startup, reopen, close-to-tray, no taskbar button, unchanged startup registration, and quoted startup command.";
+                        success = true;
+                    }
+                    catch (Exception ex) { result = "FAIL: " + ex.Message; }
+                    finally { window.RequestExit(); }
+                };
+                check.Start();
+                Application.Run(window);
+            }
+            Assert(window.IsDisposed, "Exit must dispose the application window.");
+            File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tray-test.txt"), result);
+            return success ? 0 : 1;
         }
         private static int SelfTest()
         {

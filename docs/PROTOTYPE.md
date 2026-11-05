@@ -6,7 +6,7 @@ The probe tests placement and display styles with sample data. It does not conne
 
 Requirements: Windows x64 with the .NET Framework 4.x x64 compiler. Only framework assemblies are used; no NuGet restore is required.
 
-From the repository root in PowerShell or Command Prompt:
+Exit any running copy through **Tray > Exit** before building. From the repository root in PowerShell or Command Prompt:
 
 ```powershell
 .\scripts\build-probe.cmd --test
@@ -33,7 +33,7 @@ The details also show animated, filled consumption-speed arrows and approximate 
 4. Choose **Open details > Hover (default)** to open the panel on hover or click, or **Click only** to prevent hover from opening it. The preference is saved. Click-opened panels stay open until dismissed; the **Demo details** button remains available in either mode.
 5. Select **Overlay** to compare the fallback. If verified space is insufficient, the indicator hides and explains why.
 6. Uncheck **Show indicator on the primary taskbar** to pause it.
-7. Use **Exit prototype** to close the prototype and its indicator.
+7. Use **Exit Taskcode** or the tray menu's **Exit** to close the app and its indicator.
 
 **Show weekly quota in the indicator** is an optional setting, unchecked by default. Enabling it shows two compact rows per provider, labeled `5h` and `7d`, with provider symbols and remaining percentages. Lines adds thin meters; Blocks uses segmented meters; Essential shows numbers. Disabling it restores the original five-hour-only layout. The preference is saved, the preview updates immediately, and the detail panel continues to include weekly quota in either mode. The optional layout uses a little more horizontal space while retaining the same height.
 
@@ -43,7 +43,15 @@ Placement changes how the indicator is hosted, not its appearance: **Embedded** 
 
 The indicator uses a 117% content scale, in addition to one monitor-DPI transform. Its former demo-label gutter has been removed. The control window and details panel still disclose that the displayed values are sample data.
 
-The prototype runs as the current user, without administrator rights. It does not install itself, register startup tasks, or change taskbar settings. Preferences are stored in `settings.xml` beside the executable. Deleting that file while the prototype is closed restores default style and placement on the next run.
+## Tray and Windows startup
+
+Taskcode has a tray icon instead of a normal taskbar application button. Left-click the tray icon to open settings, or right-click for **Open settings** and **Exit**. Windows may place a new tray icon under the hidden-icons arrow. Closing or minimizing settings hides the window while the quota indicator keeps running. Running the executable again reopens the existing instance's settings rather than creating another instance.
+
+**Start with Windows** is unchecked by default. Selecting it registers only Taskcode for the current user's sign-in, launching with `--tray` so settings stay hidden. Clearing it removes Taskcode's startup entry. Opening the app, running tests, and changing unrelated preferences do not enable startup. Windows may delay startup applications or override their execution through its own startup controls.
+
+The prototype runs as the current user, without administrator rights. It does not install itself or change taskbar settings. Style and interaction preferences are stored in `settings.xml` beside the executable. Deleting that file while the prototype is closed restores those preferences, but does not remove a Windows startup registration. Disable **Start with Windows** before moving or deleting the portable executable: the registration points to its current absolute path.
+
+Command-line switches: `--tray` starts without showing settings; `--exit` requests a clean exit from a running instance. The build's `--test` sequence also checks hidden startup, settings reopen, close-to-tray, the missing taskbar button, and unchanged startup registration. Its offscreen settings preview is saved as `out/probe/settings-check.png`.
 
 The `out/` directory is ignored by Git. Do not commit local executable files or settings.
 

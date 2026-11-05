@@ -33,6 +33,7 @@ The Floating concept illustrates an overlay placement option if taskbar integrat
 - Optional weekly quota in the taskbar indicator, disabled by default.
 - Recent-consumption projections with one to three animated, filled arrows, currently demonstrated using simulated histories.
 - Transparent taskbar indicator with colors following the Windows taskbar theme.
+- Tray icon for settings and exit, plus optional Windows sign-in startup (off by default).
 - Explicit states for stale data, connection errors, and unavailable quota information.
 
 ## Development
