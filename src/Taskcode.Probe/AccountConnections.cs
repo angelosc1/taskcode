@@ -10,6 +10,9 @@ namespace Taskcode.Probe
         private readonly CodexAccountClient codex = new CodexAccountClient();
         private readonly ConcurrentQueue<Action<UsageDemo>> updates = new ConcurrentQueue<Action<UsageDemo>>();
         private int busy, loginRequested;
+        private readonly LocalActivity activity = new LocalActivity();
+        private int activityBusy;
+        private DateTime nextActivity;
         private volatile bool disposed;
         private DateTime nextPoll, nextCodex;
         internal bool CodexEnabled = true, ClaudeEnabled = true;
@@ -20,6 +23,21 @@ namespace Taskcode.Probe
         {
             Action<UsageDemo> apply;
             while (updates.TryDequeue(out apply)) apply(usage);
+            if (!disposed && DateTime.UtcNow >= nextActivity && Interlocked.CompareExchange(ref activityBusy, 1, 0) == 0)
+            {
+                nextActivity = DateTime.UtcNow.AddMilliseconds(750);
+                bool claude = ClaudeEnabled, codexOn = CodexEnabled;
+                ThreadPool.QueueUserWorkItem(delegate
+                {
+                    try
+                    {
+                        int key;
+                        try { key = activity.Read(DateTime.UtcNow, claude, codexOn); } catch (Exception) { key = 0; }
+                        updates.Enqueue(model => model.ActivityKey = key & (ClaudeEnabled ? 1 : 0) | key & (CodexEnabled ? 2 : 0));
+                    }
+                    finally { Interlocked.Exchange(ref activityBusy, 0); }
+                });
+            }
             if (disposed || DateTime.UtcNow < nextPoll || Interlocked.CompareExchange(ref busy, 1, 0) != 0) return;
             nextPoll = DateTime.UtcNow.AddSeconds(1);
             bool readCodex = CodexEnabled, readClaude = ClaudeEnabled;

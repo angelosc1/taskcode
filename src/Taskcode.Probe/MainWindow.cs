@@ -207,11 +207,13 @@ namespace Taskcode.Probe
             animationTimer.Tick += delegate
             {
                 int key = usage.PulseKey(DateTime.UtcNow, settings.ShowWeekly);
+                int activity = usage.ActivityAt(DateTime.UtcNow);
                 preview.PulseKey = key;
+                preview.ActivityKey = activity;
                 preview.Invalidate();
                 if (indicator != null && !indicator.IsDisposed && indicator.Visible)
-                { indicator.PulseKey = key; indicator.RenderAlpha(); }
-                if (key == 0) animationTimer.Stop();
+                { indicator.PulseKey = key; indicator.ActivityKey = activity; indicator.RenderAlpha(); }
+                if (key == 0 && activity == 0) animationTimer.Stop();
             };
             trayImage = TrayArtwork.Create();
             Icon = trayImage;
@@ -310,7 +312,9 @@ namespace Taskcode.Probe
             }
             usage.Tick(DateTime.UtcNow);
             int pulse = usage.PulseKey(DateTime.UtcNow, settings.ShowWeekly);
-            animationTimer.Enabled = pulse != 0 && enabled.Checked && SpeedArrows.IsAnimated;
+            int activityKey = usage.ActivityAt(DateTime.UtcNow);
+            animationTimer.Enabled = (pulse != 0 || activityKey != 0) && enabled.Checked && SpeedArrows.IsAnimated;
+            if (preview.ActivityKey != activityKey) { preview.ActivityKey = activityKey; preview.Invalidate(); }
             if (preview.PulseKey != pulse) { preview.PulseKey = pulse; preview.Invalidate(); }
             if (DateTime.UtcNow >= nextThemeCheck)
             {
@@ -346,6 +350,7 @@ namespace Taskcode.Probe
             indicator.DisplayStyle = settings.Style;
             indicator.ShowWeekly = settings.ShowWeekly;
             indicator.PulseKey = pulse;
+            indicator.ActivityKey = activityKey;
             indicator.Usage = usage;
             indicator.AccessibleName = IndicatorView.LiveAccessibleText(usage, settings.ShowWeekly);
             indicator.Theme = theme;

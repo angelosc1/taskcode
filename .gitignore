@@ -13,6 +13,7 @@ auth.json
 credentials.json
 claude-usage.json
 claude-statusline-original.json
+claude-activity/
 *.pem
 *.key
 *.pfx

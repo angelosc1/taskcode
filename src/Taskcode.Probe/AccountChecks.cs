@@ -79,5 +79,15 @@ namespace Taskcode.Probe
                 File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "accounts-check.txt"), "Account check failed: " + ex.GetType().Name + ". Check CLI installation, sign-in, and connectivity."); return 1;
             }
         }
+        internal static int ProbeActivity()
+        {
+            try
+            {
+                int key = new LocalActivity().Read(DateTime.UtcNow, true, true);
+                File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "activity-check.txt"), "Local execution signals: Claude=" + ((key & 1) != 0 ? "working" : "idle/unavailable") + "; Codex=" + ((key & 2) != 0 ? "working" : "idle/unavailable"));
+                return 0;
+            }
+            catch (Exception ex) { File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "activity-check.txt"), "Activity unavailable: " + ex.GetType().Name); return 1; }
+        }
     }
 }

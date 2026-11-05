@@ -36,7 +36,7 @@ Prototype values are not real readings. Displayed reset times and limits will de
 - Show the last update time and connection state.
 - Make missing or stale data explicit.
 - Color helps distinguish providers; text and numbers must identify them as well.
-- Avoid continuous animations and distracting taskbar behavior.
+- Use the selected Ripple only during observed local execution, respecting Windows motion preferences. Idle and unknown states remain still. See [activity detection](ACTIVITY.md).
 
 ## Current visual references
 

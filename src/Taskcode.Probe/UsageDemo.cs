@@ -19,6 +19,9 @@ namespace Taskcode.Probe
         private DateTime nextSample;
         internal bool IsLive;
         internal int Revision;
+        internal int ActivityKey;
+        private DateTime demoActivityUntil = DateTime.UtcNow.AddSeconds(15);
+        internal int ActivityAt(DateTime now) { return IsLive ? ActivityKey : now < demoActivityUntil && scenario < 4 ? 3 : 0; }
         internal readonly string[] AccountStatus = { "Demo data", "Demo data" };
         internal void BeginLive()
         {
@@ -27,6 +30,7 @@ namespace Taskcode.Probe
         }
         internal void ClearProvider(int provider, string status)
         {
+            ActivityKey &= ~(1 << provider);
             AccountStatus[provider] = status;
             for (int i = provider * 2; i < provider * 2 + 2; i++)
             {
@@ -82,7 +86,7 @@ namespace Taskcode.Probe
         }
         private static DemoReading Create(string provider, string window, int remaining, DateTime start, DateTime end)
         { return new DemoReading { Provider = provider, Window = window, Period = new QuotaPeriod { Remaining = remaining, StartUtc = start, EndUtc = end } }; }
-        internal void Cycle(DateTime now) { scenario = (scenario + 1) % 6; Seed(now, true); }
+        internal void Cycle(DateTime now) { scenario = (scenario + 1) % 6; demoActivityUntil = now.AddSeconds(15); Seed(now, true); }
         internal string ScenarioName { get { return new[] { "Mixed", "Comfortable", "Near reset", "Fast", "Idle", "Calculating" }[scenario]; } }
         private void Seed(DateTime now, bool announce)
         {

@@ -14,6 +14,7 @@ namespace Taskcode.Probe
         internal IndicatorStyle Style = IndicatorStyle.Lines;
         internal bool ShowWeekly;
         internal int PulseKey;
+        internal int ActivityKey;
         internal UsageDemo Usage;
         internal TaskbarTheme Theme = TaskbarTheme.Read();
         internal static readonly Color Claude = Color.FromArgb(222, 157, 126), Codex = Color.FromArgb(144, 219, 188);
@@ -31,7 +32,7 @@ namespace Taskcode.Probe
         private static int ContentWidth(IndicatorStyle style, bool showWeekly)
         {
             if (showWeekly) return style == IndicatorStyle.Essential ? 184 : 268;
-            return style == IndicatorStyle.Essential ? 156 : style == IndicatorStyle.Blocks ? 246 : 214;
+            return style == IndicatorStyle.Essential ? 156 : style == IndicatorStyle.Blocks ? 246 : 262;
         }
         internal static int LogicalWidth(IndicatorStyle style, bool showWeekly = false) { return (int)Math.Ceiling(ContentWidth(style, showWeekly) * IndicatorScale); }
         internal static string AccessibleText(bool weekly)
@@ -41,7 +42,7 @@ namespace Taskcode.Probe
         }
         internal static int LogicalHeight { get { return (int)Math.Ceiling(34 * IndicatorScale); } }
         private static int SecondProviderX(IndicatorStyle style, bool weekly)
-        { return weekly ? (style == IndicatorStyle.Essential ? 132 : 172) : style == IndicatorStyle.Essential ? 120 : style == IndicatorStyle.Blocks ? 162 : 148; }
+        { return weekly ? (style == IndicatorStyle.Essential ? 132 : 172) : style == IndicatorStyle.Essential ? 120 : style == IndicatorStyle.Blocks ? 162 : 172; }
         internal static Rectangle ProviderBounds(int provider, Size size, IndicatorStyle style, bool weekly)
         {
             if (provider < 0 || provider > 1 || size.Width <= 0 || size.Height <= 0) return Rectangle.Empty;
@@ -57,9 +58,9 @@ namespace Taskcode.Probe
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            Draw(e.Graphics, ClientSize, Style, Theme, ShowWeekly, PulseKey, Usage);
+            Draw(e.Graphics, ClientSize, Style, Theme, ShowWeekly, PulseKey, Usage, ActivityKey);
         }
-        internal static void Draw(Graphics g, Size size, IndicatorStyle style, TaskbarTheme theme, bool showWeekly = false, int pulseKey = 0, UsageDemo usage = null)
+        internal static void Draw(Graphics g, Size size, IndicatorStyle style, TaskbarTheme theme, bool showWeekly = false, int pulseKey = 0, UsageDemo usage = null, int activityKey = 0, double activitySeconds = -1)
         {
             var state = g.Save();
             float scale = Math.Min(size.Width / (float)ContentWidth(style, showWeekly), size.Height / 34f);
@@ -92,6 +93,8 @@ namespace Taskcode.Probe
                     DrawSpeedHint(g, theme.Claude, 36, style, false, pulseKey & 3, 0);
                     DrawSpeedHint(g, theme.Codex, second, style, false, (pulseKey >> 4) & 3, 0);
                 }
+                if ((activityKey & 1) != 0) ActivityRipple.Draw(g, theme.Claude, new PointF(44, 17), activitySeconds);
+                if ((activityKey & 2) != 0) ActivityRipple.Draw(g, theme.Codex, new PointF(SecondProviderX(style, showWeekly) + 8, 17), activitySeconds);
             }
             g.Restore(state);
         }
@@ -104,7 +107,7 @@ namespace Taskcode.Probe
         }
         private static void DrawSpeedHint(Graphics g, Color color, int x, IndicatorStyle style, bool weekly, int shortLevel, int weeklyLevel)
         {
-            if (!weekly && style == IndicatorStyle.Lines) DrawFilledArrows(g, color, shortLevel, x + 70, 18);
+            if (!weekly && style == IndicatorStyle.Lines) DrawFilledArrows(g, color, shortLevel, x + 94, 18);
             else
             {
                 DrawFilledArrows(g, color, shortLevel, x, 1);
@@ -157,10 +160,11 @@ namespace Taskcode.Probe
                 }
                 if (style == IndicatorStyle.Lines)
                 {
-                    g.DrawString(name, font, text, x, 4);
-                    g.DrawString(Percentage(remaining), bold, text, x + 53, 4);
-                    g.FillRectangle(track, x + 1, 24, 88, 3);
-                    if (remaining >= 0) g.FillRectangle(accent, x + 1, 24, 88 * remaining / 100f, 3);
+                    DrawMark(g, font, accent, name, x);
+                    g.DrawString(name, font, text, x + 23, 4);
+                    g.DrawString(Percentage(remaining), bold, text, x + 76, 4);
+                    g.FillRectangle(track, x + 23, 24, 89, 3);
+                    if (remaining >= 0) g.FillRectangle(accent, x + 23, 24, 89 * remaining / 100f, 3);
                     return;
                 }
                 DrawMark(g, font, accent, name, x);
@@ -188,12 +192,14 @@ namespace Taskcode.Probe
         private TaskbarTheme renderedTheme;
         private bool renderedWeekly;
         private int renderedPulse;
+        private int renderedActivity;
         private int renderedFrame;
         private bool renderedMotion;
         private string renderedValues;
         internal IndicatorStyle DisplayStyle;
         internal bool ShowWeekly;
         internal int PulseKey;
+        internal int ActivityKey;
         internal UsageDemo Usage;
         internal TaskbarTheme Theme;
         internal IndicatorWindow()
@@ -212,14 +218,14 @@ namespace Taskcode.Probe
         }
         internal bool RenderAlpha()
         {
-            bool motion = PulseKey != 0 && SpeedArrows.IsAnimated;
+            bool motion = (PulseKey != 0 || ActivityKey != 0) && SpeedArrows.IsAnimated;
             int frame = motion ? SpeedArrows.Frame : 0;
             string values = IndicatorView.LiveAccessibleText(Usage, ShowWeekly);
-            if (renderedHandle == Handle && renderedSize == Size && renderedStyle == DisplayStyle && renderedTheme == Theme && renderedWeekly == ShowWeekly && renderedPulse == PulseKey && renderedFrame == frame && renderedMotion == motion && renderedValues == values) return true;
+            if (renderedHandle == Handle && renderedSize == Size && renderedStyle == DisplayStyle && renderedTheme == Theme && renderedWeekly == ShowWeekly && renderedPulse == PulseKey && renderedActivity == ActivityKey && renderedFrame == frame && renderedMotion == motion && renderedValues == values) return true;
             if (Width <= 0 || Height <= 0) return false;
             using (var bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppPArgb))
             {
-                using (var graphics = Graphics.FromImage(bitmap)) IndicatorView.Draw(graphics, bitmap.Size, DisplayStyle, Theme, ShowWeekly, PulseKey, Usage);
+                using (var graphics = Graphics.FromImage(bitmap)) IndicatorView.Draw(graphics, bitmap.Size, DisplayStyle, Theme, ShowWeekly, PulseKey, Usage, ActivityKey);
                 IntPtr screen = Native.GetDC(IntPtr.Zero), memory = Native.CreateCompatibleDC(screen);
                 IntPtr image = bitmap.GetHbitmap(Color.FromArgb(0));
                 IntPtr previous = Native.SelectObject(memory, image);
@@ -229,7 +235,7 @@ namespace Taskcode.Probe
                     var source = new Native.Point();
                     var blend = new Native.Blend { SourceConstantAlpha = 255, AlphaFormat = 1 };
                     if (!Native.UpdateLayeredWindow(Handle, screen, IntPtr.Zero, ref size, memory, ref source, 0, ref blend, 2)) return false;
-                    renderedHandle = Handle; renderedSize = Size; renderedStyle = DisplayStyle; renderedTheme = Theme; renderedWeekly = ShowWeekly; renderedPulse = PulseKey; renderedFrame = frame; renderedMotion = motion; renderedValues = values;
+                    renderedHandle = Handle; renderedSize = Size; renderedStyle = DisplayStyle; renderedTheme = Theme; renderedWeekly = ShowWeekly; renderedPulse = PulseKey; renderedActivity = ActivityKey; renderedFrame = frame; renderedMotion = motion; renderedValues = values;
                     return true;
                 }
                 finally

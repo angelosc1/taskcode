@@ -22,6 +22,8 @@ The bridge receives these observations whenever Claude Code updates its status l
 
 The connection copies `Taskcode.ClaudeBridge.exe` into `%LOCALAPPDATA%/Taskcode/` and updates `statusLine` in `%USERPROFILE%/.claude/settings.json` (or `CLAUDE_CONFIG_DIR`). Other settings are preserved. The original status-line definition is backed up locally; its original command continues receiving the same input and its output is forwarded. With no existing status line, the bridge displays a compact quota summary in Claude Code. Disconnecting restores the original definition and clears the cached quota.
 
+The connection also installs additive lifecycle hooks for the [Ripple activity indicator](ACTIVITY.md). Existing hooks are preserved. Restart Claude Code after installing these hooks. Disconnecting removes Taskcode's hook commands without removing other hooks.
+
 Open or resume Claude Code and use it to receive the first reading. A missing quota field means unavailable, not zero. Taskcode cannot fetch fresh Claude quota while Claude Code supplies no observations. This connection does **not** independently sign in to the Claude desktop app or website; users who only use those interfaces will not receive readings through this integration.
 
 ## Freshness and speed

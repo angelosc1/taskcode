@@ -14,6 +14,7 @@ namespace Taskcode.Probe
             if (Array.IndexOf(args, "--self-test") >= 0) return SelfTest();
             if (Array.IndexOf(args, "--tray-test") >= 0) return TraySelfTest();
             if (Array.IndexOf(args, "--accounts-check") >= 0) return AccountChecks.Probe(false);
+            if (Array.IndexOf(args, "--activity-check") >= 0) return AccountChecks.ProbeActivity();
             if (Array.IndexOf(args, "--connect-claude") >= 0) return AccountChecks.Probe(true);
             if (Array.IndexOf(args, "--exit") >= 0)
             {
@@ -133,8 +134,9 @@ namespace Taskcode.Probe
                 Assert(period.ElapsedAt(start) == null, "Invalid period bounds must hide the marker.");
                 SpeedChecks.Run();
                 AccountChecks.Run();
+                ActivityChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 RenderChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
-                File.WriteAllText(output, "PASS: 7 placement assertions.\nPASS: provider routing in all 3 styles, with weekly off/on and scaled coordinates.\nPASS: 10 time-progress and budget-pace assertions.\nPASS: 26 recent-speed, projection, and sequential-fade assertions.\nPASS: account parsing, missing/expired windows, fractional readings, privacy, provider isolation, stale data, and no synthetic live observations.\nPASS: all 3 styles in light/dark palettes, transparent backgrounds, visible vector/text content, and palette contrast.\n");
+                File.WriteAllText(output, "PASS: 7 placement assertions.\nPASS: provider routing in all 3 styles, with weekly off/on and scaled coordinates.\nPASS: 10 time-progress and budget-pace assertions.\nPASS: 26 recent-speed, projection, and sequential-fade assertions.\nPASS: account parsing, missing/expired windows, fractional readings, privacy, provider isolation, stale data, and no synthetic live observations.\nPASS: activity lifecycle, multiple sessions, incremental records, hook preservation, and staggered transparent Ripple rendering.\nPASS: all 3 styles in light/dark palettes, transparent backgrounds, visible vector/text content, and palette contrast.\n");
                 return 0;
             }
             catch (Exception ex) { File.WriteAllText(output, "FAIL: " + ex.Message); return 1; }

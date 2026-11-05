@@ -28,6 +28,7 @@
 - [x] Add a tray icon, close-to-tray settings, and opt-in Windows startup.
 - [x] Adapt indicator and details colors to the Windows taskbar's light/dark theme.
 - [x] Render the taskbar indicator without an opaque background.
+- [x] Add provider-colored Ripple for observed local execution, with motion preferences and idle handling.
 - [x] Use the Claude symbol in compact styles and details.
 - [ ] Refine the full settings window appearance for both themes.
 

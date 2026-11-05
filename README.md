@@ -24,6 +24,10 @@ These previews are rendered by the current application with **sample data**. The
 
 Weekly readings are optional and disabled by default. Enabling them adds labeled `5h` and `7d` rows within the selected style. There are three display styles; placement is a separate technical setting.
 
+Active local turns show a subtle **Ripple** around the provider symbol, in its own accent color. This follows execution signals rather than quota polling. See [activity detection and limitations](docs/ACTIVITY.md).
+
+![Ripple phases around Claude and Codex symbols in all three styles and both themes](docs/images/current-ripple.png)
+
 ### Quota details
 
 ![Current details panel in dark and light mode](docs/images/current-details.png)

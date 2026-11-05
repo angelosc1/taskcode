@@ -16,12 +16,39 @@ namespace Taskcode.Probe
         private static string BackupPath { get { return Path.Combine(DataDirectory, "claude-statusline-original.json"); } }
         internal static string Command
         {
-            get
+            get { return CommandFor(""); }
+        }
+        private static string CommandFor(string argument)
+        {
+            string suffix = argument.Length == 0 ? "" : " " + argument;
+            if (File.Exists(GitBashPath())) return "\"" + BridgePath.Replace('\\', '/') + "\"" + suffix;
+            string invocation = "& '" + BridgePath.Replace("'", "''") + "'" + suffix;
+            return "powershell.exe -NoProfile -NonInteractive -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(invocation));
+        }
+        private static readonly string[] ActivityEvents = { "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "PermissionRequest", "Stop", "StopFailure", "SessionEnd" };
+        internal static void ConfigureActivityHooks(Dictionary<string, object> settings, bool install)
+        {
+            var hooks = AccountJson.Map(AccountJson.Get(settings, "hooks"));
+            foreach (string name in ActivityEvents)
             {
-                if (File.Exists(GitBashPath())) return "\"" + BridgePath.Replace('\\', '/') + "\"";
-                string invocation = "& '" + BridgePath.Replace("'", "''") + "'";
-                return "powershell.exe -NoProfile -NonInteractive -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(invocation));
+                string command = CommandFor("--activity-" + name);
+                var groups = new List<object>();
+                var existing = AccountJson.Get(hooks, name) as System.Collections.IEnumerable;
+                if (existing != null) foreach (object item in existing)
+                {
+                    var group = AccountJson.Map(item);
+                    var members = AccountJson.Get(group, "hooks") as System.Collections.IEnumerable;
+                    if (members == null) { groups.Add(item); continue; }
+                    var kept = new List<object>(); bool removed = false;
+                    foreach (object member in members)
+                        if ((AccountJson.Get(member, "command") as string) == command) removed = true; else kept.Add(member);
+                    if (!removed) groups.Add(item);
+                    else if (kept.Count > 0) { var copy = new Dictionary<string, object>(group); copy["hooks"] = kept; groups.Add(copy); }
+                }
+                if (install) groups.Add(new Dictionary<string, object> { { "hooks", new object[] { new Dictionary<string, object> { { "type", "command" }, { "command", command }, { "timeout", 2 } } } } });
+                if (groups.Count == 0) hooks.Remove(name); else hooks[name] = groups;
             }
+            if (hooks.Count == 0) settings.Remove("hooks"); else settings["hooks"] = hooks;
         }
         private static string GitBashPath()
         {
@@ -48,11 +75,18 @@ namespace Taskcode.Probe
                 AtomicWrite(BackupPath, AccountJson.Encode(new { statusLine = original }));
             }
             settings["statusLine"] = new { type = "command", command = Command };
+            ConfigureActivityHooks(settings, true);
             Directory.CreateDirectory(ClaudeDirectory);
             AtomicWrite(SettingsPath, AccountJson.Encode(settings));
         }
         internal static void Uninstall()
         {
+            if (File.Exists(SettingsPath))
+            {
+                var cleaned = AccountJson.Parse(File.ReadAllText(SettingsPath));
+                ConfigureActivityHooks(cleaned, false);
+                AtomicWrite(SettingsPath, AccountJson.Encode(cleaned));
+            }
             if (IsInstalled())
             {
                 var settings = AccountJson.Parse(File.ReadAllText(SettingsPath));
@@ -63,6 +97,8 @@ namespace Taskcode.Probe
             }
             if (File.Exists(BackupPath)) File.Delete(BackupPath);
             if (File.Exists(CachePath)) File.Delete(CachePath);
+            string activityDirectory = Path.Combine(DataDirectory, "activity");
+            if (Directory.Exists(activityDirectory)) foreach (string file in Directory.EnumerateFiles(activityDirectory, "*.json")) File.Delete(file);
         }
         internal static void AtomicWrite(string path, string text)
         {
@@ -97,6 +133,18 @@ namespace Taskcode.Probe
             {
                 // Save only whitelisted quota fields. Never save the incoming session payload.
                 if (input.Length > 1048576) return 1;
+                if (args.Length == 1 && args[0].StartsWith("--activity-", StringComparison.Ordinal))
+                {
+                    string kind = args[0].Substring("--activity-".Length);
+                    if (Array.IndexOf(ActivityEvents, kind) < 0) return 0;
+                    string session = AccountJson.Get(AccountJson.Parse(input), "session_id") as string;
+                    if (string.IsNullOrWhiteSpace(session)) return 0;
+                    string filename;
+                    using (var hash = System.Security.Cryptography.SHA256.Create()) filename = BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(session))).Replace("-", "");
+                    string directory = Path.Combine(DataDirectory, "activity"); Directory.CreateDirectory(directory);
+                    AtomicWrite(Path.Combine(directory, filename + ".json"), AccountJson.Encode(new { @event = kind, at = (DateTime.UtcNow - AccountJson.Epoch).TotalSeconds }));
+                    return 0;
+                }
                 var snapshot = AccountSnapshot.Claude(AccountJson.Parse(input), DateTime.UtcNow);
                 Directory.CreateDirectory(DataDirectory);
                 if (snapshot.Periods[0] != null || snapshot.Periods[1] != null)
