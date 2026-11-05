@@ -32,5 +32,14 @@ namespace Taskcode.Probe
                 Math.Max(1, (int)Math.Ceiling(remaining.TotalMinutes)) + "m";
             return time + " · resets in " + reset;
         }
+        internal string ResetCaptionAt(DateTime nowUtc)
+        {
+            if (!ElapsedAt(nowUtc).HasValue) return "Reset time unavailable";
+            var remaining = EndUtc - nowUtc;
+            if (remaining <= TimeSpan.Zero) return "Waiting for reset";
+            string reset = remaining.TotalDays >= 1 ? (int)remaining.TotalDays + "d " + remaining.Hours + "h" :
+                remaining.TotalHours >= 1 ? (int)remaining.TotalHours + "h " + remaining.Minutes + "m" : Math.Max(1, (int)Math.Ceiling(remaining.TotalMinutes)) + "m";
+            return "Resets in " + reset;
+        }
     }
 }

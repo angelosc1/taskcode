@@ -25,8 +25,6 @@ namespace Taskcode.Probe
         private int selectedProvider, hoverProvider = -1;
         private IntPtr attachedParent;
         private Rectangle indicatorBounds;
-        private DateTime leftAt = DateTime.UtcNow;
-        private bool pinned;
         private string saveError;
         private TaskbarTheme theme = TaskbarTheme.Read();
         private DateTime nextThemeCheck;
@@ -201,7 +199,6 @@ namespace Taskcode.Probe
                 settings.DetailsTrigger = (DetailsTrigger)trigger.SelectedIndex;
                 hoverSince = null;
                 hoverProvider = -1;
-                pinned = false;
                 details.Hide();
                 Save();
             };
@@ -227,7 +224,7 @@ namespace Taskcode.Probe
             trayMenu.Items.Add("Exit", null, delegate { RequestExit(); });
             trayMenu.Closed += delegate
             {
-                leftAt = DateTime.UtcNow; hoverSince = null; hoverProvider = -1;
+                hoverSince = null; hoverProvider = -1;
                 if (indicator != null && !indicator.IsDisposed) indicator.InvalidateSurface();
             };
             tray = new NotifyIcon { Icon = trayImage, Text = "Taskcode - AI quota monitor", ContextMenuStrip = trayMenu, Visible = true };
@@ -312,7 +309,7 @@ namespace Taskcode.Probe
             indicator.ContextRequested += delegate
             {
                 hoverSince = null; hoverProvider = -1;
-                if (!pinned) details.Hide();
+                details.Hide();
                 if (!trayMenu.Visible) trayMenu.Show(Cursor.Position);
             };
             indicator.MouseClick += delegate(object sender, MouseEventArgs e)
@@ -330,7 +327,7 @@ namespace Taskcode.Probe
         private void PauseIndicator(string reason)
         {
             if (indicator != null && !indicator.IsDisposed) indicator.Hide();
-            if (!pinned) details.Hide();
+            details.Hide();
             indicatorBounds = Rectangle.Empty;
             hoverSince = null;
             hoverProvider = -1;
@@ -414,7 +411,6 @@ namespace Taskcode.Probe
             if (trayMenu.Visible) { hoverSince = null; hoverProvider = -1; return; }
             if (indicatorBounds.Contains(Cursor.Position))
             {
-                leftAt = DateTime.UtcNow;
                 if (settings.DetailsTrigger == DetailsTrigger.Hover)
                 {
                     int provider = IndicatorView.ProviderAt(new Point(Cursor.Position.X - indicatorBounds.X, Cursor.Position.Y - indicatorBounds.Y), indicatorBounds.Size, settings.Style, settings.ShowWeekly);
@@ -428,8 +424,6 @@ namespace Taskcode.Probe
             {
                 hoverSince = null;
                 hoverProvider = -1;
-                if (details.Visible && details.Bounds.Contains(Cursor.Position)) leftAt = DateTime.UtcNow;
-                else if (!pinned && DateTime.UtcNow - leftAt > TimeSpan.FromMilliseconds(550)) details.Hide();
             }
         }
         internal int VisibleDetailProvider { get { return details.Visible ? details.ProviderIndex : -1; } }
@@ -453,8 +447,7 @@ namespace Taskcode.Probe
             int y = anchor.Top - details.Height - 8;
             if (y < area.Top) y = Math.Min(area.Bottom - details.Height, anchor.Bottom + 8);
             details.Location = new Point(x, y);
-            pinned = focus;
-            leftAt = DateTime.UtcNow;
+            details.HoverAnchor = anchor;
             details.Show();
             if (focus) details.Activate();
         }

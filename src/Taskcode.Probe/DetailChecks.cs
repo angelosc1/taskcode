@@ -1,0 +1,38 @@
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace Taskcode.Probe
+{
+    internal static class DetailChecks
+    {
+        internal static void Run()
+        {
+            foreach (int provider in new[] { 0, 1 })
+            using (var panel = new DetailWindow(new UsageDemo(), provider) { Location = new Point(-30000, -30000), HoverAnchor = new Rectangle(-30000, -29750, 150, 40) })
+            {
+                panel.Show();
+                Check(panel.FormBorderStyle == FormBorderStyle.None && !panel.ControlBox && !panel.ShowInTaskbar, "Details must be a borderless card without native title/close controls.");
+                Check(panel.ClientSize.Height < 240, "The clean card must omit the former title and footer space.");
+                foreach (Control control in panel.Controls)
+                {
+                    var bar = control as QuotaBar;
+                    if (bar != null) Check(TextRenderer.MeasureText("100%", bar.ValueCaption.Font).Width <= bar.ValueCaption.Width, "The percentage must fit completely: " + TextRenderer.MeasureText("100%", bar.ValueCaption.Font).Width + "px required, " + bar.ValueCaption.Width + "px available.");
+                    var label = control as Label;
+                    if (label == null) continue;
+                    Check(label.Text != "Taskcode" && !label.Text.Contains("DATA /") && !label.Text.StartsWith("Gray:") && !label.Text.Contains("history"), "Details must not contain decorative titles, legends, or footer text.");
+                    Check(panel.ClientRectangle.Contains(label.Bounds), "Every detail label must fit inside the compact card.");
+                }
+                var now = DateTime.UtcNow;
+                panel.TrackPointer(new Point(panel.HoverAnchor.Left + 5, panel.HoverAnchor.Top + 5), now);
+                panel.TrackPointer(new Point(-25000, -25000), now.AddMilliseconds(100));
+                Check(panel.Visible, "Crossing the short gap between indicator and card must not dismiss it immediately.");
+                panel.TrackPointer(new Point(panel.Left + 100, panel.Top + 70), now.AddMilliseconds(180));
+                Check(panel.Visible, "Pointer over a card's child controls must keep the card open.");
+                panel.TrackPointer(new Point(-25000, -25000), now.AddMilliseconds(450));
+                Check(!panel.Visible, "Leaving both card and trigger must automatically dismiss every provider card.");
+            }
+        }
+        private static void Check(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
+    }
+}

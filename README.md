@@ -34,6 +34,8 @@ Active local turns show a subtle **Ripple** around the provider symbol, in its o
 
 Each provider has its own panel with five-hour and weekly quota, elapsed-period markers, and recent-consumption projections with animated filled arrows. Hovering or clicking Claude opens Claude's panel; Codex opens its own. Only one panel is visible at a time. The preview above uses simulated values in both themes. Normal startup uses account data, and unavailable or stale quota appears as `--`.
 
+Details are compact borderless cards without an app title, close button, legend, or footer. They close automatically when the pointer leaves the card and its indicator, including when opened by click. Source and freshness information are available on hover.
+
 ### Settings
 
 ![Current Taskcode settings with optional weekly readings and Windows startup](docs/images/current-settings.png)

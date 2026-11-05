@@ -31,7 +31,7 @@ Windows discovery supports the standard npm x64 installation, `.local/bin/codex.
 
 ## Freshness and identity
 
-The strip shows remaining subscription quota, not context size or API spending. Unknown, missing, expired, disconnected, and stale readings appear as `--`. Codex readings expire after two minutes; Claude readings after six minutes to allow its five-minute usage interval. Details identify the source and age. Successful responses with missing windows clear them; temporary failures preserve recent readings until they expire.
+The strip shows remaining subscription quota, not context size or API spending. Unknown, missing, expired, disconnected, and stale readings appear as `--`. Codex readings expire after two minutes; Claude readings after six minutes to allow its five-minute usage interval. Hover the provider identity or percentage in Details for source/freshness information; connection messages remain in settings. Successful responses with missing windows clear them; temporary failures preserve recent readings until they expire.
 
 Only provider-reported 300-minute and 10,080-minute Codex windows are assigned to five-hour and weekly quota. Reset timestamps anchor time markers. Fractional percentages are retained for speed estimates; displayed values are rounded. Repainting, polling an unchanged cache, and signing in do not fabricate consumption samples.
 

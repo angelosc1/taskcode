@@ -31,6 +31,8 @@ Offline preview values are simulated; normal startup uses the selected account s
 ## Behavior
 
 - Hover opens a panel containing only the selected provider's five-hour and weekly details. The hit regions follow each rendered style and optional weekly layout. Moving to another provider replaces the current panel; both panels are never shown together.
+- Details use a compact borderless card: provider identity, remaining percentages, quota bars/time markers, reset countdowns, and available recent-speed estimates. App titles, native close controls, legends, source labels, and footers are omitted. Source/freshness and pace explanations remain in tooltips and accessibility descriptions.
+- Both hover-opened and click-opened cards close after the pointer leaves the card and its trigger, with a 220ms grace period for crossing the small gap. Click does not pin the card. Escape also dismisses it.
 - **Open details** defaults to **Hover**, with a saved **Click only** alternative. Click-only mode disables both native hover events and dwell-based opening. Changing the preference dismisses the current panel immediately.
 - Support click and keyboard access rather than relying exclusively on hover.
 - Show the last update time and connection state.

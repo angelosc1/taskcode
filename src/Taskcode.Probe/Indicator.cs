@@ -318,9 +318,12 @@ namespace Taskcode.Probe
         private TaskbarTheme theme = TaskbarTheme.Read();
         private readonly Timer periodTimer = new Timer { Interval = 1000 };
         private readonly Timer animationTimer = new Timer { Interval = 33 };
+        private readonly Timer dismissalTimer = new Timer { Interval = 100 };
         private readonly ToolTip hints = new ToolTip();
         private readonly UsageDemo usage;
-        private readonly Label sourceLabel, sourceFooter;
+        private readonly Label providerLabel;
+        private DateTime lastPointerInside;
+        internal Rectangle HoverAnchor { get; set; }
         internal readonly int ProviderIndex;
         internal DetailWindow(UsageDemo usage = null, int providerIndex = 0)
         {
@@ -329,23 +332,19 @@ namespace Taskcode.Probe
             this.usage = usage ?? new UsageDemo();
             string provider = providerIndex == 0 ? "Claude" : "Codex";
             Text = "Taskcode - " + provider + " details";
-            FormBorderStyle = FormBorderStyle.FixedToolWindow;
+            FormBorderStyle = FormBorderStyle.None;
+            ControlBox = false;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.Manual;
-            ClientSize = new Size(330, 324);
+            ClientSize = new Size(300, 212);
             BackColor = Color.FromArgb(29, 32, 36);
             ForeColor = Color.FromArgb(238, 241, 245);
             Font = new Font("Segoe UI", 10f);
             KeyPreview = true;
-            AddText("Taskcode", 18, 14, 13, FontStyle.Bold, ForeColor);
-            sourceLabel = AddText("DEMO DATA  /  Remaining quota", 18, 49, 9, FontStyle.Regular, Color.LightGray);
             var providerColor = providerIndex == 0 ? IndicatorView.Claude : IndicatorView.Codex;
-            AddText(provider, 42, 80, 10, FontStyle.Bold, providerColor);
-            AddQuota(this.usage.Readings[providerIndex * 2], 110);
-            AddQuota(this.usage.Readings[providerIndex * 2 + 1], 196);
-            AddText("Gray: used · Color: remaining · ▼: time", 18, 286, 8, FontStyle.Regular, Color.LightGray);
-            sourceFooter = AddText("Simulated usage history. No accounts connected.", 18, 305, 7.5f, FontStyle.Regular, Color.LightGray);
-            sourceFooter.AutoSize = false; sourceFooter.Size = new Size(294, 18); sourceFooter.AutoEllipsis = true;
+            providerLabel = AddText(provider, 38, 14, 10, FontStyle.Bold, providerColor);
+            AddQuota(this.usage.Readings[providerIndex * 2], 44);
+            AddQuota(this.usage.Readings[providerIndex * 2 + 1], 124);
             KeyDown += delegate(object sender, KeyEventArgs e) { if (e.KeyCode == Keys.Escape) Hide(); };
             FormClosing += delegate(object sender, FormClosingEventArgs e) { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } };
             periodTimer.Tick += delegate { RefreshPeriods(); };
@@ -354,8 +353,13 @@ namespace Taskcode.Probe
                 foreach (Control control in Controls)
                 { var readout = control as SpeedReadout; if (readout != null && readout.HasArrows) readout.Invalidate(); }
             };
-            VisibleChanged += delegate { periodTimer.Enabled = Visible; if (Visible) RefreshPeriods(); else animationTimer.Stop(); };
-            Disposed += delegate { periodTimer.Dispose(); animationTimer.Dispose(); hints.Dispose(); };
+            dismissalTimer.Tick += delegate { TrackPointer(Cursor.Position, DateTime.UtcNow); };
+            VisibleChanged += delegate
+            {
+                periodTimer.Enabled = dismissalTimer.Enabled = Visible;
+                if (Visible) { lastPointerInside = DateTime.UtcNow; RefreshPeriods(); } else animationTimer.Stop();
+            };
+            Disposed += delegate { periodTimer.Dispose(); animationTimer.Dispose(); dismissalTimer.Dispose(); hints.Dispose(); };
             ApplyTheme(theme);
         }
         private Label AddText(string text, int x, int y, float size, FontStyle style, Color color)
@@ -370,27 +374,35 @@ namespace Taskcode.Probe
             string provider = reading.Provider, window = reading.Window;
             int remaining = reading.Period.Remaining;
             var color = provider == "Claude" ? IndicatorView.Claude : IndicatorView.Codex;
-            AddText(window, 18, y, 9, FontStyle.Regular, ForeColor);
-            var valueCaption = AddText(remaining + "%", 270, y, 9, FontStyle.Bold, color);
-            var caption = AddText("", 18, y + 41, 8, FontStyle.Regular, Color.LightGray);
-            var speedCaption = new SpeedReadout { Location = new Point(18, y + 57), Size = new Size(294, 24), ForeColor = color, Tag = provider.ToLowerInvariant() };
+            AddText(window == "Weekly" ? "Weekly" : "5 hours", 16, y, 9, FontStyle.Regular, ForeColor);
+            var valueCaption = AddText(remaining + "%", 212, y - 2, 11, FontStyle.Bold, color);
+            int valueWidth = Math.Max(72, TextRenderer.MeasureText("100%", valueCaption.Font).Width + 6);
+            valueCaption.AutoSize = false; valueCaption.Location = new Point(284 - valueWidth, y - 2);
+            valueCaption.Size = new Size(valueWidth, 24); valueCaption.TextAlign = ContentAlignment.TopRight;
+            var caption = AddText("", 16, y + 39, 8, FontStyle.Regular, Color.LightGray);
+            var speedCaption = new SpeedReadout { Location = new Point(16, y + 53), Size = new Size(268, 20), ForeColor = color, Tag = provider.ToLowerInvariant() };
             Controls.Add(speedCaption);
             Controls.Add(new QuotaBar
             {
-                Location = new Point(12, y + 20), Size = new Size(306, 17),
+                Location = new Point(10, y + 18), Size = new Size(280, 17),
                 Period = reading.Period, Reading = reading, SpeedCaption = speedCaption, ValueCaption = valueCaption,
                 Provider = provider.ToLowerInvariant(), Theme = theme, Caption = caption,
                 AccessibleName = provider + ", " + window + ", " + remaining + " percent remaining"
             });
         }
         internal void RefreshUsage() { RefreshPeriods(); }
+        internal void TrackPointer(Point pointer, DateTime now)
+        {
+            if (!Visible) return;
+            if (Bounds.Contains(pointer) || HoverAnchor.Contains(pointer)) lastPointerInside = now;
+            else if (now - lastPointerInside >= TimeSpan.FromMilliseconds(220)) Hide();
+        }
         private void RefreshPeriods()
         {
             var now = DateTime.UtcNow;
             usage.Tick(now);
-            sourceLabel.Text = usage.IsLive ? "ACCOUNT DATA / Remaining quota" : "DEMO DATA / Remaining quota";
-            sourceFooter.Text = usage.ProviderStatus(ProviderIndex, now);
-            hints.SetToolTip(sourceFooter, sourceFooter.Text);
+            AccessibleDescription = usage.ProviderStatus(ProviderIndex, now);
+            hints.SetToolTip(providerLabel, AccessibleDescription);
             bool hasArrows = false;
             foreach (Control control in Controls)
             {
@@ -399,9 +411,12 @@ namespace Taskcode.Probe
                 bar.RenderTimeUtc = now;
                 int value = usage.DisplayValue(ProviderIndex * 2 + (bar.Reading.Window == "Weekly" ? 1 : 0), now);
                 bar.ValueCaption.Text = value < 0 ? "--" : value + "%";
-                bar.Caption.Text = value < 0 ? "Waiting for current quota data" : bar.Period.CaptionAt(now);
+                bar.AccessibleName = bar.Reading.Provider + ", " + bar.Reading.Window + ", " + (value < 0 ? "quota unavailable" : value + " percent remaining");
+                bar.Caption.Text = value < 0 ? "Unavailable" : bar.Period.ResetCaptionAt(now);
                 var speed = value < 0 ? new SpeedEstimate { State = SpeedState.Unavailable } : bar.Reading.Speed.EstimateAt(now);
                 bar.SpeedCaption.Estimate = speed;
+                bar.SpeedCaption.Visible = value >= 0 && (speed.State == SpeedState.Active || speed.State == SpeedState.Idle);
+                hints.SetToolTip(bar.ValueCaption, "Remaining quota. " + AccessibleDescription);
                 bar.SpeedCaption.AccessibleName = (speed.State == SpeedState.Active ? speed.Level + " speed arrows. " : "") + speed.Summary;
                 bar.SpeedCaption.Invalidate();
                 hasArrows |= bar.SpeedCaption.HasArrows;
@@ -436,8 +451,9 @@ namespace Taskcode.Probe
             base.OnPaint(e);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             if (ProviderIndex == 0)
-                using (var brush = new SolidBrush(theme.Claude)) BrandMarks.DrawClaude(e.Graphics, brush, new RectangleF(18, 84, 16, 16));
-            else using (var brush = new SolidBrush(theme.Codex)) BrandMarks.DrawCodex(e.Graphics, brush, new RectangleF(18, 84, 16, 16));
+                using (var brush = new SolidBrush(theme.Claude)) BrandMarks.DrawClaude(e.Graphics, brush, new RectangleF(16, 16, 16, 16));
+            else using (var brush = new SolidBrush(theme.Codex)) BrandMarks.DrawCodex(e.Graphics, brush, new RectangleF(16, 16, 16, 16));
+            using (var border = new Pen(theme.Divider, 1)) e.Graphics.DrawRectangle(border, 0, 0, Width - 1, Height - 1);
         }
         protected override bool ShowWithoutActivation { get { return true; } }
     }

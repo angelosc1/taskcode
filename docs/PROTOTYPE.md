@@ -30,7 +30,7 @@ The details also show animated, filled consumption-speed arrows and approximate 
 1. Keep **Lines (default)** or select **Essential** or **Blocks**.
 2. Start with **Embedded (experimental)** and check the status below the preview.
 3. Look just before the primary taskbar's system tray for provider readings. Use the account connection buttons to complete setup. `--` means unavailable or stale; the details show source and age. Offline demo mode is identified explicitly.
-4. Choose **Open details > Hover (default)** to open only the hovered provider's panel, or **Click only** to open it only when that provider is clicked. Moving between Claude and Codex switches panels after a short hover delay; only one panel is shown at a time. The preference is saved. Click-opened panels stay open until dismissed. **Details** offers a menu for choosing Claude or Codex, and clicking a provider in the preview opens its panel as well.
+4. Choose **Open details > Hover (default)** to open only the hovered provider's card, or **Click only** to open it only when that provider is clicked. Moving between Claude and Codex switches cards after a short hover delay; only one is shown at a time. Both modes automatically close the borderless card when the pointer leaves the card and its trigger, allowing 220ms to cross the gap. **Details** offers a provider menu, and clicking a provider in the preview opens its card as well. Escape dismisses it.
 5. Select **Overlay** to compare the fallback. If verified space is insufficient, the indicator hides and explains why.
 6. Uncheck **Show indicator on the primary taskbar** to pause it.
 7. Use **Exit Taskcode** or the tray menu's **Exit** to close the app and its indicator.
