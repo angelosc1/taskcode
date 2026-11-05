@@ -6,24 +6,26 @@
 - [x] Record the three selected display styles.
 - [x] Store the mockup in the project.
 - [x] Configure exclusions for local files and credentials.
-- [ ] Create and publish the public GitHub repository.
-- [ ] Choose a license before publishing reusable code.
+- [x] Create and publish the public GitHub repository.
+- [x] Choose a license before publishing reusable code (MIT).
 
 ## 2. Validate Windows integration
 
 - [ ] Identify the Windows version, monitors, and display scaling used for initial testing.
-- [ ] Investigate ways to position the indicator to the left of the system tray.
-- [ ] Build a small proof of concept before choosing the final technology stack.
+- [x] Investigate ways to position the indicator to the left of the system tray.
+- [x] Build a small proof of concept before choosing the final technology stack.
+- [x] Confirm initial placement before the hidden-icons arrow on the test desktop (user verified).
 - [ ] Compare integration and overlay approaches: reserved space, clicks, resizing, and stability.
 - [ ] Check taskbar auto-hide, multiple monitors, DPI scaling, and Explorer restarts.
-- [ ] Document the chosen approach and its limitations.
+- [x] Document the experimental approach and its limitations.
 
 ## 3. Build the visual prototype
 
-- [ ] Implement the Lines style using sample data.
+- [x] Implement the Lines style using sample data.
 - [ ] Add the hover panel and keyboard access.
-- [ ] Add Essential and Blocks.
-- [ ] Save preferences and support light and dark mode.
+- [x] Add Essential and Blocks.
+- [x] Save style and placement preferences.
+- [ ] Support light and dark mode.
 
 ## 4. Connect providers
 

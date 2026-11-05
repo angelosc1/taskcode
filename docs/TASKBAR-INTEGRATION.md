@@ -1,0 +1,81 @@
+# Taskbar integration investigation
+
+## Current decision
+
+The original C# / Windows Forms probe uses the .NET Framework compiler already available on the development machine. It tests feasibility without downloading a UI framework. The final application stack remains open.
+
+Embedded mode hosts a child window under the primary taskbar's `Shell_TrayWnd`. Overlay mode uses a separate window in the same measured location. The probe never resizes the Windows task list or system tray and never injects a DLL into Explorer.
+
+Taskbar class names are implementation details. A successful test on one Windows build is not a compatibility guarantee. Microsoft documents window parenting and its DPI considerations, but that does not establish a supported taskbar extension contract.
+
+## Options considered
+
+| Approach | Assessment |
+| --- | --- |
+| Notification-area icon | Standard tray presence, but cannot provide the requested strip before the tray |
+| Application desktop toolbar (appbar) | Reserves desktop-edge space as a separate toolbar; does not match this placement |
+| Hosted child window | Preferred feasibility experiment; depends on Explorer internals |
+| Independent overlay | Explicit fallback; does not become a taskbar child |
+| Third-party hosting library | Candidate for later evaluation, after the independent experiment |
+
+## Probe behavior
+
+- Finds the primary taskbar and its `TrayNotifyWnd` region.
+- Measures visible button and tab-item bounds through UI Automation on a dedicated MTA background thread.
+- Places the indicator before the tray only if the measured gap fits.
+- Hides it when measurement is missing, stale, or too narrow.
+- Rechecks taskbar and tray geometry before positioning.
+- Declares per-monitor DPI awareness in its manifest.
+- Supports three styles, immediate preview, and local preferences.
+- Marks all values as demo data. No provider endpoints or account credentials are used.
+
+The measurement is a snapshot, not a reserved slot. A newly added taskbar item could briefly overlap before the next measurement. A production host needs stronger layout coordination or faster collision handling.
+
+## Validation record
+
+Initial desktop: Windows build 26300; primary taskbar at 120 DPI. The legacy registry product-name field says Windows 10, so that string alone is not treated as reliable OS identification.
+
+| Check | Result |
+| --- | --- |
+| Compile with warnings treated as errors | Passed |
+| Seven placement assertions: fit, alignment, crowding, missing tray, vertical orientation, negative coordinates, and scaling | Passed |
+| Embedded mode | Host verified that its parent handle matches the taskbar; UI reports active |
+| Overlay mode | Placement path activated; UI reports active |
+| Switch between all three styles | All three previews visually reviewed; no clipped provider values observed |
+| Open demo details | English provider names, remaining percentages, reset times, and sample-data disclosure visually reviewed |
+| Keyboard navigation | Style selector reached with Shift+Tab and reset with Home |
+| Pause indicator | Paused state observed |
+| Restore settings after restart | Blocks and Overlay restored successfully |
+| Restore the approved defaults | Lines and Embedded selected again; saved preferences verified |
+| Hover on the actual taskbar indicator | Implemented; not independently verified through desktop automation |
+| Placement before the hidden-icons arrow | User confirmed that the indicator appears in the expected location on the test desktop |
+| Explorer restart | Recovery code exists; not exercised |
+| Auto-hide, fullscreen, multiple monitors, display/DPI changes | Not validated |
+
+The desktop inspection tool captures the prototype control window and its related panel, but does not expose the full taskbar as a selectable window. Placement was confirmed by the user on the test desktop. Real-indicator hover behavior remains pending confirmation; the control window's active status is not used as a substitute for that check.
+
+## Known limits
+
+- Primary horizontal taskbar only.
+- Dark appearance only; no automatic theme switching or true acrylic yet.
+- Does not reserve space or move Windows controls; may hide on a crowded taskbar.
+- Overlay does not yet suppress itself for fullscreen applications.
+- Taskbar class names and accessibility structure can change with Windows updates.
+- The settings window is the control surface. No installer, auto-start, updater, or production tray menu.
+- Functional controls and hover/click details are prototypes, not the final mockup implementation.
+
+## Next checks
+
+Confirm hover behavior on the actual taskbar, then test Explorer recovery, auto-hide, fullscreen, scaling, and monitor changes. Choose the production hosting approach after those checks. Provider integration follows placement validation.
+
+## Primary sources
+
+- [Microsoft: application desktop toolbars](https://learn.microsoft.com/en-us/windows/win32/shell/application-desktop-toolbars)
+- [Microsoft: SetParent and DPI](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setparent)
+- [Microsoft: SetWindowPos](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowpos)
+- [Microsoft: UI Automation threading](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-threading)
+- [Microsoft: process DPI awareness](https://learn.microsoft.com/en-us/windows/win32/hidpi/setting-the-default-dpi-awareness-for-a-process)
+- [Taskband](https://github.com/mnismi/taskband)
+- [Deskband11Lib](https://github.com/airtaxi/Deskband11Lib)
+
+No source code from these projects has been copied into this probe.
