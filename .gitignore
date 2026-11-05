@@ -1,0 +1,48 @@
+# Local settings and credentials
+.env
+.env.*
+!.env.example
+.claude/
+.codex/
+.agents/
+.aws/
+.ssh/
+.config/
+.local/
+auth.json
+credentials.json
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Dependencies and build outputs
+node_modules/
+dist/
+build/
+out/
+target/
+bin/
+obj/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Local data, reports, and logs
+*.log
+*.db
+*.sqlite
+*.sqlite3
+coverage/
+.cache/
+tmp/
+temp/
+
+# IDE and operating system
+.vs/
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini
+.DS_Store
