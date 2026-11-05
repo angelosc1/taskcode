@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Threading;
 
 namespace Taskcode.Probe
@@ -8,87 +7,124 @@ namespace Taskcode.Probe
     internal sealed class AccountConnections : IDisposable
     {
         private readonly CodexAccountClient codex = new CodexAccountClient();
+        private readonly ClaudeAccountClient claude = new ClaudeAccountClient();
+        internal readonly ClaudeSignIn ClaudeAuth = new ClaudeSignIn();
         private readonly ConcurrentQueue<Action<UsageDemo>> updates = new ConcurrentQueue<Action<UsageDemo>>();
-        private int busy, loginRequested;
         private readonly LocalActivity activity = new LocalActivity();
-        private int activityBusy;
-        private DateTime nextActivity;
+        private int busy, activityBusy, codexRequest, claudeRefresh, codexGeneration, claudeGeneration;
         private volatile bool disposed;
-        private DateTime nextPoll, nextCodex;
+        private DateTime nextPoll, nextCodex, nextActivity, loginDeadline;
         internal bool CodexEnabled = true, ClaudeEnabled = true;
+        internal bool CodexPrivateProfile, ClaudePrivateProfile;
+        internal volatile bool CodexSigningIn;
+        internal string CodexAuthMessage = "Choose how to connect your ChatGPT account.";
+        internal string CodexAuthUrl;
         internal Action<string> OpenLogin;
-        internal void ConnectCodex() { CodexEnabled = true; Interlocked.Exchange(ref loginRequested, 1); nextPoll = nextCodex = DateTime.MinValue; }
-        internal void Refresh() { nextPoll = nextCodex = DateTime.MinValue; }
+        internal void ConnectCodex(bool signIn = false)
+        {
+            CodexEnabled = true; CodexPrivateProfile = signIn; Interlocked.Increment(ref codexGeneration);
+            CodexAuthUrl = null;
+            CodexSigningIn = signIn; loginDeadline = DateTime.UtcNow.AddMinutes(15);
+            CodexAuthMessage = signIn ? "Preparing browser sign-in..." : "Reading your existing Codex CLI account...";
+            Interlocked.Exchange(ref codexRequest, signIn ? 2 : 1); nextPoll = nextCodex = DateTime.MinValue;
+        }
+        internal void ConnectClaude(bool signIn)
+        {
+            ClaudeEnabled = true; ClaudePrivateProfile = signIn; Interlocked.Increment(ref claudeGeneration);
+            if (signIn) ClaudeAuth.Start(true, success => { Interlocked.Exchange(ref claudeRefresh, 1); });
+            Interlocked.Exchange(ref claudeRefresh, 1); nextPoll = DateTime.MinValue;
+        }
+        internal void CancelCodex() { Interlocked.Exchange(ref codexRequest, 3); CodexSigningIn = false; CodexAuthUrl = null; CodexAuthMessage = "Sign-in cancelled."; nextPoll = nextCodex = DateTime.MinValue; }
+        internal void Refresh() { Interlocked.Exchange(ref claudeRefresh, 1); nextPoll = nextCodex = DateTime.MinValue; }
         internal void Tick(UsageDemo usage)
         {
             Action<UsageDemo> apply;
             while (updates.TryDequeue(out apply)) apply(usage);
-            if (!disposed && DateTime.UtcNow >= nextActivity && Interlocked.CompareExchange(ref activityBusy, 1, 0) == 0)
+            if (disposed) return;
+            if (DateTime.UtcNow >= nextActivity && Interlocked.CompareExchange(ref activityBusy, 1, 0) == 0)
             {
                 nextActivity = DateTime.UtcNow.AddMilliseconds(750);
-                bool claude = ClaudeEnabled, codexOn = CodexEnabled;
+                bool claudeOn = ClaudeEnabled, codexOn = CodexEnabled;
                 ThreadPool.QueueUserWorkItem(delegate
                 {
                     try
                     {
-                        int key;
-                        try { key = activity.Read(DateTime.UtcNow, claude, codexOn); } catch (Exception) { key = 0; }
+                        int key; try { key = activity.Read(DateTime.UtcNow, claudeOn, codexOn); } catch (Exception) { key = 0; }
                         updates.Enqueue(model => model.ActivityKey = key & (ClaudeEnabled ? 1 : 0) | key & (CodexEnabled ? 2 : 0));
                     }
                     finally { Interlocked.Exchange(ref activityBusy, 0); }
                 });
             }
-            if (disposed || DateTime.UtcNow < nextPoll || Interlocked.CompareExchange(ref busy, 1, 0) != 0) return;
+            if (CodexSigningIn && DateTime.UtcNow >= loginDeadline) CancelCodex();
+            if (DateTime.UtcNow < nextPoll || Interlocked.CompareExchange(ref busy, 1, 0) != 0) return;
             nextPoll = DateTime.UtcNow.AddSeconds(1);
-            bool readCodex = CodexEnabled, readClaude = ClaudeEnabled;
+            bool readCodex = CodexEnabled, readClaude = ClaudeEnabled, privateCodex = CodexPrivateProfile, privateClaude = ClaudePrivateProfile;
+            int codexVersion = codexGeneration, claudeVersion = claudeGeneration;
             ThreadPool.QueueUserWorkItem(delegate
             {
                 try
                 {
-                    if (readClaude)
+                    int request = Interlocked.Exchange(ref codexRequest, 0);
+                    if (request != 0) { privateCodex = CodexPrivateProfile; codexVersion = codexGeneration; }
+                    if (readCodex && (request != 0 || DateTime.UtcNow >= nextCodex))
                     {
-                        AccountSnapshot snapshot;
-                        try { snapshot = ClaudeBridge.Read(); }
-                        catch (Exception ex) { snapshot = new AccountSnapshot { Status = SafeError("Claude", ex), Failed = true }; }
-                        updates.Enqueue(model => { if (ClaudeEnabled) model.Apply(0, snapshot); });
-                    }
-                    if (readCodex && (DateTime.UtcNow >= nextCodex || Interlocked.CompareExchange(ref loginRequested, 0, 0) != 0))
-                    {
-                        nextCodex = DateTime.UtcNow.AddSeconds(10);
+                        nextCodex = DateTime.UtcNow.AddSeconds(CodexSigningIn ? 2 : 10);
                         AccountSnapshot snapshot;
                         try
                         {
-                            bool connect = Interlocked.Exchange(ref loginRequested, 0) != 0;
-                            snapshot = codex.Read();
-                            if (connect && snapshot.Status.StartsWith("Not signed in", StringComparison.Ordinal))
+                            codex.UsePrivateProfile = privateCodex;
+                            if (request == 2)
                             {
-                                string url = codex.BeginLogin();
-                                updates.Enqueue(model => { if (!disposed && CodexEnabled && OpenLogin != null) OpenLogin(url); });
-                                snapshot.Status = "Finish signing in in your browser.";
+                                string url = codex.BeginLogin(); CodexAuthUrl = url;
+                                updates.Enqueue(model => { if (!disposed && CodexEnabled && CodexSigningIn && codexVersion == codexGeneration && OpenLogin != null) OpenLogin(url); });
+                                CodexAuthMessage = "Complete sign-in in your browser. This window will update automatically.";
+                                snapshot = new AccountSnapshot { Status = "Waiting for browser sign-in..." };
+                            }
+                            else
+                            {
+                                if (request == 3) codex.CancelLogin();
+                                snapshot = codex.Read();
+                                if (CodexSigningIn && codex.LoginPending) snapshot = new AccountSnapshot { Status = "Waiting for browser sign-in..." };
+                                else if (CodexSigningIn)
+                                {
+                                    CodexSigningIn = false;
+                                    CodexAuthMessage = snapshot.SignedIn && !codex.LoginFailed ? "Signed in. Account connected." : "Sign-in did not complete. Try again.";
+                                }
+                                else if (snapshot.SignedIn) CodexAuthMessage = "Account connected.";
                             }
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
-                            codex.Dispose(); nextCodex = DateTime.UtcNow.AddSeconds(60);
-                            snapshot = new AccountSnapshot { Status = SafeError("Codex", ex), Failed = true };
+                            codex.Dispose(); nextCodex = DateTime.UtcNow.AddSeconds(60); CodexSigningIn = false;
+                            CodexAuthMessage = CodexAccountClient.FindExecutable() == null ? "Codex CLI is missing. Click Install official CLI, then Sign in." : "Could not connect to Codex. Retry sign-in or check your network.";
+                            snapshot = new AccountSnapshot { Status = CodexAuthMessage, Failed = true };
                         }
-                        updates.Enqueue(model => { if (CodexEnabled) model.Apply(1, snapshot); });
+                        updates.Enqueue(model => { if (CodexEnabled && codexVersion == codexGeneration) model.Apply(1, snapshot); });
+                    }
+                    if (readClaude)
+                    {
+                        AccountSnapshot snapshot;
+                        try
+                        {
+                            claude.UsePrivateProfile = privateClaude;
+                            if (Interlocked.Exchange(ref claudeRefresh, 0) != 0) claude.Refresh();
+                            snapshot = ClaudeAuth.Busy ? new AccountSnapshot { Status = "Complete Claude sign-in in the browser or sign-in window.", Failed = true } : claude.Read();
+                        }
+                        catch (Exception) { snapshot = new AccountSnapshot { Status = "Claude account data is unavailable. Open Connect Claude to sign in or retry.", Failed = true }; }
+                        updates.Enqueue(model =>
+                        {
+                            if (ClaudeEnabled && claudeVersion == claudeGeneration)
+                            { model.Apply(0, snapshot); if (snapshot.SignedIn && !ClaudeAuth.Busy) ClaudeAuth.Message = "Account connected."; }
+                        });
                     }
                     if (!readCodex) codex.Dispose();
                 }
                 finally { if (disposed) codex.Dispose(); Interlocked.Exchange(ref busy, 0); }
             });
         }
-        private static string SafeError(string provider, Exception error)
-        {
-            if (error is TimeoutException) return provider + " connection timed out. Retrying automatically.";
-            if (error is System.ComponentModel.Win32Exception || error is InvalidOperationException) return provider + " is unavailable. Check the CLI installation and sign-in.";
-            if (error is UnauthorizedAccessException) return provider + " local data is not accessible.";
-            return provider + " data is unavailable. Retrying automatically.";
-        }
         public void Dispose()
         {
-            disposed = true;
+            disposed = true; ClaudeAuth.Dispose();
             if (Interlocked.CompareExchange(ref busy, 1, 0) == 0) { codex.Dispose(); Interlocked.Exchange(ref busy, 0); }
         }
     }

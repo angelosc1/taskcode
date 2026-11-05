@@ -13,6 +13,7 @@ namespace Taskcode.Probe
         internal DetailsTrigger DetailsTrigger = DetailsTrigger.Hover;
         internal bool ShowWeekly;
         internal bool CodexEnabled = true, ClaudeEnabled = true;
+        internal bool CodexPrivateProfile, ClaudePrivateProfile;
         internal static readonly string Path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.xml");
         internal static Settings Load()
         {
@@ -32,6 +33,8 @@ namespace Taskcode.Probe
                 bool connected;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("codexEnabled"), out connected)) value.CodexEnabled = connected;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("claudeEnabled"), out connected)) value.ClaudeEnabled = connected;
+                if (bool.TryParse(doc.DocumentElement.GetAttribute("codexPrivateProfile"), out connected)) value.CodexPrivateProfile = connected;
+                if (bool.TryParse(doc.DocumentElement.GetAttribute("claudePrivateProfile"), out connected)) value.ClaudePrivateProfile = connected;
             }
             catch (IOException) { }
             catch (XmlException) { }
@@ -49,6 +52,8 @@ namespace Taskcode.Probe
                 writer.WriteAttributeString("showWeekly", ShowWeekly.ToString());
                 writer.WriteAttributeString("codexEnabled", CodexEnabled.ToString());
                 writer.WriteAttributeString("claudeEnabled", ClaudeEnabled.ToString());
+                writer.WriteAttributeString("codexPrivateProfile", CodexPrivateProfile.ToString());
+                writer.WriteAttributeString("claudePrivateProfile", ClaudePrivateProfile.ToString());
                 writer.WriteEndElement();
             }
         }

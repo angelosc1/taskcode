@@ -29,6 +29,8 @@ namespace Taskcode.Probe
         internal DateTime ObservedUtc;
         internal string Status;
         internal bool Failed = false;
+        internal bool SignedIn = false;
+        internal string Identity;
         internal static AccountSnapshot Codex(object result, DateTime now)
         {
             var snapshot = new AccountSnapshot { ObservedUtc = now, Status = "Connected via Codex CLI" };
@@ -73,6 +75,11 @@ namespace Taskcode.Probe
     {
         private Process process;
         private int nextId;
+        internal bool UsePrivateProfile = false;
+        private bool processPrivateProfile;
+        private string loginId;
+        internal bool LoginPending = false;
+        internal bool LoginFailed = false;
         internal static string FindExecutable()
         {
             string root = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -89,11 +96,17 @@ namespace Taskcode.Probe
         }
         private void EnsureStarted()
         {
-            if (process != null && !process.HasExited) return;
+            if (process != null && !process.HasExited && processPrivateProfile == UsePrivateProfile) return;
             Dispose();
             string executable = FindExecutable();
             if (executable == null) throw new InvalidOperationException("Install Codex CLI to connect your ChatGPT account.");
             var info = new ProcessStartInfo(executable, "app-server") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true };
+            if (UsePrivateProfile)
+            {
+                Directory.CreateDirectory(AccountPaths.PrivateHome("codex"));
+                info.EnvironmentVariables["CODEX_HOME"] = AccountPaths.PrivateHome("codex");
+            }
+            processPrivateProfile = UsePrivateProfile;
             process = Process.Start(info);
             process.ErrorDataReceived += delegate { }; // Drain diagnostics without storing credentials or raw service responses.
             process.BeginErrorReadLine();
@@ -114,6 +127,12 @@ namespace Taskcode.Probe
                 if (!line.Wait(Math.Max(1, 20000 - (int)deadline.ElapsedMilliseconds))) { Dispose(); throw new TimeoutException(); }
                 if (line.Result == null) { Dispose(); throw new IOException("Codex CLI stopped."); }
                 var message = AccountJson.Parse(line.Result);
+                if ((AccountJson.Get(message, "method") as string) == "account/login/completed")
+                {
+                    object notification = AccountJson.Get(message, "params");
+                    if ((AccountJson.Get(notification, "loginId") as string) == loginId)
+                    { LoginPending = false; LoginFailed = !object.Equals(AccountJson.Get(notification, "success"), true); }
+                }
                 if (AccountJson.Number(AccountJson.Get(message, "id")) != id) continue;
                 if (AccountJson.Get(message, "error") != null) throw new InvalidOperationException("Codex could not read this account's subscription limits. Check sign-in in Codex CLI.");
                 return AccountJson.Get(message, "result");
@@ -126,19 +145,27 @@ namespace Taskcode.Probe
             object account = AccountJson.Get(Request("account/read", new { refreshToken = false }), "account");
             if (account == null) return new AccountSnapshot { Status = "Not signed in. Click Connect Codex." };
             if ((AccountJson.Get(account, "type") as string) == "apiKey") return new AccountSnapshot { Status = "API-key account: ChatGPT subscription quota is unavailable." };
-            return AccountSnapshot.Codex(Request("account/rateLimits/read", null), DateTime.UtcNow);
+            var snapshot = AccountSnapshot.Codex(Request("account/rateLimits/read", null), DateTime.UtcNow);
+            snapshot.SignedIn = true;
+            snapshot.Identity = AccountJson.Get(account, "email") as string;
+            return snapshot;
         }
         internal string BeginLogin()
         {
             EnsureStarted();
-            string url = AccountJson.Get(Request("account/login/start", new { type = "chatgpt" }), "authUrl") as string;
+            object result = Request("account/login/start", new { type = "chatgpt" });
+            loginId = AccountJson.Get(result, "loginId") as string;
+            string url = AccountJson.Get(result, "authUrl") as string;
+            LoginPending = true; LoginFailed = false;
             Uri parsed;
             if (!Uri.TryCreate(url, UriKind.Absolute, out parsed) || parsed.Scheme != "https" || !(parsed.Host == "auth.openai.com" || parsed.Host == "chatgpt.com")) throw new InvalidOperationException("Codex returned an unexpected sign-in address.");
             return url;
         }
+        internal void CancelLogin() { if (process != null && !process.HasExited && loginId != null) Request("account/login/cancel", new { loginId = loginId }); loginId = null; LoginPending = false; }
         public void Dispose()
         {
             var owned = process; process = null;
+            LoginPending = false; loginId = null;
             if (owned == null) return;
             try { if (!owned.HasExited) { owned.StandardInput.Close(); if (!owned.WaitForExit(500)) owned.Kill(); } }
             catch (InvalidOperationException) { }

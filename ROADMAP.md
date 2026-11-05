@@ -36,6 +36,7 @@
 
 - [x] Connect Codex through the official CLI app-server and browser sign-in.
 - [x] Receive Claude quota through Claude Code's official status-line input.
+- [x] Add explicit account windows, isolated browser sign-in profiles, CLI installation, progress, cancellation, and Claude authenticated usage reads.
 - [x] Document fields, installation, freshness, privacy, and client dependencies.
 - [x] Distinguish subscription quota from context usage and API spending.
 - [x] Delegate credential storage to the official clients; keep credentials out of Taskcode.

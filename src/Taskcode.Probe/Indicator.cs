@@ -290,7 +290,7 @@ namespace Taskcode.Probe
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            if (Reading != null && (!Reading.Available || Period.EndUtc <= RenderTimeUtc || (Reading.ObservedUtc != DateTime.MinValue && RenderTimeUtc - Reading.ObservedUtc > TimeSpan.FromMinutes(2)))) return;
+            if (Reading != null && (!Reading.Available || Period.EndUtc <= RenderTimeUtc || (Reading.ObservedUtc != DateTime.MinValue && RenderTimeUtc - Reading.ObservedUtc > TimeSpan.FromMinutes(Reading.Provider == "Claude" ? 6 : 2)))) return;
             using (var track = new SolidBrush(Theme.Track))
             using (var fill = new SolidBrush(Provider == "claude" ? Theme.Claude : Theme.Codex))
             using (var marker = new SolidBrush(Theme.Text))

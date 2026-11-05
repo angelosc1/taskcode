@@ -6,7 +6,7 @@
 
 Taskcode is a Windows taskbar companion for monitoring Claude and Codex quota without interrupting your work. Its indicator sits to the left of the taskbar's hidden-icons arrow, with details available on hover or click.
 
-**Status: experimental Windows prototype.** The app connects to Codex through its official CLI and receives Claude quota through Claude Code's status line. Taskbar embedding, packaging, and wider Windows compatibility are still experimental. See [account setup and privacy](docs/ACCOUNTS.md).
+**Status: experimental Windows prototype.** Account windows provide explicit Claude and ChatGPT sign-in through the official clients, or reuse an existing local CLI account. Codex uses its app-server; Claude reads authenticated subscription quota with a status-line fallback. Taskbar embedding, packaging, and wider Windows compatibility remain experimental. See [account setup and privacy](docs/ACCOUNTS.md).
 
 ## Current prototype
 
@@ -40,7 +40,7 @@ Each provider has its own panel with five-hour and weekly quota, elapsed-period 
 
 Settings open from the tray icon. Windows startup is opt-in; closing the settings window keeps Taskcode running in the tray.
 
-Use **Connect Codex** to reuse the official CLI login or open its sign-in flow. **Connect Claude** installs a local Claude Code status-line bridge and preserves the original status line. Claude Code must supply quota observations; this does not independently connect the Claude website or desktop app. Read [connection instructions](docs/ACCOUNTS.md) before removing the bridge.
+**Connect Claude** and **Connect Codex** open dedicated account windows. Choose **Sign in** to select an account through the official login, or **Use existing CLI account**. New sign-ins use separate Taskcode profiles and preserve your regular CLI login. The windows show progress, errors, account identity when available, cancellation, and an official CLI installer if needed. Read [connection instructions](docs/ACCOUNTS.md).
 
 ## Planned first version
 
@@ -75,7 +75,7 @@ Interface suggestions, compatibility reports, and technical discussion are welco
 
 ## Inspiration
 
-[Codenotch](https://github.com/vinzdg/codenotch) is a functional reference for this project. This repository currently contains no Codenotch code. Any future reuse must include a review of the applicable license and attribution requirements.
+[Codenotch](https://github.com/vinzdg/codenotch) is a functional reference. The Claude connection adapts its MIT-licensed Windows CLI sign-in and usage-reading approach to C#. Attribution and license text are included in [third-party notices](THIRD-PARTY-NOTICES.md).
 
 ## License
 

@@ -22,7 +22,7 @@ The estimate is remaining quota divided by the observed consumption rate. The ra
 - Show **Calculating** before sufficient history, **Idle** without recent consumption, and a stale/expired/unavailable state when appropriate. Those states do not show speed arrows.
 - Do not generate new observations just because the display timer ticks. A repeated unchanged reading is valid only when the data source has supplied that observation.
 
-Provider refresh frequency limits responsiveness. Codex is queried approximately every ten seconds; Claude supplies event-driven status-line observations. Reading an unchanged Claude cache more often does not reveal new consumption. Slow or absent observations leave the estimator calculating or stale. See [account connections](ACCOUNTS.md).
+Provider refresh frequency limits responsiveness. Codex is queried approximately every ten seconds; Claude's direct usage check has a five-minute minimum interval and can also receive newer local status-line observations when using the matching local CLI account. Rechecking a cached response does not reveal new consumption. Slow or absent observations leave the estimator calculating or stale. See [account connections](ACCOUNTS.md).
 
 ## Taskbar hints
 

@@ -38,6 +38,14 @@ namespace Taskcode.Probe
             Check(usage.DisplayValue(2, now) == -1 && usage.DisplayValue(3, now) == 90, "A missing live window must clear its previous value.");
             usage.ClearProvider(1, "Disconnected");
             Check(usage.DisplayValue(3, now) == -1 && usage.Readings[3].PulseUntil == DateTime.MinValue, "Disconnect must clear values and speed hints.");
+            var api = ClaudeAccountClient.ParseUsage(AccountJson.Parse(AccountJson.Encode(new { five_hour = new { utilization = 25.5, resets_at = now.AddHours(2).ToString("o") }, seven_day = new { utilization = 60, resets_at = now.AddDays(4).ToString("o") } })), now);
+            Check(api.Remaining[0] == 74.5 && api.Periods[1].Remaining == 40 && api.SignedIn, "Claude API usage must convert utilization and ISO reset times independently.");
+            Check(ClaudeAccountClient.ParseUsage(AccountJson.Parse("{\"five_hour\":null,\"seven_day\":null}"), now).Periods[0] == null, "Missing Claude API windows must remain unavailable.");
+            var login = ClaudeSignIn.LoginInfo(@"C:\fixture with spaces\O'Brien\claude.exe", @"C:\private account");
+            Check(!login.Arguments.Contains("O'Brien") && login.EnvironmentVariables["TASKCODE_AUTH_CLI"].Contains("O'Brien"), "CLI paths must be data, never interpolated shell code.");
+            Check(login.EnvironmentVariables["CLAUDE_CONFIG_DIR"] == @"C:\private account" && !login.CreateNoWindow, "Claude sign-in must use the selected profile and a visible interactive official login.");
+            Check(AccountPaths.PrivateHome("codex") != Environment.GetEnvironmentVariable("CODEX_HOME"), "Taskcode sign-in must have its own Codex credential directory.");
+            Check(!AccountJson.Encode(api).Contains("Bearer"), "Snapshots must not retain authentication headers.");
         }
         internal static int Probe(bool installClaude)
         {
@@ -53,8 +61,10 @@ namespace Taskcode.Probe
                         report = "Codex: " + snapshot.Status;
                         for (int index = 0; index < 2; index++) report += "\n" + (index == 0 ? "5h" : "Weekly") + ": " + (snapshot.Periods[index] == null ? "unavailable" : snapshot.Periods[index].Remaining + "% remaining");
                     }
-                    report += "\nClaude: " + ClaudeBridge.Read().Status;
-                    using (var connections = new AccountConnections())
+                    var claude = new ClaudeAccountClient().Read();
+                    report += "\nClaude: " + claude.Status;
+                    for (int index = 0; index < 2; index++) report += "\nClaude " + (index == 0 ? "5h" : "Weekly") + ": " + (claude.Periods[index] == null ? "unavailable" : claude.Periods[index].Remaining + "% remaining");
+                    using (var connections = new AccountConnections { ClaudeEnabled = false })
                     {
                         var usage = new UsageDemo(); usage.BeginLive();
                         var deadline = System.Diagnostics.Stopwatch.StartNew();
@@ -88,6 +98,20 @@ namespace Taskcode.Probe
                 return 0;
             }
             catch (Exception ex) { File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "activity-check.txt"), "Activity unavailable: " + ex.GetType().Name); return 1; }
+        }
+        internal static int ProbeLoginFlow()
+        {
+            try
+            {
+                using (var client = new CodexAccountClient { UsePrivateProfile = true })
+                {
+                    string url = client.BeginLogin();
+                    Check(new Uri(url).Scheme == "https", "The Codex sign-in flow must return an HTTPS browser URL.");
+                    client.CancelLogin();
+                }
+                File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "login-flow-check.txt"), "PASS: official Codex browser sign-in started and cancelled using Taskcode's isolated profile; no browser opened and no account authenticated.\nClaude CLI: " + (AccountPaths.FindClaude() == null ? "missing" : "available")); return 0;
+            }
+            catch (Exception ex) { File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "login-flow-check.txt"), "FAIL: " + ex.GetType().Name + ". Browser login could not start."); return 1; }
         }
     }
 }

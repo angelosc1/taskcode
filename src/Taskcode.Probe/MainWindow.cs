@@ -37,6 +37,7 @@ namespace Taskcode.Probe
         private bool startInTray, exiting;
         private readonly AccountConnections connections;
         private readonly Label accountNotice;
+        private readonly AccountConnectionWindow[] accountWindows = new AccountConnectionWindow[2];
         private DateTime ripplePreviewUntil;
         private int CurrentActivity { get { return DateTime.UtcNow < ripplePreviewUntil ? 3 : usage.ActivityAt(DateTime.UtcNow); } }
 
@@ -46,11 +47,11 @@ namespace Taskcode.Probe
             if (connectAccounts)
             {
                 usage.BeginLive();
-                connections = new AccountConnections { CodexEnabled = settings.CodexEnabled, ClaudeEnabled = settings.ClaudeEnabled };
+                connections = new AccountConnections { CodexEnabled = settings.CodexEnabled, ClaudeEnabled = settings.ClaudeEnabled, CodexPrivateProfile = settings.CodexPrivateProfile, ClaudePrivateProfile = settings.ClaudePrivateProfile };
                 connections.OpenLogin = delegate(string url)
                 {
                     try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); }
-                    catch (System.ComponentModel.Win32Exception) { saveError = "Could not open the sign-in browser. Check your default browser."; }
+                    catch (System.ComponentModel.Win32Exception) { saveError = connections.CodexAuthMessage = "Could not open the browser. Use Open sign-in page again or check your default browser."; }
                 };
                 if (!settings.ClaudeEnabled) usage.ClearProvider(0, "Disconnected from Taskcode.");
                 if (!settings.CodexEnabled) usage.ClearProvider(1, "Disconnected from Taskcode.");
@@ -151,20 +152,19 @@ namespace Taskcode.Probe
             var codexConnect = new Button { Text = "Connect Codex", Location = new Point(210, 569), Size = new Size(168, 34), Enabled = connectAccounts };
             var disconnect = new Button { Text = "Disconnect...", Location = new Point(394, 569), Size = new Size(166, 34), Enabled = connectAccounts };
             Controls.Add(claudeConnect); Controls.Add(codexConnect); Controls.Add(disconnect);
-            AddLabel("Claude uses Claude Code's status line; Codex uses its CLI login.\nPasswords and tokens are managed by their official apps.", 26, 617, 9, FontStyle.Regular, 534, 60);
+            AddLabel("Connect opens account sign-in and connection status.\nChoose a browser sign-in or use an existing CLI account.", 26, 617, 9, FontStyle.Regular, 534, 60);
             claudeConnect.Click += delegate
             {
-                try { ClaudeBridge.Install(); settings.ClaudeEnabled = connections.ClaudeEnabled = true; Save(); connections.Refresh(); }
-                catch (Exception ex) { MessageBox.Show(this, "Claude could not be connected. " + (ex is InvalidOperationException ? ex.Message : "Check access to Claude Code settings and the bridge executable."), "Connect Claude", MessageBoxButtons.OK, MessageBoxIcon.Information); }
+                OpenAccountConnection(0);
             };
-            codexConnect.Click += delegate { settings.CodexEnabled = true; connections.ConnectCodex(); Save(); };
+            codexConnect.Click += delegate { OpenAccountConnection(1); };
             var disconnectMenu = new ContextMenuStrip();
             disconnectMenu.Items.Add("Disconnect Claude (restore status line)", null, delegate
             {
-                try { ClaudeBridge.Uninstall(); settings.ClaudeEnabled = connections.ClaudeEnabled = false; usage.ClearProvider(0, "Disconnected from Taskcode."); Save(); }
+                try { connections.ClaudeAuth.Cancel(); ClaudeBridge.Uninstall(); settings.ClaudeEnabled = connections.ClaudeEnabled = false; usage.ClearProvider(0, "Disconnected from Taskcode."); Save(); }
                 catch (Exception) { MessageBox.Show(this, "Could not restore Claude Code's status line. Settings were left connected.", "Disconnect Claude", MessageBoxButtons.OK, MessageBoxIcon.Information); }
             });
-            disconnectMenu.Items.Add("Disconnect Codex from Taskcode", null, delegate { settings.CodexEnabled = connections.CodexEnabled = false; usage.ClearProvider(1, "Disconnected from Taskcode. Your Codex login was preserved."); Save(); });
+            disconnectMenu.Items.Add("Disconnect Codex from Taskcode", null, delegate { connections.CancelCodex(); settings.CodexEnabled = connections.CodexEnabled = false; usage.ClearProvider(1, "Disconnected from Taskcode. Your Codex login was preserved."); Save(); });
             disconnect.Click += delegate { disconnectMenu.Show(disconnect, new Point(0, disconnect.Height)); };
             var detailsMenu = new ContextMenuStrip();
             detailsMenu.Items.Add("Claude details", null, delegate { ShowDetails(true, true, 0); });
@@ -241,6 +241,7 @@ namespace Taskcode.Probe
             {
                 timer.Stop(); timer.Dispose(); animationTimer.Dispose(); watcher.Dispose();
                 if (connections != null) connections.Dispose();
+                foreach (var accountWindow in accountWindows) if (accountWindow != null && !accountWindow.IsDisposed) accountWindow.Dispose();
                 disconnectMenu.Dispose();
                 if (indicator != null && !indicator.IsDisposed) indicator.Dispose();
                 foreach (var panel in providerDetails) panel.Dispose();
@@ -265,6 +266,23 @@ namespace Taskcode.Probe
             base.WndProc(ref message);
         }
         internal bool TrayVisible { get { return tray.Visible; } }
+        internal void OpenAccountConnection(int provider)
+        {
+            if (connections == null) return;
+            if (accountWindows[provider] == null || accountWindows[provider].IsDisposed)
+                accountWindows[provider] = new AccountConnectionWindow(provider, connections, usage, delegate(bool signIn)
+                {
+                    usage.ClearProvider(provider, signIn ? "Preparing sign-in..." : "Reading local account...");
+                    if (provider == 0)
+                    {
+                        ClaudeBridge.Install(); settings.ClaudeEnabled = true; settings.ClaudePrivateProfile = signIn;
+                        connections.ConnectClaude(signIn);
+                    }
+                    else { settings.CodexEnabled = true; settings.CodexPrivateProfile = signIn; connections.ConnectCodex(signIn); }
+                    Save();
+                });
+            accountWindows[provider].Show(this); accountWindows[provider].Activate();
+        }
         internal void PreviewAnimation() { ripplePreviewUntil = DateTime.UtcNow.AddSeconds(8); TickLayout(); }
         internal void OpenSettings()
         {

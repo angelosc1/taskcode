@@ -30,7 +30,7 @@ Taskbar class names are implementation details. A successful test on one Windows
 - Reads `SystemUsesLightTheme` for the taskbar palette and checks for changes once per second, without modifying Windows settings.
 - Uses pixel-sized indicator fonts with one DPI transform, avoiding double scaling.
 - Supports three styles, immediate preview, and local preferences.
-- Marks all values as demo data. No provider endpoints or account credentials are used.
+- Uses live provider connections in normal startup and explicitly simulated data in offline previews. See [account connections](ACCOUNTS.md) for authentication and privacy.
 
 The measurement is a snapshot, not a reserved slot. A newly added taskbar item could briefly overlap before the next measurement. A production host needs stronger layout coordination or faster collision handling.
 

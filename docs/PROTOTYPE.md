@@ -4,7 +4,7 @@ The probe tests taskbar placement and display styles and can monitor account quo
 
 ## Build and run
 
-Requirements: Windows x64 with the .NET Framework 4.x x64 compiler. Only framework assemblies are used; no NuGet restore is required.
+Requirements: Windows x64 with the .NET Framework 4.8 runtime and the Windows Framework x64 compiler. Only framework assemblies are used; no NuGet restore is required.
 
 Exit any running copy through **Tray > Exit** before building. From the repository root in PowerShell or Command Prompt:
 
@@ -51,7 +51,7 @@ Right-clicking anywhere inside the taskbar indicator opens Taskcode's own settin
 
 **Start with Windows** is unchecked by default. Selecting it registers only Taskcode for the current user's sign-in, launching with `--tray` so settings stay hidden. Clearing it removes Taskcode's startup entry. Opening the app, running tests, and changing unrelated preferences do not enable startup. Windows may delay startup applications or override their execution through its own startup controls.
 
-The prototype runs as the current user, without administrator rights, and does not change taskbar settings. Connecting Claude installs a local status-line bridge; disconnect it before removing the app. Style, connection toggles, and interaction preferences are stored in `settings.xml` beside the executable. Deleting that file restores those preferences, but does not remove a Windows startup registration or Claude integration. Disable **Start with Windows** before moving or deleting the portable executable.
+The prototype runs as the current user, without administrator rights, and does not change taskbar settings. Connection buttons open account sign-in windows. Connecting Claude also installs a local status-line bridge; disconnect it before removing the app. Keep `Taskcode.Probe.exe.config` beside the executable: it enables the modern TLS behavior required for provider connections. Keep `Taskcode.ClaudeBridge.exe` alongside it for bridge installation. Preferences are stored in `settings.xml`; deleting it does not remove saved official-client sessions, a Windows startup registration, or the Claude integration. See [account setup and removal](ACCOUNTS.md).
 
 Command-line switches: `--tray` starts without showing settings; `--exit` requests a clean exit from a running instance. The build's `--test` sequence also checks hidden startup, settings reopen, close-to-tray, the missing taskbar button, and unchanged startup registration. Its offscreen settings preview is saved as `out/probe/settings-check.png`.
 

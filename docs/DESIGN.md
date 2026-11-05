@@ -24,9 +24,9 @@ Detail bars use the same fill convention as the taskbar: colored remaining quota
 
 The arrow starts at zero on reset and reaches the end at renewal. Unknown or invalid time bounds hide the arrow instead of guessing. Expired data stays at the end until a new period is supplied. The tooltip includes used quota, elapsed time, and budget pace; a two-percentage-point tolerance is treated as on pace.
 
-The prototype uses the five-hour window as the primary value, with weekly quota in the details panel and optionally in the indicator. Real provider fields and period definitions still need validation.
+The prototype uses the five-hour window as the primary value, with weekly quota in details and optionally in the indicator. Provider adapters use the reported reset timestamps and documented/matched period durations; missing windows stay unavailable.
 
-Prototype values are not real readings. Displayed reset times and limits will depend on each provider's data source.
+Offline preview values are simulated; normal startup uses the selected account source. See [account connections](ACCOUNTS.md) for sign-in, privacy, and provider limitations.
 
 ## Behavior
 

@@ -11,6 +11,8 @@
 .local/
 auth.json
 credentials.json
+.credentials.json
+/accounts/
 claude-usage.json
 claude-statusline-original.json
 claude-activity/

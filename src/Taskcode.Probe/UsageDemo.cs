@@ -23,6 +23,7 @@ namespace Taskcode.Probe
         private DateTime demoActivityUntil = DateTime.UtcNow.AddSeconds(15);
         internal int ActivityAt(DateTime now) { return IsLive ? ActivityKey : now < demoActivityUntil && scenario < 4 ? 3 : 0; }
         internal readonly string[] AccountStatus = { "Demo data", "Demo data" };
+        internal readonly string[] AccountIdentity = { "", "" };
         internal void BeginLive()
         {
             IsLive = true;
@@ -32,6 +33,7 @@ namespace Taskcode.Probe
         {
             ActivityKey &= ~(1 << provider);
             AccountStatus[provider] = status;
+            AccountIdentity[provider] = "";
             for (int i = provider * 2; i < provider * 2 + 2; i++)
             {
                 Readings[i].Available = false; Readings[i].ObservedUtc = DateTime.MinValue;
@@ -43,6 +45,7 @@ namespace Taskcode.Probe
         internal void Apply(int provider, AccountSnapshot snapshot)
         {
             AccountStatus[provider] = snapshot.Status;
+            if (!snapshot.Failed) AccountIdentity[provider] = snapshot.Identity ?? "";
             if (snapshot.Failed) { Revision++; return; }
             for (int index = 0; index < 2; index++)
             {
@@ -62,7 +65,7 @@ namespace Taskcode.Probe
         internal int DisplayValue(int index, DateTime now)
         {
             var reading = Readings[index];
-            return !IsLive ? reading.Period.Remaining : reading.Available && now < reading.Period.EndUtc && now - reading.ObservedUtc <= TimeSpan.FromMinutes(2) ? reading.Period.Remaining : -1;
+            return !IsLive ? reading.Period.Remaining : reading.Available && now < reading.Period.EndUtc && now - reading.ObservedUtc <= TimeSpan.FromMinutes(index < 2 ? 6 : 2) ? reading.Period.Remaining : -1;
         }
         internal string ProviderStatus(int provider, DateTime now)
         {
