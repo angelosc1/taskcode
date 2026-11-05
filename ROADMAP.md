@@ -4,7 +4,7 @@
 
 - [x] Document the proposal and the current project status.
 - [x] Record the three selected display styles.
-- [x] Store the mockup in the project.
+- [x] Store current application previews in the project.
 - [x] Configure exclusions for local files and credentials.
 - [x] Create and publish the public GitHub repository.
 - [x] Choose a license before publishing reusable code (MIT).

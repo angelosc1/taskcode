@@ -14,7 +14,7 @@ Integration and overlay are technical approaches to validate, independent of the
 
 Weekly readings are opt-in through **Show weekly quota in the indicator**, disabled by default. When enabled, each provider is identified by its symbol and receives two rows labeled `5h` and `7d`, using the selected style. The height stays constant; the width expands to keep both readings legible. The detail panel always retains both periods.
 
-Proposed setting: **Settings > Appearance > Indicator style**. Selection provides an immediate preview and is saved. Light/dark mode is a separate preference.
+The **Indicator style** setting provides an immediate preview and saves the selection. The indicator palette follows the Windows taskbar's light/dark mode.
 
 ## Data semantics
 
@@ -24,9 +24,9 @@ In the details panel, quota bars also compare consumption with elapsed time. The
 
 The arrow starts at zero on reset and reaches the end at renewal. Unknown or invalid time bounds hide the arrow instead of guessing. Expired data stays at the end until a new period is supplied. The tooltip includes used quota, elapsed time, and budget pace; a two-percentage-point tolerance is treated as on pace.
 
-The main indicator must identify which quota window it represents. This choice depends on the actual available data and has not yet been validated. The mockup uses a five-hour window as the primary value, with weekly limits in the details panel.
+The prototype uses the five-hour window as the primary value, with weekly quota in the details panel and optionally in the indicator. Real provider fields and period definitions still need validation.
 
-Mockup values are not real readings. Displayed reset times and limits will depend on each provider's data source.
+Prototype values are not real readings. Displayed reset times and limits will depend on each provider's data source.
 
 ## Behavior
 
@@ -38,10 +38,12 @@ Mockup values are not real readings. Displayed reset times and limits will depen
 - Color helps distinguish providers; text and numbers must identify them as well.
 - Avoid continuous animations and distracting taskbar behavior.
 
-## Mockup
+## Current visual references
 
-The [comparison board](images/taskcode-concepts-en.png) was generated with the built-in image tool. It shows four concepts; the first three were approved as display styles. The fourth illustrates overlay placement.
+The repository uses previews rendered by the current application:
 
-Visual brief: Taskcode monitor for Windows 11 in dark mode, to the left of the system tray arrow, Claude in terracotta and Codex in soft mint, four concepts in a 2 by 2 grid with hover panels, understated typography, and illustrative remaining-quota percentages.
+- [Three implemented indicator styles](images/current-indicators.png), with weekly readings off and on, in both palettes.
+- [Details panel](images/current-details.png), including period markers and recent-usage estimates.
+- [Settings window](images/current-settings.png), including interaction, weekly quota, and opt-in startup controls.
 
-Localization brief: translate all labels into English while preserving the approved layout, display styles, colors, provider names, and sample values.
+These are offscreen application renders with illustrative data, not photographs of an installed taskbar or live provider readings.

@@ -2,25 +2,37 @@
 
 Your AI quota, on the Windows taskbar.
 
-Taskcode is a planned quota monitor for Claude and Codex, designed to show your remaining allowance without interrupting your work. The indicator will sit to the left of the taskbar's hidden-icons arrow, with details available on hover.
+Taskcode is a Windows taskbar companion for monitoring Claude and Codex quota without interrupting your work. Its indicator sits to the left of the taskbar's hidden-icons arrow, with details available on hover or click.
 
 **Status: experimental positioning prototype.** A runnable Windows probe demonstrates the three styles and tests taskbar embedding and overlay placement with sample data. Real provider connections and production compatibility are not implemented.
 
-## Visual concepts
+## Current prototype
 
-![Four Taskcode design concepts](docs/images/taskcode-concepts-en.png)
+These previews are rendered by the current application with **sample data**. They show implemented controls and styles, rather than proposed designs. Indicator previews use sample light/dark backgrounds to demonstrate contrast; the actual taskbar strip is transparent.
 
-AI-generated concept mockup. All values are illustrative; percentages show **remaining quota**. The position shown does not establish technical feasibility.
+### Three indicator styles
 
-Three display styles are planned:
+![Lines, Essential, and Blocks in both themes, with weekly readings off and on](docs/images/current-indicators.png)
 
-| Style | Indicator | Planned availability |
+| Style | Indicator | Availability |
 | --- | --- | --- |
 | Lines | Names and thin bars | Default |
 | Essential | Icons and percentages | Configurable |
 | Blocks | Segmented meters | Configurable |
 
-The Floating concept illustrates an overlay placement option if taskbar integration proves impractical. It is not a fourth selected display style.
+Weekly readings are optional and disabled by default. Enabling them adds labeled `5h` and `7d` rows within the selected style. There are three display styles; placement is a separate technical setting.
+
+### Quota details
+
+![Current details panel in dark and light mode](docs/images/current-details.png)
+
+The panel shows five-hour and weekly quota, elapsed-period markers, and recent-consumption projections with animated filled arrows. Percentages show remaining quota; period dates and usage histories are currently simulated.
+
+### Settings
+
+![Current Taskcode settings with optional weekly readings and Windows startup](docs/images/current-settings.png)
+
+Settings open from the tray icon. Windows startup is opt-in; closing the settings window keeps Taskcode running in the tray.
 
 ## Planned first version
 
@@ -28,7 +40,7 @@ The Floating concept illustrates an overlay placement option if taskbar integrat
 - Claude and Codex.
 - Remaining quota and reset times, when available from the data source.
 - A details panel on hover.
-- Style selection under **Settings > Appearance > Indicator style**, with an immediate preview and a saved preference.
+- Style selection under **Indicator style** in the settings window, with an immediate preview and a saved preference.
 - Indicator style independent of light or dark mode.
 - Optional weekly quota in the taskbar indicator, disabled by default.
 - Recent-consumption projections with one to three animated, filled arrows, currently demonstrated using simulated histories.

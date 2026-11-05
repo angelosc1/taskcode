@@ -68,7 +68,7 @@ The desktop inspection tool captures the prototype control window and its relate
 - Overlay does not yet suppress itself for fullscreen applications.
 - Taskbar class names and accessibility structure can change with Windows updates.
 - Settings open from a tray icon, without a normal taskbar app button. Windows startup is opt-in and launches hidden; no installer or updater is provided yet.
-- Functional controls and hover/click details are prototypes, not the final mockup implementation.
+- Functional controls and hover/click details remain experimental rather than a polished release.
 
 ## Next checks
 
