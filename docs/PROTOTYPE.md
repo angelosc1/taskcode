@@ -17,6 +17,8 @@ Compiler warnings are treated as errors. Seven placement assertions run with `--
 
 The same command also checks transparent background pixels, rendered content, and palette contrast for every style in both light and dark mode. It writes `out/probe/appearance-check.png`, an offscreen renderer comparison, not a screenshot of the Windows taskbar.
 
+The details panel includes separate remaining-quota bars for each provider's five-hour and weekly windows. Sample values are Claude 68% / 81% and Codex 42% / 63%. The build also writes `out/probe/details-check.png` for an offscreen layout review of the panel in both themes.
+
 ## Controls
 
 1. Keep **Lines (default)** or select **Essential** or **Blocks**.

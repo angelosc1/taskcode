@@ -141,6 +141,28 @@ namespace Taskcode.Probe
         }
     }
 
+    internal sealed class QuotaBar : Control
+    {
+        internal int Remaining;
+        internal string Provider;
+        internal TaskbarTheme Theme;
+        internal QuotaBar()
+        {
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            AccessibleRole = AccessibleRole.ProgressBar;
+        }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            using (var track = new SolidBrush(Theme.Track))
+            using (var fill = new SolidBrush(Provider == "claude" ? Theme.Claude : Theme.Codex))
+            {
+                e.Graphics.FillRectangle(track, ClientRectangle);
+                e.Graphics.FillRectangle(fill, 0, 0, Width * Math.Max(0, Math.Min(100, Remaining)) / 100f, Height);
+            }
+        }
+    }
+
     internal sealed class DetailWindow : Form
     {
         private TaskbarTheme theme = TaskbarTheme.Read();
@@ -150,21 +172,21 @@ namespace Taskcode.Probe
             FormBorderStyle = FormBorderStyle.FixedToolWindow;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.Manual;
-            ClientSize = new Size(330, 290);
+            ClientSize = new Size(330, 400);
             BackColor = Color.FromArgb(29, 32, 36);
             ForeColor = Color.FromArgb(238, 241, 245);
             Font = new Font("Segoe UI", 10f);
             KeyPreview = true;
             AddText("Taskcode", 18, 14, 13, FontStyle.Bold, ForeColor);
             AddText("DEMO DATA  /  Remaining quota", 18, 49, 9, FontStyle.Regular, Color.LightGray);
-            AddText("Claude", 42, 84, 10, FontStyle.Bold, IndicatorView.Claude);
-            AddText("68%", 270, 84, 10, FontStyle.Bold, IndicatorView.Claude);
-            AddText("5-hour window · resets in 2h 14m\nWeekly · 81% remaining", 18, 115, 9, FontStyle.Regular, ForeColor);
-            AddText(">_", 18, 174, 10, FontStyle.Bold, IndicatorView.Codex);
-            AddText("Codex", 42, 174, 10, FontStyle.Bold, IndicatorView.Codex);
-            AddText("42%", 270, 174, 10, FontStyle.Bold, IndicatorView.Codex);
-            AddText("5-hour window · resets in 1h 08m\nWeekly · 63% remaining", 18, 205, 9, FontStyle.Regular, ForeColor);
-            AddText("Sample values only. No accounts connected.", 18, 262, 8, FontStyle.Regular, Color.LightGray);
+            AddText("Claude", 42, 80, 10, FontStyle.Bold, IndicatorView.Claude);
+            AddQuota("Claude", "5-hour window", 68, 110, "Resets in 2h 14m");
+            AddQuota("Claude", "Weekly", 81, 172, null);
+            AddText(">_", 18, 230, 10, FontStyle.Bold, IndicatorView.Codex);
+            AddText("Codex", 42, 230, 10, FontStyle.Bold, IndicatorView.Codex);
+            AddQuota("Codex", "5-hour window", 42, 260, "Resets in 1h 08m");
+            AddQuota("Codex", "Weekly", 63, 322, null);
+            AddText("Sample values only. No accounts connected.", 18, 378, 8, FontStyle.Regular, Color.LightGray);
             KeyDown += delegate(object sender, KeyEventArgs e) { if (e.KeyCode == Keys.Escape) Hide(); };
             FormClosing += delegate(object sender, FormClosingEventArgs e) { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } };
             ApplyTheme(theme);
@@ -174,6 +196,19 @@ namespace Taskcode.Probe
             string role = color == IndicatorView.Claude ? "claude" : color == IndicatorView.Codex ? "codex" : color == Color.LightGray ? "muted" : "text";
             Controls.Add(new Label { Text = text, Location = new Point(x, y), AutoSize = true, Font = new Font("Segoe UI", size, style), ForeColor = color, Tag = role });
         }
+        private void AddQuota(string provider, string window, int remaining, int y, string reset)
+        {
+            var color = provider == "Claude" ? IndicatorView.Claude : IndicatorView.Codex;
+            AddText(window, 18, y, 9, FontStyle.Regular, ForeColor);
+            AddText(remaining + "%", 270, y, 9, FontStyle.Bold, color);
+            Controls.Add(new QuotaBar
+            {
+                Location = new Point(18, y + 25), Size = new Size(294, 6),
+                Remaining = remaining, Provider = provider.ToLowerInvariant(), Theme = theme,
+                AccessibleName = provider + ", " + window + ", " + remaining + " percent remaining"
+            });
+            if (reset != null) AddText(reset, 18, y + 38, 8, FontStyle.Regular, Color.LightGray);
+        }
         internal void ApplyTheme(TaskbarTheme value)
         {
             if (theme == value && BackColor == value.PreviewBackground) return;
@@ -182,6 +217,8 @@ namespace Taskcode.Probe
             ForeColor = value.Text;
             foreach (Control control in Controls)
             {
+                var bar = control as QuotaBar;
+                if (bar != null) { bar.Theme = value; bar.BackColor = value.PreviewBackground; bar.Invalidate(); continue; }
                 string role = control.Tag as string;
                 control.ForeColor = role == "claude" ? value.Claude : role == "codex" ? value.Codex : role == "muted" ? value.Muted : value.Text;
             }
@@ -191,7 +228,7 @@ namespace Taskcode.Probe
         {
             base.OnPaint(e);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var brush = new SolidBrush(theme.Claude)) BrandMarks.DrawClaude(e.Graphics, brush, new RectangleF(18, 88, 16, 16));
+            using (var brush = new SolidBrush(theme.Claude)) BrandMarks.DrawClaude(e.Graphics, brush, new RectangleF(18, 84, 16, 16));
         }
         protected override bool ShowWithoutActivation { get { return true; } }
     }

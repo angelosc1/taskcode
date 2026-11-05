@@ -39,6 +39,27 @@ namespace Taskcode.Probe
                 }
                 board.Save(Path.Combine(directory, "appearance-check.png"), ImageFormat.Png);
             }
+            using (var details = new DetailWindow())
+            {
+                // Realize child controls outside the visible desktop for DrawToBitmap.
+                // A never-shown form omits its hidden children from that rendering API.
+                details.Location = new Point(-30000, -30000);
+                details.Show();
+                using (var board = new Bitmap(details.Width * 2, details.Height))
+                using (var canvas = Graphics.FromImage(board))
+                {
+                    for (int column = 0; column < 2; column++)
+                    {
+                        details.ApplyTheme(TaskbarTheme.Create(column == 0));
+                        using (var surface = new Bitmap(details.Width, details.Height))
+                        {
+                            details.DrawToBitmap(surface, new Rectangle(Point.Empty, surface.Size));
+                            canvas.DrawImageUnscaled(surface, column * details.Width, 0);
+                        }
+                    }
+                    board.Save(Path.Combine(directory, "details-check.png"), ImageFormat.Png);
+                }
+            }
         }
         private static double Contrast(Color a, Color b)
         {
