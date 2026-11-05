@@ -58,7 +58,10 @@ namespace Taskcode.Probe
                     }
                 };
                 RecordLifecycle("Started");
-                Application.Run(new MainWindow(startInTray, Array.IndexOf(args, "--demo") < 0));
+                var mainWindow = new MainWindow(startInTray, Array.IndexOf(args, "--demo") < 0);
+                RecordLifecycle("Window initialized");
+                mainWindow.Shown += delegate { RecordLifecycle("Settings shown"); };
+                Application.Run(mainWindow);
                 RecordLifecycle("Message loop ended");
             }
             return 0;
