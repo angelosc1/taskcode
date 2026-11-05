@@ -21,7 +21,7 @@ The same command also checks transparent background pixels, rendered content, an
 
 1. Keep **Lines (default)** or select **Essential** or **Blocks**.
 2. Start with **Embedded (experimental)** and check the status below the preview.
-3. Look just before the primary taskbar's system tray. The indicator includes a `DEMO` label.
+3. Look just before the primary taskbar's system tray for the provider readings. Sample data is identified in the control window and details panel.
 4. Hover or click the indicator for sample details. The **Demo details** button also opens the panel from the control window.
 5. Select **Overlay** to compare the fallback. If verified space is insufficient, the indicator hides and explains why.
 6. Uncheck **Show indicator on the primary taskbar** to pause it.
@@ -31,7 +31,7 @@ The actual taskbar indicator has a per-pixel transparent background. Its colors 
 
 Placement changes how the indicator is hosted, not its appearance: **Embedded** attaches it as a child of the taskbar window; **Overlay** keeps it as an independent window over the same measured gap. Both modes use the same style, transparent surface, and theme palette.
 
-Indicator text uses 11-pixel logical fonts with one DPI transform. Icons, meter sizes, and spacing are adjusted separately from text size.
+The indicator uses a 117% content scale, in addition to one monitor-DPI transform. Its former demo-label gutter has been removed. The control window and details panel still disclose that the displayed values are sample data.
 
 The prototype runs as the current user, without administrator rights. It does not install itself, register startup tasks, or change taskbar settings. Preferences are stored in `settings.xml` beside the executable. Deleting that file while the prototype is closed restores default style and placement on the next run.
 

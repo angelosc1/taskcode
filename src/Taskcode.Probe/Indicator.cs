@@ -24,7 +24,10 @@ namespace Taskcode.Probe
             AccessibleRole = AccessibleRole.PushButton;
             TabStop = true;
         }
-        internal static int LogicalWidth(IndicatorStyle style) { return style == IndicatorStyle.Essential ? 188 : style == IndicatorStyle.Blocks ? 278 : 246; }
+        private const float IndicatorScale = 1.17f;
+        private static int ContentWidth(IndicatorStyle style) { return style == IndicatorStyle.Essential ? 156 : style == IndicatorStyle.Blocks ? 246 : 214; }
+        internal static int LogicalWidth(IndicatorStyle style) { return (int)Math.Ceiling(ContentWidth(style) * IndicatorScale); }
+        internal static int LogicalHeight { get { return (int)Math.Ceiling(34 * IndicatorScale); } }
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
@@ -33,19 +36,18 @@ namespace Taskcode.Probe
         internal static void Draw(Graphics g, Size size, IndicatorStyle style, TaskbarTheme theme)
         {
             var state = g.Save();
-            float scale = Math.Min(size.Width / (float)LogicalWidth(style), size.Height / 34f);
+            float scale = Math.Min(size.Width / (float)ContentWidth(style), size.Height / 34f);
             g.ScaleTransform(scale, scale);
+            // Remove the former demo-label gutter while enlarging the entire content.
+            g.TranslateTransform(-32, 0);
             g.SmoothingMode = SmoothingMode.AntiAlias;
             // Pixel units avoid applying the monitor's DPI twice when scaling.
             // Grayscale antialiasing works on an alpha surface without colored fringes.
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
             using (var font = new Font("Segoe UI", 11f, FontStyle.Regular, GraphicsUnit.Pixel))
             using (var bold = new Font("Segoe UI", 11f, FontStyle.Bold, GraphicsUnit.Pixel))
-            using (var small = new Font("Segoe UI", 7f, FontStyle.Regular, GraphicsUnit.Pixel))
             using (var text = new SolidBrush(theme.Text))
-            using (var muted = new SolidBrush(theme.Muted))
             {
-                g.DrawString("DEMO", small, muted, 2, 13);
                 int second = style == IndicatorStyle.Essential ? 120 : style == IndicatorStyle.Blocks ? 162 : 148;
                 DrawProvider(g, font, bold, text, "Claude", 68, theme.Claude, 36, style, theme);
                 DrawProvider(g, font, bold, text, "Codex", 42, theme.Codex, second, style, theme);

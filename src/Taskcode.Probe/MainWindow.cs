@@ -51,7 +51,7 @@ namespace Taskcode.Probe
             Controls.Add(mode);
             AddLabel("Preview", 26, 242, 10, FontStyle.Regular, 180, 26);
             preview.Location = new Point(220, 237);
-            preview.Size = new Size(IndicatorView.LogicalWidth(settings.Style), 34);
+            preview.Size = new Size(IndicatorView.LogicalWidth(settings.Style), IndicatorView.LogicalHeight);
             preview.Style = settings.Style;
             preview.Theme = theme;
             preview.BackColor = theme.PreviewBackground;
@@ -148,7 +148,7 @@ namespace Taskcode.Probe
             { PauseIndicator("Taskbar is hidden."); return; }
             float scale = Math.Max(96, layout.Dpi) / 96f;
             int width = (int)Math.Round(IndicatorView.LogicalWidth(settings.Style) * scale);
-            int height = (int)Math.Round(34 * scale);
+            int height = (int)Math.Round(IndicatorView.LogicalHeight * scale);
             Rectangle slot;
             if (!Placement.TrySlot(layout.Bar, layout.Tray, layout.OccupiedRight, width, height, (int)Math.Round(8 * scale), out slot))
             { PauseIndicator("Not enough verified space before the system tray.\nTry Essential or reduce the number of taskbar buttons."); return; }
