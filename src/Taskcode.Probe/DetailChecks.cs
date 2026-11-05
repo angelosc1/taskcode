@@ -27,11 +27,17 @@ namespace Taskcode.Probe
             {
                 panel.Show();
                 Check(panel.FormBorderStyle == FormBorderStyle.None && !panel.ControlBox && !panel.ShowInTaskbar, "Details must be a borderless card without native title/close controls.");
-                Check(panel.ClientSize.Height < 240, "The clean card must omit the former title and footer space.");
+                Check(panel.ClientSize.Height <= 252, "The compact card must fit the restored budget and speed rows.");
                 foreach (Control control in panel.Controls)
                 {
                     var bar = control as QuotaBar;
-                    if (bar != null) Check(TextRenderer.MeasureText("100%", bar.ValueCaption.Font).Width <= bar.ValueCaption.Width, "The percentage must fit completely: " + TextRenderer.MeasureText("100%", bar.ValueCaption.Font).Width + "px required, " + bar.ValueCaption.Width + "px available.");
+                    if (bar != null)
+                    {
+                        Check(TextRenderer.MeasureText("100%", bar.ValueCaption.Font).Width <= bar.ValueCaption.Width, "The percentage must fit completely.");
+                        Check(bar.BudgetCaption.Text.Contains("% used / ") && bar.BudgetCaption.Text.Contains("% time"), "Details must expose consumption versus elapsed time directly.");
+                        Check(bar.SpeedCaption.Visible && bar.SpeedCaption.HasArrows, "Active sample histories must expose speed arrows and their time estimate.");
+                        Check(panel.ClientRectangle.Contains(bar.SpeedCaption.Bounds), "The restored speed row must fit the card.");
+                    }
                     var label = control as Label;
                     if (label == null) continue;
                     Check(label.Text != "Taskcode" && !label.Text.Contains("DATA /") && !label.Text.StartsWith("Gray:") && !label.Text.Contains("history"), "Details must not contain decorative titles, legends, or footer text.");
@@ -45,6 +51,16 @@ namespace Taskcode.Probe
                 Check(panel.Visible, "Pointer over a card's child controls must keep the card open.");
                 panel.TrackPointer(new Point(-25000, -25000), now.AddMilliseconds(450));
                 Check(!panel.Visible, "Leaving both card and trigger must automatically dismiss every provider card.");
+            }
+            using (var panel = new DetailWindow(usage) { Location = new Point(-30000, -30000) })
+            {
+                panel.Show();
+                foreach (Control control in panel.Controls)
+                {
+                    var bar = control as QuotaBar;
+                    if (bar != null) Check(bar.SpeedCaption.Visible && !bar.SpeedCaption.HasArrows && bar.SpeedCaption.Estimate.State == SpeedState.Unavailable,
+                        "Missing observations must show an honest status instead of hiding the row or fabricating arrows.");
+                }
             }
         }
         private static void Check(bool value, string message) { if (!value) throw new InvalidOperationException(message); }

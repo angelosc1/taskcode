@@ -19,7 +19,7 @@ The estimate is remaining quota divided by the observed consumption rate. The ra
 - Require three consecutive new observations proposing a different level before changing an established arrow count.
 - Do not treat duplicate, out-of-order, non-UTC, or invalid observations as new activity.
 - Discard history when period bounds change, quota increases, or a sampling gap exceeds 30 seconds.
-- Show **Calculating** before sufficient history, **Idle** without recent consumption, and a stale/expired/unavailable state when appropriate. Those states do not show speed arrows.
+- Show **Calculating** before sufficient history, **Idle** without recent consumption, and a stale/expired/unavailable state when appropriate. Those states do not show speed arrows. The row stays visible with its calculation or availability status. Each quota also shows consumed percentage versus elapsed-time percentage directly above the reset countdown.
 - Do not generate new observations just because the display timer ticks. A repeated unchanged reading is valid only when the data source has supplied that observation.
 
 Provider refresh frequency limits responsiveness. Codex is queried approximately every ten seconds; Claude's direct usage check has a five-minute minimum interval and can also receive newer local status-line observations when using the matching local CLI account. Rechecking a cached response does not reveal new consumption. Slow or absent observations leave the estimator calculating or stale. See [account connections](ACCOUNTS.md).

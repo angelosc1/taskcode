@@ -281,6 +281,7 @@ namespace Taskcode.Probe
         internal SpeedReadout SpeedCaption;
         internal DemoReading Reading;
         internal Label ValueCaption;
+        internal Label BudgetCaption;
         internal DateTime RenderTimeUtc = DateTime.UtcNow;
         internal QuotaBar()
         {
@@ -336,7 +337,7 @@ namespace Taskcode.Probe
             ControlBox = false;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.Manual;
-            ClientSize = new Size(300, 212);
+            ClientSize = new Size(300, 252);
             BackColor = Color.FromArgb(29, 32, 36);
             ForeColor = Color.FromArgb(238, 241, 245);
             Font = new Font("Segoe UI", 10f);
@@ -344,7 +345,7 @@ namespace Taskcode.Probe
             var providerColor = providerIndex == 0 ? IndicatorView.Claude : IndicatorView.Codex;
             providerLabel = AddText(provider, 38, 14, 10, FontStyle.Bold, providerColor);
             AddQuota(this.usage.Readings[providerIndex * 2], 44);
-            AddQuota(this.usage.Readings[providerIndex * 2 + 1], 124);
+            AddQuota(this.usage.Readings[providerIndex * 2 + 1], 144);
             KeyDown += delegate(object sender, KeyEventArgs e) { if (e.KeyCode == Keys.Escape) Hide(); };
             FormClosing += delegate(object sender, FormClosingEventArgs e) { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } };
             periodTimer.Tick += delegate { RefreshPeriods(); };
@@ -379,14 +380,15 @@ namespace Taskcode.Probe
             int valueWidth = Math.Max(72, TextRenderer.MeasureText("100%", valueCaption.Font).Width + 6);
             valueCaption.AutoSize = false; valueCaption.Location = new Point(284 - valueWidth, y - 2);
             valueCaption.Size = new Size(valueWidth, 24); valueCaption.TextAlign = ContentAlignment.TopRight;
-            var caption = AddText("", 16, y + 39, 8, FontStyle.Regular, Color.LightGray);
-            var speedCaption = new SpeedReadout { Location = new Point(16, y + 53), Size = new Size(268, 20), ForeColor = color, Tag = provider.ToLowerInvariant() };
+            var budgetCaption = AddText("", 16, y + 36, 8, FontStyle.Regular, Color.LightGray);
+            var caption = AddText("", 16, y + 52, 8, FontStyle.Regular, Color.LightGray);
+            var speedCaption = new SpeedReadout { Location = new Point(16, y + 68), Size = new Size(268, 20), ForeColor = color, Tag = provider.ToLowerInvariant() };
             Controls.Add(speedCaption);
             Controls.Add(new QuotaBar
             {
                 Location = new Point(10, y + 18), Size = new Size(280, 17),
                 Period = reading.Period, Reading = reading, SpeedCaption = speedCaption, ValueCaption = valueCaption,
-                Provider = provider.ToLowerInvariant(), Theme = theme, Caption = caption,
+                Provider = provider.ToLowerInvariant(), Theme = theme, Caption = caption, BudgetCaption = budgetCaption,
                 AccessibleName = provider + ", " + window + ", " + used + " percent used"
             });
         }
@@ -415,13 +417,15 @@ namespace Taskcode.Probe
                 bar.Caption.Text = value < 0 ? "Unavailable" : bar.Period.ResetCaptionAt(now);
                 var speed = value < 0 ? new SpeedEstimate { State = SpeedState.Unavailable } : bar.Reading.Speed.EstimateAt(now);
                 bar.SpeedCaption.Estimate = speed;
-                bar.SpeedCaption.Visible = value >= 0 && (speed.State == SpeedState.Active || speed.State == SpeedState.Idle);
+                bar.SpeedCaption.Visible = true;
                 hints.SetToolTip(bar.ValueCaption, "Used quota. " + AccessibleDescription);
                 bar.SpeedCaption.AccessibleName = (speed.State == SpeedState.Active ? speed.Level + " speed arrows. " : "") + speed.Summary;
                 bar.SpeedCaption.Invalidate();
                 hasArrows |= bar.SpeedCaption.HasArrows;
                 hints.SetToolTip(bar.SpeedCaption, speed.State == SpeedState.Active ? speed.PointsPerHour.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " percentage points/hour · 15-second recent window. Estimate, not a guarantee." : speed.Summary);
                 var elapsed = bar.Period.ElapsedAt(now);
+                bar.BudgetCaption.Text = value < 0 ? "-- used / -- time" : value + "% used / " +
+                    (elapsed.HasValue ? Math.Round(elapsed.Value * 100) + "% time" : "-- time");
                 string description = Math.Round(bar.Period.UsedFraction * 100) + "% quota used; " +
                     (elapsed.HasValue ? Math.Round(elapsed.Value * 100) + "% time elapsed. " : "") + bar.Period.PaceAt(now) + ".";
                 bar.AccessibleDescription = description;
