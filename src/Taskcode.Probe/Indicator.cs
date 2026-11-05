@@ -202,6 +202,7 @@ namespace Taskcode.Probe
         internal int ActivityKey;
         internal UsageDemo Usage;
         internal TaskbarTheme Theme;
+        internal event EventHandler ContextRequested;
         internal IndicatorWindow()
         {
             Text = "Taskcode indicator";
@@ -212,6 +213,27 @@ namespace Taskcode.Probe
             Cursor = Cursors.Hand;
         }
         protected override bool ShowWithoutActivation { get { return true; } }
+        protected override void WndProc(ref Message message)
+        {
+            if (message.Msg == 0x0021) // WM_MOUSEACTIVATE: accept input without activating Explorer's child.
+            { message.Result = new IntPtr(3); return; } // MA_NOACTIVATE
+            if (message.Msg == 0x007B) // WM_CONTEXTMENU must never fall through to the taskbar parent.
+            {
+                var handler = ContextRequested;
+                if (handler != null) handler(this, EventArgs.Empty);
+                message.Result = IntPtr.Zero;
+                return;
+            }
+            base.WndProc(ref message);
+        }
+        internal void InvalidateSurface() { renderedHandle = IntPtr.Zero; }
+        internal static void DrawInputSurface(Graphics graphics, Size size, IndicatorStyle style, TaskbarTheme theme, bool weekly, int pulse, UsageDemo usage, int activity)
+        {
+            // Windows skips alpha-zero pixels during mouse hit testing. Alpha 1/255
+            // is visually transparent, but keeps gaps inside this window's input area.
+            graphics.Clear(Color.FromArgb(1, theme.PreviewBackground));
+            IndicatorView.Draw(graphics, size, style, theme, weekly, pulse, usage, activity);
+        }
         protected override CreateParams CreateParams
         {
             get { var value = base.CreateParams; value.ExStyle |= 0x80000 | 0x80; return value; }
@@ -225,7 +247,7 @@ namespace Taskcode.Probe
             if (Width <= 0 || Height <= 0) return false;
             using (var bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppPArgb))
             {
-                using (var graphics = Graphics.FromImage(bitmap)) IndicatorView.Draw(graphics, bitmap.Size, DisplayStyle, Theme, ShowWeekly, PulseKey, Usage, ActivityKey);
+                using (var graphics = Graphics.FromImage(bitmap)) DrawInputSurface(graphics, bitmap.Size, DisplayStyle, Theme, ShowWeekly, PulseKey, Usage, ActivityKey);
                 IntPtr screen = Native.GetDC(IntPtr.Zero), memory = Native.CreateCompatibleDC(screen);
                 IntPtr image = bitmap.GetHbitmap(Color.FromArgb(0));
                 IntPtr previous = Native.SelectObject(memory, image);

@@ -221,6 +221,11 @@ namespace Taskcode.Probe
             trayMenu.Items.Add("Open settings", null, delegate { OpenSettings(); });
             trayMenu.Items.Add(new ToolStripSeparator());
             trayMenu.Items.Add("Exit", null, delegate { RequestExit(); });
+            trayMenu.Closed += delegate
+            {
+                leftAt = DateTime.UtcNow; hoverSince = null; hoverProvider = -1;
+                if (indicator != null && !indicator.IsDisposed) indicator.InvalidateSurface();
+            };
             tray = new NotifyIcon { Icon = trayImage, Text = "Taskcode - AI quota monitor", ContextMenuStrip = trayMenu, Visible = true };
             tray.MouseClick += delegate(object sender, MouseEventArgs e) { if (e.Button == MouseButtons.Left) OpenSettings(); };
             Resize += delegate { if (WindowState == FormWindowState.Minimized) Hide(); };
@@ -280,6 +285,12 @@ namespace Taskcode.Probe
             if (indicator != null && !indicator.IsDisposed) indicator.Dispose();
             attachedParent = IntPtr.Zero;
             indicator = new IndicatorWindow();
+            indicator.ContextRequested += delegate
+            {
+                hoverSince = null; hoverProvider = -1;
+                if (!pinned) details.Hide();
+                if (!trayMenu.Visible) trayMenu.Show(Cursor.Position);
+            };
             indicator.MouseClick += delegate(object sender, MouseEventArgs e)
             {
                 if (e.Button != MouseButtons.Left) return;
@@ -376,6 +387,7 @@ namespace Taskcode.Probe
             status.Text = (expected == IntPtr.Zero ? "Overlay active" : "Embedded child window active") + " · " + layout.Dpi + " DPI · " + (theme.Dark ? "Dark" : "Light") + " taskbar\n" + (usage.IsLive ? "Account data · -- means unavailable or stale" : "DEMO · Recent-history scenario: " + usage.ScenarioName) + (saveError == null ? "" : "\n" + saveError);
             // The alpha surface has real transparent gaps between glyphs. Track the
             // complete indicator rectangle so those gaps do not reset hover dwell.
+            if (trayMenu.Visible) { hoverSince = null; hoverProvider = -1; return; }
             if (indicatorBounds.Contains(Cursor.Position))
             {
                 leftAt = DateTime.UtcNow;

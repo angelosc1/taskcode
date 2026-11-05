@@ -47,6 +47,8 @@ The indicator uses a 117% content scale, in addition to one monitor-DPI transfor
 
 Taskcode has a tray icon instead of a normal taskbar application button. Left-click the tray icon to open settings, or right-click for **Open settings** and **Exit**. Windows may place a new tray icon under the hidden-icons arrow. Closing or minimizing settings hides the window while the quota indicator keeps running. Running the executable again reopens the existing instance's settings rather than creating another instance.
 
+Right-clicking anywhere inside the taskbar indicator opens Taskcode's own settings/exit menu. It does not open Explorer's taskbar menu. Hover details pause while the menu is visible, and dismissing it refreshes the indicator without hiding it.
+
 **Start with Windows** is unchecked by default. Selecting it registers only Taskcode for the current user's sign-in, launching with `--tray` so settings stay hidden. Clearing it removes Taskcode's startup entry. Opening the app, running tests, and changing unrelated preferences do not enable startup. Windows may delay startup applications or override their execution through its own startup controls.
 
 The prototype runs as the current user, without administrator rights, and does not change taskbar settings. Connecting Claude installs a local status-line bridge; disconnect it before removing the app. Style, connection toggles, and interaction preferences are stored in `settings.xml` beside the executable. Deleting that file restores those preferences, but does not remove a Windows startup registration or Claude integration. Disable **Start with Windows** before moving or deleting the portable executable.
