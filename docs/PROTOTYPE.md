@@ -15,6 +15,8 @@ From the repository root in PowerShell or Command Prompt:
 
 Compiler warnings are treated as errors. Seven placement assertions run with `--test`; results appear in `out/probe/self-test.txt`.
 
+The same command also checks transparent background pixels, rendered content, and palette contrast for every style in both light and dark mode. It writes `out/probe/appearance-check.png`, an offscreen renderer comparison, not a screenshot of the Windows taskbar.
+
 ## Controls
 
 1. Keep **Lines (default)** or select **Essential** or **Blocks**.
@@ -24,6 +26,8 @@ Compiler warnings are treated as errors. Seven placement assertions run with `--
 5. Select **Overlay** to compare the fallback. If verified space is insufficient, the indicator hides and explains why.
 6. Uncheck **Show indicator on the primary taskbar** to pause it.
 7. Use **Exit prototype** to close the prototype and its indicator.
+
+The actual taskbar indicator has a per-pixel transparent background. Its colors follow the Windows taskbar's light/dark setting, including theme changes while running. The preview uses a solid sample background to make each palette visible; that sample background is not applied to the taskbar indicator. The control window itself still uses the prototype's dark appearance.
 
 The prototype runs as the current user, without administrator rights. It does not install itself, register startup tasks, or change taskbar settings. Preferences are stored in `settings.xml` beside the executable. Deleting that file while the prototype is closed restores default style and placement on the next run.
 

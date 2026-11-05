@@ -26,6 +26,9 @@ Taskbar class names are implementation details. A successful test on one Windows
 - Hides it when measurement is missing, stale, or too narrow.
 - Rechecks taskbar and tray geometry before positioning.
 - Declares per-monitor DPI awareness in its manifest.
+- Uses a per-pixel alpha surface for both placement modes, without painting a background rectangle.
+- Reads `SystemUsesLightTheme` for the taskbar palette and checks for changes once per second, without modifying Windows settings.
+- Uses pixel-sized indicator fonts with one DPI transform, avoiding double scaling.
 - Supports three styles, immediate preview, and local preferences.
 - Marks all values as demo data. No provider endpoints or account credentials are used.
 
@@ -39,6 +42,8 @@ Initial desktop: Windows build 26300; primary taskbar at 120 DPI. The legacy reg
 | --- | --- |
 | Compile with warnings treated as errors | Passed |
 | Seven placement assertions: fit, alignment, crowding, missing tray, vertical orientation, negative coordinates, and scaling | Passed |
+| Transparent renderer, visible content, and palette contrast | Passed for every style in both themes; offscreen comparison image reviewed |
+| Live alpha surface | Windows accepted the transparent Embedded surface at 120 DPI; current light-taskbar palette detected |
 | Embedded mode | Host verified that its parent handle matches the taskbar; UI reports active |
 | Overlay mode | Placement path activated; UI reports active |
 | Switch between all three styles | All three previews visually reviewed; no clipped provider values observed |
@@ -57,7 +62,8 @@ The desktop inspection tool captures the prototype control window and its relate
 ## Known limits
 
 - Primary horizontal taskbar only.
-- Dark appearance only; no automatic theme switching or true acrylic yet.
+- Indicator and details adapt to light/dark taskbar mode; the settings window remains dark.
+- The indicator is transparent rather than a separate acrylic surface. Exact blending on the actual taskbar still needs visual confirmation after this change.
 - Does not reserve space or move Windows controls; may hide on a crowded taskbar.
 - Overlay does not yet suppress itself for fullscreen applications.
 - Taskbar class names and accessibility structure can change with Windows updates.
@@ -75,6 +81,7 @@ Confirm hover behavior on the actual taskbar, then test Explorer recovery, auto-
 - [Microsoft: SetWindowPos](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowpos)
 - [Microsoft: UI Automation threading](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-threading)
 - [Microsoft: process DPI awareness](https://learn.microsoft.com/en-us/windows/win32/hidpi/setting-the-default-dpi-awareness-for-a-process)
+- [Microsoft: per-pixel layered windows](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-updatelayeredwindow)
 - [Taskband](https://github.com/mnismi/taskband)
 - [Deskband11Lib](https://github.com/airtaxi/Deskband11Lib)
 

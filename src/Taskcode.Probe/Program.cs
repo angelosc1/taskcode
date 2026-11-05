@@ -37,7 +37,8 @@ namespace Taskcode.Probe
                 Assert(!Placement.TrySlot(new Rectangle(0, 0, 48, 1080), tray, 0, 248, 34, 8, out slot), "Vertical taskbars are not supported by this probe.");
                 Assert(Placement.TrySlot(new Rectangle(-1920, 0, 1920, 48), new Rectangle(-270, 0, 270, 48), -1000, 248, 34, 8, out slot) && slot.Left == -526, "Negative monitor coordinates must work.");
                 Assert(Placement.TrySlot(new Rectangle(0, 1560, 2880, 60), new Rectangle(2475, 1560, 405, 60), 1800, 310, 43, 10, out slot) && slot.Right == 2465, "Scaled coordinates must preserve the tray gap.");
-                File.WriteAllText(output, "PASS: 7 placement assertions.\n");
+                RenderChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
+                File.WriteAllText(output, "PASS: 7 placement assertions.\nPASS: all 3 styles in light/dark palettes, transparent backgrounds, visible vector/text content, and palette contrast.\n");
                 return 0;
             }
             catch (Exception ex) { File.WriteAllText(output, "FAIL: " + ex.Message); return 1; }

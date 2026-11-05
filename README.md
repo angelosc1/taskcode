@@ -30,6 +30,7 @@ The Floating concept illustrates an overlay placement option if taskbar integrat
 - A details panel on hover.
 - Style selection under **Settings > Appearance > Indicator style**, with an immediate preview and a saved preference.
 - Indicator style independent of light or dark mode.
+- Transparent taskbar indicator with colors following the Windows taskbar theme.
 - Explicit states for stale data, connection errors, and unavailable quota information.
 
 ## Development
@@ -56,3 +57,5 @@ Interface suggestions, compatibility reports, and technical discussion are welco
 ## License
 
 Taskcode is licensed under the [MIT License](LICENSE).
+
+Provider artwork is covered separately in [third-party notices](THIRD-PARTY-NOTICES.md).

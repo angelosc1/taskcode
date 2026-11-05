@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Windows.Forms;
 
 namespace Taskcode.Probe
@@ -11,6 +12,7 @@ namespace Taskcode.Probe
     internal sealed class IndicatorView : Control
     {
         internal IndicatorStyle Style = IndicatorStyle.Lines;
+        internal TaskbarTheme Theme = TaskbarTheme.Read();
         internal static readonly Color Claude = Color.FromArgb(222, 157, 126), Codex = Color.FromArgb(144, 219, 188);
         internal IndicatorView()
         {
@@ -22,51 +24,63 @@ namespace Taskcode.Probe
             AccessibleRole = AccessibleRole.PushButton;
             TabStop = true;
         }
-        internal static int LogicalWidth(IndicatorStyle style) { return style == IndicatorStyle.Essential ? 188 : style == IndicatorStyle.Blocks ? 276 : 248; }
+        internal static int LogicalWidth(IndicatorStyle style) { return style == IndicatorStyle.Essential ? 166 : style == IndicatorStyle.Blocks ? 242 : 220; }
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            var g = e.Graphics;
-            float scale = Math.Min(Width / (float)LogicalWidth(Style), Height / 34f);
+            Draw(e.Graphics, ClientSize, Style, Theme);
+        }
+        internal static void Draw(Graphics g, Size size, IndicatorStyle style, TaskbarTheme theme)
+        {
+            var state = g.Save();
+            float scale = Math.Min(size.Width / (float)LogicalWidth(style), size.Height / 34f);
             g.ScaleTransform(scale, scale);
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-            using (var font = new Font("Segoe UI", 9f))
-            using (var bold = new Font("Segoe UI", 9f, FontStyle.Bold))
-            using (var small = new Font("Segoe UI", 6.5f, FontStyle.Bold))
-            using (var text = new SolidBrush(ForeColor))
-            using (var muted = new SolidBrush(Color.FromArgb(167, 174, 183)))
+            // Pixel units avoid applying the monitor's DPI twice when scaling.
+            // Grayscale antialiasing works on an alpha surface without colored fringes.
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+            using (var font = new Font("Segoe UI", 11f, FontStyle.Regular, GraphicsUnit.Pixel))
+            using (var bold = new Font("Segoe UI", 11f, FontStyle.Bold, GraphicsUnit.Pixel))
+            using (var small = new Font("Segoe UI", 7f, FontStyle.Regular, GraphicsUnit.Pixel))
+            using (var text = new SolidBrush(theme.Text))
+            using (var muted = new SolidBrush(theme.Muted))
             {
-                g.DrawString("DEMO", small, muted, 2, 11);
-                int second = Style == IndicatorStyle.Essential ? 112 : Style == IndicatorStyle.Blocks ? 158 : 144;
-                DrawProvider(g, font, bold, text, "Claude", "C", 68, Claude, 36);
-                DrawProvider(g, font, bold, text, "Codex", ">_", 42, Codex, second);
-                using (var pen = new Pen(Color.FromArgb(66, 71, 77))) g.DrawLine(pen, second - 10, 8, second - 10, 26);
+                g.DrawString("DEMO", small, muted, 2, 13);
+                int second = style == IndicatorStyle.Essential ? 106 : style == IndicatorStyle.Blocks ? 142 : 130;
+                DrawProvider(g, font, bold, text, "Claude", 68, theme.Claude, 32, style, theme);
+                DrawProvider(g, font, bold, text, "Codex", 42, theme.Codex, second, style, theme);
+                using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 9, 10, second - 9, 24);
             }
+            g.Restore(state);
         }
-        private void DrawProvider(Graphics g, Font font, Font bold, Brush text, string name, string symbol, int remaining, Color color, int x)
+        private static void DrawProvider(Graphics g, Font font, Font bold, Brush text, string name, int remaining, Color color, int x, IndicatorStyle style, TaskbarTheme theme)
         {
             using (var accent = new SolidBrush(color))
-            using (var track = new SolidBrush(Color.FromArgb(73, 79, 86)))
+            using (var track = new SolidBrush(theme.Track))
             {
-                if (Style == IndicatorStyle.Essential)
+                if (style == IndicatorStyle.Essential)
                 {
-                    g.DrawString(symbol, bold, accent, x, 8);
-                    g.DrawString(remaining + "%", bold, text, x + 24, 8);
+                    DrawMark(g, font, accent, name, x);
+                    g.DrawString(remaining + "%", font, text, x + 22, 10);
                     return;
                 }
-                if (Style == IndicatorStyle.Lines)
+                if (style == IndicatorStyle.Lines)
                 {
-                    g.DrawString(name, font, text, x, 1);
-                    g.DrawString(remaining + "%", bold, text, x + 59, 1);
-                    g.FillRectangle(track, x + 1, 25, 88, 3);
-                    g.FillRectangle(accent, x + 1, 25, 88 * remaining / 100f, 3);
+                    g.DrawString(name, font, text, x, 4);
+                    g.DrawString(remaining + "%", font, text, x + 49, 4);
+                    g.FillRectangle(track, x + 1, 24, 76, 2);
+                    g.FillRectangle(accent, x + 1, 24, 76 * remaining / 100f, 2);
                     return;
                 }
-                g.DrawString(symbol, bold, accent, x, 8);
-                for (int i = 0; i < 10; i++) g.FillRectangle(i < (int)Math.Round(remaining / 10.0) ? accent : track, x + 24 + i * 5, 13, 4, 9);
-                g.DrawString(remaining + "%", font, text, x + 78, 8);
+                DrawMark(g, font, accent, name, x);
+                for (int i = 0; i < 10; i++) g.FillRectangle(i < (int)Math.Round(remaining / 10.0) ? accent : track, x + 21 + i * 4.2f, 14, 3.2f, 6);
+                g.DrawString(remaining + "%", font, text, x + 67, 10);
             }
+        }
+        private static void DrawMark(Graphics g, Font font, Brush accent, string name, int x)
+        {
+            if (name == "Claude") BrandMarks.DrawClaude(g, accent, new RectangleF(x, 10, 14, 14));
+            else g.DrawString(">_", font, accent, x, 10);
         }
         protected override void OnKeyDown(KeyEventArgs e)
         {
@@ -77,24 +91,57 @@ namespace Taskcode.Probe
 
     internal sealed class IndicatorWindow : Form
     {
-        internal readonly IndicatorView View = new IndicatorView { Dock = DockStyle.Fill };
+        private Size renderedSize;
+        private IntPtr renderedHandle;
+        private IndicatorStyle renderedStyle;
+        private TaskbarTheme renderedTheme;
+        internal IndicatorStyle DisplayStyle;
+        internal TaskbarTheme Theme;
         internal IndicatorWindow()
         {
             Text = "Taskcode demo indicator";
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
             AutoScaleMode = AutoScaleMode.None;
-            Controls.Add(View);
+            AccessibleName = "Taskcode demo: Claude 68 percent remaining, Codex 42 percent remaining";
+            Cursor = Cursors.Hand;
         }
         protected override bool ShowWithoutActivation { get { return true; } }
         protected override CreateParams CreateParams
         {
-            get { var value = base.CreateParams; value.ExStyle |= 0x80; return value; }
+            get { var value = base.CreateParams; value.ExStyle |= 0x80000 | 0x80; return value; }
+        }
+        internal bool RenderAlpha()
+        {
+            if (renderedHandle == Handle && renderedSize == Size && renderedStyle == DisplayStyle && renderedTheme == Theme) return true;
+            if (Width <= 0 || Height <= 0) return false;
+            using (var bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppPArgb))
+            {
+                using (var graphics = Graphics.FromImage(bitmap)) IndicatorView.Draw(graphics, bitmap.Size, DisplayStyle, Theme);
+                IntPtr screen = Native.GetDC(IntPtr.Zero), memory = Native.CreateCompatibleDC(screen);
+                IntPtr image = bitmap.GetHbitmap(Color.FromArgb(0));
+                IntPtr previous = Native.SelectObject(memory, image);
+                try
+                {
+                    var size = new Native.WindowSize { Width = Width, Height = Height };
+                    var source = new Native.Point();
+                    var blend = new Native.Blend { SourceConstantAlpha = 255, AlphaFormat = 1 };
+                    if (!Native.UpdateLayeredWindow(Handle, screen, IntPtr.Zero, ref size, memory, ref source, 0, ref blend, 2)) return false;
+                    renderedHandle = Handle; renderedSize = Size; renderedStyle = DisplayStyle; renderedTheme = Theme;
+                    return true;
+                }
+                finally
+                {
+                    Native.SelectObject(memory, previous);
+                    Native.DeleteObject(image); Native.DeleteDC(memory); Native.ReleaseDC(IntPtr.Zero, screen);
+                }
+            }
         }
     }
 
     internal sealed class DetailWindow : Form
     {
+        private TaskbarTheme theme = TaskbarTheme.Read();
         internal DetailWindow()
         {
             Text = "Taskcode - demo details";
@@ -106,19 +153,43 @@ namespace Taskcode.Probe
             ForeColor = Color.FromArgb(238, 241, 245);
             Font = new Font("Segoe UI", 10f);
             KeyPreview = true;
-            AddText("Taskcode", 18, 14, 15, FontStyle.Bold, ForeColor);
+            AddText("Taskcode", 18, 14, 13, FontStyle.Bold, ForeColor);
             AddText("DEMO DATA  /  Remaining quota", 18, 49, 9, FontStyle.Regular, Color.LightGray);
-            AddText("Claude                                      68%", 18, 84, 11, FontStyle.Bold, IndicatorView.Claude);
+            AddText("Claude", 42, 84, 10, FontStyle.Bold, IndicatorView.Claude);
+            AddText("68%", 270, 84, 10, FontStyle.Bold, IndicatorView.Claude);
             AddText("5-hour window · resets in 2h 14m\nWeekly · 81% remaining", 18, 115, 9, FontStyle.Regular, ForeColor);
-            AddText("Codex                                       42%", 18, 174, 11, FontStyle.Bold, IndicatorView.Codex);
+            AddText(">_", 18, 174, 10, FontStyle.Bold, IndicatorView.Codex);
+            AddText("Codex", 42, 174, 10, FontStyle.Bold, IndicatorView.Codex);
+            AddText("42%", 270, 174, 10, FontStyle.Bold, IndicatorView.Codex);
             AddText("5-hour window · resets in 1h 08m\nWeekly · 63% remaining", 18, 205, 9, FontStyle.Regular, ForeColor);
             AddText("Sample values only. No accounts connected.", 18, 262, 8, FontStyle.Regular, Color.LightGray);
             KeyDown += delegate(object sender, KeyEventArgs e) { if (e.KeyCode == Keys.Escape) Hide(); };
             FormClosing += delegate(object sender, FormClosingEventArgs e) { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } };
+            ApplyTheme(theme);
         }
         private void AddText(string text, int x, int y, float size, FontStyle style, Color color)
         {
-            Controls.Add(new Label { Text = text, Location = new Point(x, y), AutoSize = true, Font = new Font("Segoe UI", size, style), ForeColor = color });
+            string role = color == IndicatorView.Claude ? "claude" : color == IndicatorView.Codex ? "codex" : color == Color.LightGray ? "muted" : "text";
+            Controls.Add(new Label { Text = text, Location = new Point(x, y), AutoSize = true, Font = new Font("Segoe UI", size, style), ForeColor = color, Tag = role });
+        }
+        internal void ApplyTheme(TaskbarTheme value)
+        {
+            if (theme == value && BackColor == value.PreviewBackground) return;
+            theme = value;
+            BackColor = value.PreviewBackground;
+            ForeColor = value.Text;
+            foreach (Control control in Controls)
+            {
+                string role = control.Tag as string;
+                control.ForeColor = role == "claude" ? value.Claude : role == "codex" ? value.Codex : role == "muted" ? value.Muted : value.Text;
+            }
+            Invalidate();
+        }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            using (var brush = new SolidBrush(theme.Claude)) BrandMarks.DrawClaude(e.Graphics, brush, new RectangleF(18, 88, 16, 16));
         }
         protected override bool ShowWithoutActivation { get { return true; } }
     }

@@ -20,6 +20,9 @@ namespace Taskcode.Probe
         private DateTime leftAt = DateTime.UtcNow;
         private bool pinned;
         private string saveError;
+        private TaskbarTheme theme = TaskbarTheme.Read();
+        private DateTime nextThemeCheck;
+        private DateTime? hoverSince;
 
         internal MainWindow()
         {
@@ -50,6 +53,8 @@ namespace Taskcode.Probe
             preview.Location = new Point(220, 237);
             preview.Size = new Size(IndicatorView.LogicalWidth(settings.Style), 34);
             preview.Style = settings.Style;
+            preview.Theme = theme;
+            preview.BackColor = theme.PreviewBackground;
             Controls.Add(preview);
             enabled.Text = "Show indicator on the primary taskbar";
             enabled.Location = new Point(26, 298);
@@ -104,18 +109,29 @@ namespace Taskcode.Probe
             if (indicator != null && !indicator.IsDisposed) indicator.Dispose();
             attachedParent = IntPtr.Zero;
             indicator = new IndicatorWindow();
-            indicator.View.Click += delegate { ShowDetails(true, false); };
-            indicator.View.MouseHover += delegate { ShowDetails(false, false); };
+            indicator.Click += delegate { ShowDetails(true, false); };
+            indicator.MouseHover += delegate { ShowDetails(false, false); };
         }
         private void PauseIndicator(string reason)
         {
             if (indicator != null && !indicator.IsDisposed) indicator.Hide();
             if (!pinned) details.Hide();
             indicatorBounds = Rectangle.Empty;
+            hoverSince = null;
             status.Text = reason + (saveError == null ? "" : "\n" + saveError);
         }
         private void TickLayout()
         {
+            if (DateTime.UtcNow >= nextThemeCheck)
+            {
+                nextThemeCheck = DateTime.UtcNow.AddSeconds(1);
+                var current = TaskbarTheme.Read();
+                if (current.Dark != theme.Dark || current.HighContrast != theme.HighContrast) theme = current;
+                preview.Theme = theme;
+                preview.BackColor = theme.PreviewBackground;
+                preview.Invalidate();
+                details.ApplyTheme(theme);
+            }
             if (!enabled.Checked) { PauseIndicator("Indicator paused. The preview is still available."); return; }
             var layout = watcher.Latest;
             if (layout == null) { PauseIndicator("Measuring available taskbar space..."); return; }
@@ -137,8 +153,8 @@ namespace Taskcode.Probe
             if (!Placement.TrySlot(layout.Bar, layout.Tray, layout.OccupiedRight, width, height, (int)Math.Round(8 * scale), out slot))
             { PauseIndicator("Not enough verified space before the system tray.\nTry Essential or reduce the number of taskbar buttons."); return; }
             if (indicator == null || indicator.IsDisposed || (attachedParent != IntPtr.Zero && !Native.IsWindow(indicator.Handle))) RecreateIndicator();
-            indicator.View.Style = settings.Style;
-            indicator.View.Invalidate();
+            indicator.DisplayStyle = settings.Style;
+            indicator.Theme = theme;
             IntPtr expected = settings.Mode == HostMode.Embedded ? layout.Taskbar : IntPtr.Zero;
             if (attachedParent != expected || Native.GetParent(indicator.Handle) != expected)
             {
@@ -155,10 +171,24 @@ namespace Taskcode.Probe
             if (!Native.SetWindowPos(indicator.Handle, expected == IntPtr.Zero ? Native.TopMost : Native.Top, point.X, point.Y, slot.Width, slot.Height, Native.NoActivate | Native.FrameChanged))
             { PauseIndicator("Windows rejected indicator placement."); return; }
             indicator.Show();
+            if (!indicator.RenderAlpha())
+            { PauseIndicator("Windows rejected the transparent surface. Try the other placement mode."); return; }
             indicatorBounds = slot;
-            status.Text = (expected == IntPtr.Zero ? "Overlay active" : "Embedded child window active") + " · " + layout.Dpi + " DPI\nDemo data only. Hover or click the indicator for details." + (saveError == null ? "" : "\n" + saveError);
-            if (indicatorBounds.Contains(Cursor.Position) || (details.Visible && details.Bounds.Contains(Cursor.Position))) leftAt = DateTime.UtcNow;
-            else if (!pinned && DateTime.UtcNow - leftAt > TimeSpan.FromMilliseconds(550)) details.Hide();
+            status.Text = (expected == IntPtr.Zero ? "Overlay active" : "Embedded child window active") + " · " + layout.Dpi + " DPI · " + (theme.Dark ? "Dark" : "Light") + " taskbar\nTransparent indicator. Demo data only." + (saveError == null ? "" : "\n" + saveError);
+            // The alpha surface has real transparent gaps between glyphs. Track the
+            // complete indicator rectangle so those gaps do not reset hover dwell.
+            if (indicatorBounds.Contains(Cursor.Position))
+            {
+                leftAt = DateTime.UtcNow;
+                if (!hoverSince.HasValue) hoverSince = DateTime.UtcNow;
+                if (!details.Visible && DateTime.UtcNow - hoverSince.Value > TimeSpan.FromMilliseconds(400)) ShowDetails(false, false);
+            }
+            else
+            {
+                hoverSince = null;
+                if (details.Visible && details.Bounds.Contains(Cursor.Position)) leftAt = DateTime.UtcNow;
+                else if (!pinned && DateTime.UtcNow - leftAt > TimeSpan.FromMilliseconds(550)) details.Hide();
+            }
         }
         private void ShowDetails(bool focus, bool fromPreview)
         {

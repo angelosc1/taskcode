@@ -7,7 +7,7 @@ if not exist "%taskcodeFramework%\csc.exe" (
   exit /b 1
 )
 if not exist "%taskcodeRoot%\out\probe" mkdir "%taskcodeRoot%\out\probe"
-"%taskcodeFramework%\csc.exe" /nologo /target:winexe /platform:x64 /optimize+ /warnaserror+ /out:"%taskcodeRoot%\out\probe\Taskcode.Probe.exe" /win32manifest:"%taskcodeRoot%\src\Taskcode.Probe\app.manifest" /reference:"%taskcodeFramework%\System.dll" /reference:"%taskcodeFramework%\System.Core.dll" /reference:"%taskcodeFramework%\System.Drawing.dll" /reference:"%taskcodeFramework%\System.Windows.Forms.dll" /reference:"%taskcodeFramework%\System.Xml.dll" /reference:"%taskcodeFramework%\WPF\UIAutomationClient.dll" /reference:"%taskcodeFramework%\WPF\UIAutomationTypes.dll" /reference:"%taskcodeFramework%\WPF\WindowsBase.dll" "%taskcodeRoot%\src\Taskcode.Probe\*.cs"
+"%taskcodeFramework%\csc.exe" /nologo /target:winexe /platform:x64 /optimize+ /warnaserror+ /out:"%taskcodeRoot%\out\probe\Taskcode.Probe.exe" /win32manifest:"%taskcodeRoot%\src\Taskcode.Probe\app.manifest" /reference:"%taskcodeFramework%\System.dll" /reference:"%taskcodeFramework%\System.Core.dll" /reference:"%taskcodeFramework%\System.Drawing.dll" /reference:"%taskcodeFramework%\System.Windows.Forms.dll" /reference:"%taskcodeFramework%\System.Xml.dll" /reference:"%taskcodeFramework%\WPF\UIAutomationClient.dll" /reference:"%taskcodeFramework%\WPF\UIAutomationTypes.dll" /reference:"%taskcodeFramework%\WPF\WindowsBase.dll" /reference:"%taskcodeFramework%\WPF\PresentationCore.dll" /resource:"%taskcodeRoot%\assets\providers\claude.svg",Taskcode.Claude.svg "%taskcodeRoot%\src\Taskcode.Probe\*.cs"
 if errorlevel 1 exit /b 1
 echo Built: out\probe\Taskcode.Probe.exe
 if /i "%~1"=="--test" (
