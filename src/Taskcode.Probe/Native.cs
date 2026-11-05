@@ -10,6 +10,8 @@ namespace Taskcode.Probe
         internal const long Child = 0x40000000L, Popup = 0x80000000L;
         internal static readonly IntPtr Top = IntPtr.Zero, TopMost = new IntPtr(-1);
         internal const uint NoActivate = 0x10, FrameChanged = 0x20;
+        [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW")]
+        internal static extern bool SystemParametersInfo(uint action, uint parameter, [MarshalAs(UnmanagedType.Bool)] out bool value, uint flags);
         [StructLayout(LayoutKind.Sequential)] internal struct Rect
         {
             internal int Left, Top, Right, Bottom;

@@ -10,6 +10,7 @@ namespace Taskcode.Probe
         private readonly Settings settings = Settings.Load();
         private readonly TaskbarWatcher watcher = new TaskbarWatcher();
         private readonly Timer timer = new Timer { Interval = 250 };
+        private readonly Timer animationTimer = new Timer { Interval = 33 };
         private readonly IndicatorView preview = new IndicatorView();
         private readonly Label status = new Label();
         private readonly CheckBox enabled = new CheckBox();
@@ -122,10 +123,19 @@ namespace Taskcode.Probe
             };
             enabled.CheckedChanged += delegate { TickLayout(); };
             timer.Tick += delegate { TickLayout(); };
+            animationTimer.Tick += delegate
+            {
+                int key = usage.PulseKey(DateTime.UtcNow, settings.ShowWeekly);
+                preview.PulseKey = key;
+                preview.Invalidate();
+                if (indicator != null && !indicator.IsDisposed && indicator.Visible)
+                { indicator.PulseKey = key; indicator.RenderAlpha(); }
+                if (key == 0) animationTimer.Stop();
+            };
             Shown += delegate { RecreateIndicator(); timer.Start(); };
             FormClosed += delegate
             {
-                timer.Stop(); timer.Dispose(); watcher.Dispose();
+                timer.Stop(); timer.Dispose(); animationTimer.Dispose(); watcher.Dispose();
                 if (indicator != null && !indicator.IsDisposed) indicator.Dispose();
                 details.Dispose();
             };
@@ -162,6 +172,7 @@ namespace Taskcode.Probe
         {
             usage.Tick(DateTime.UtcNow);
             int pulse = usage.PulseKey(DateTime.UtcNow, settings.ShowWeekly);
+            animationTimer.Enabled = pulse != 0 && enabled.Checked && SpeedArrows.IsAnimated;
             if (preview.PulseKey != pulse) { preview.PulseKey = pulse; preview.Invalidate(); }
             if (DateTime.UtcNow >= nextThemeCheck)
             {

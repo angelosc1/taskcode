@@ -53,6 +53,11 @@ namespace Taskcode.Probe
             Check(stable.EstimateAt(now.AddSeconds(3)).Level == 3, "Three confirmed readings must change the level.");
             stable.Observe(now.AddSeconds(40), 77, start, end);
             Check(stable.EstimateAt(now.AddSeconds(40)).State == SpeedState.Calculating, "A long sampling gap must restart calibration.");
+            Check(SpeedArrows.OpacityAt(0, 0) > 0.99, "The first filled arrow must start at full brightness.");
+            Check(SpeedArrows.OpacityAt(0.2, 1) > SpeedArrows.OpacityAt(0.2, 0), "Brightness must progress from the first arrow to the second.");
+            Check(SpeedArrows.OpacityAt(0.4, 2) > SpeedArrows.OpacityAt(0.4, 1), "Brightness must progress from the second arrow to the third.");
+            Check(Math.Abs(SpeedArrows.OpacityAt(0.625, 0) - 0.2) < 0.000001, "Fade must keep a faint arrow visible for counting.");
+            Check(Math.Abs(SpeedArrows.OpacityAt(1.25, 0) - SpeedArrows.OpacityAt(0, 0)) < 0.000001, "Animation must loop without a brightness discontinuity.");
         }
         private static UsageSpeed Seed(DateTime now, double remaining, DateTime start, DateTime end, double ratio)
         {

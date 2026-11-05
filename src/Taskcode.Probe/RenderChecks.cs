@@ -9,6 +9,21 @@ namespace Taskcode.Probe
     {
         internal static void Run(string directory)
         {
+            using (var animation = new Bitmap(720, 320))
+            using (var canvas = Graphics.FromImage(animation))
+            using (var font = new Font("Segoe UI", 10f, FontStyle.Regular, GraphicsUnit.Pixel))
+            {
+                for (int column = 0; column < 6; column++)
+                for (int palette = 0; palette < 2; palette++)
+                {
+                    var theme = TaskbarTheme.Create(palette == 0);
+                    using (var background = new SolidBrush(theme.PreviewBackground)) canvas.FillRectangle(background, column * 120, palette * 160, 120, 160);
+                    using (var text = new SolidBrush(theme.Text)) canvas.DrawString((column * 0.2).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + "s", font, text, column * 120 + 20, palette * 160 + 12);
+                    for (int count = 1; count <= 3; count++)
+                        SpeedArrows.Draw(canvas, theme.Codex, count, new RectangleF(column * 120 + 22, palette * 160 + 20 + count * 32, 42, 12), column * 0.2);
+                }
+                animation.Save(Path.Combine(directory, "animation-check.png"), ImageFormat.Png);
+            }
             foreach (int pulse in new[] { 0, 121 })
             using (var board = new Bitmap(960, 650))
             using (var canvas = Graphics.FromImage(board))

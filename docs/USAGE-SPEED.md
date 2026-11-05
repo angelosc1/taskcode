@@ -2,7 +2,7 @@
 
 ## Meaning
 
-The details panel estimates time to quota exhaustion from recent observations, separately for every provider and quota period. These right-pointing chevrons are different from the downward elapsed-time marker:
+The details panel estimates time to quota exhaustion from recent observations, separately for every provider and quota period. These filled, right-pointing arrows are different from the downward elapsed-time marker:
 
 | Indicator | Projected time to exhaustion divided by time until reset |
 | --- | --- |
@@ -26,7 +26,9 @@ Real provider refresh frequency will limit responsiveness. Polling an unchanged 
 
 ## Taskbar hints
 
-A confirmed level change displays chevrons for eight seconds, without blinking, resizing the strip, or replacing its quota values. Five-hour hints appear for the relevant provider. Weekly hints appear only when the optional weekly indicator is enabled. In the two-row layout, five-hour chevrons appear above the provider symbol and weekly chevrons below it. In the single-period Lines style, chevrons appear just above the thin meter.
+A confirmed level change displays filled arrows for eight seconds without resizing the strip or replacing its quota values. Five-hour hints appear for the relevant provider. Weekly hints appear only when the optional weekly indicator is enabled. In the two-row layout, five-hour arrows appear above the provider symbol and weekly arrows below it. In the single-period Lines style, arrows appear just above the thin meter.
+
+The arrowheads are vector shapes with subtly rounded corners and narrow spacing. Their opacity follows a smooth 1.25-second cycle, with peaks delayed from left to right. A faint 20% baseline keeps the arrow count discernible. Rendering targets 30 frames per second, independently of data sampling. Taskbar animation runs only during the temporary hint; details animation runs only while the panel is visible and has active speed estimates. The Windows client-area animation preference and high-contrast mode are respected by showing static shapes instead.
 
 ## Testing the prototype
 
@@ -34,4 +36,4 @@ Use **Simulate speed** in the control window to cycle through Mixed, Comfortable
 
 The demo initially seeds fifteen seconds of past activity. Subsequent synthetic observations arrive every two seconds with unchanged quota, so the simulated burst naturally decays to Idle when no new activity is simulated. Clicking the button seeds another history and previews changed arrow counts immediately. This explicit preview does not bypass stabilization for real incoming observations.
 
-The self-test includes twenty-one assertions for rates, projections, warmup, stale and invalid readings, interpolation, resets, resuming from Idle, and three-observation stabilization. Offscreen artifacts include `details-check.png` and `speed-check.png` for visual review in both themes.
+The self-test includes twenty-six assertions for rates, projections, warmup, stale and invalid readings, interpolation, resets, resuming from Idle, three-observation stabilization, and sequential opacity transitions. Offscreen artifacts include `details-check.png`, `speed-check.png`, and an `animation-check.png` contact sheet for visual review in both themes.

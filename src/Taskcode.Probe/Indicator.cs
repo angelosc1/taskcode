@@ -82,21 +82,16 @@ namespace Taskcode.Probe
         }
         private static void DrawSpeedHint(Graphics g, Color color, int x, IndicatorStyle style, bool weekly, int shortLevel, int weeklyLevel)
         {
-            if (!weekly && style == IndicatorStyle.Lines) DrawChevrons(g, color, shortLevel, x + 70, 18);
+            if (!weekly && style == IndicatorStyle.Lines) DrawFilledArrows(g, color, shortLevel, x + 70, 18);
             else
             {
-                DrawChevrons(g, color, shortLevel, x, 1);
-                if (weekly) DrawChevrons(g, color, weeklyLevel, x, 28);
+                DrawFilledArrows(g, color, shortLevel, x, 1);
+                if (weekly) DrawFilledArrows(g, color, weeklyLevel, x, 28);
             }
         }
-        private static void DrawChevrons(Graphics g, Color color, int count, float x, float y)
+        private static void DrawFilledArrows(Graphics g, Color color, int count, float x, float y)
         {
-            using (var pen = new Pen(color, 1.1f))
-                for (int index = 0; index < Math.Min(3, count); index++)
-                {
-                    float left = x + (16 - count * 5) / 2f + index * 5;
-                    g.DrawLines(pen, new[] { new PointF(left, y), new PointF(left + 2.5f, y + 2.5f), new PointF(left, y + 5) });
-                }
+            SpeedArrows.Draw(g, color, count, new RectangleF(x - 0.5f, y, 17, 6));
         }
         private static void DrawWeeklyProvider(Graphics g, Font font, Brush text, string name, int shortRemaining, int weeklyRemaining, Color color, int x, IndicatorStyle style, TaskbarTheme theme)
         {
@@ -171,6 +166,8 @@ namespace Taskcode.Probe
         private TaskbarTheme renderedTheme;
         private bool renderedWeekly;
         private int renderedPulse;
+        private int renderedFrame;
+        private bool renderedMotion;
         internal IndicatorStyle DisplayStyle;
         internal bool ShowWeekly;
         internal int PulseKey;
@@ -191,7 +188,9 @@ namespace Taskcode.Probe
         }
         internal bool RenderAlpha()
         {
-            if (renderedHandle == Handle && renderedSize == Size && renderedStyle == DisplayStyle && renderedTheme == Theme && renderedWeekly == ShowWeekly && renderedPulse == PulseKey) return true;
+            bool motion = PulseKey != 0 && SpeedArrows.IsAnimated;
+            int frame = motion ? SpeedArrows.Frame : 0;
+            if (renderedHandle == Handle && renderedSize == Size && renderedStyle == DisplayStyle && renderedTheme == Theme && renderedWeekly == ShowWeekly && renderedPulse == PulseKey && renderedFrame == frame && renderedMotion == motion) return true;
             if (Width <= 0 || Height <= 0) return false;
             using (var bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppPArgb))
             {
@@ -205,7 +204,7 @@ namespace Taskcode.Probe
                     var source = new Native.Point();
                     var blend = new Native.Blend { SourceConstantAlpha = 255, AlphaFormat = 1 };
                     if (!Native.UpdateLayeredWindow(Handle, screen, IntPtr.Zero, ref size, memory, ref source, 0, ref blend, 2)) return false;
-                    renderedHandle = Handle; renderedSize = Size; renderedStyle = DisplayStyle; renderedTheme = Theme; renderedWeekly = ShowWeekly; renderedPulse = PulseKey;
+                    renderedHandle = Handle; renderedSize = Size; renderedStyle = DisplayStyle; renderedTheme = Theme; renderedWeekly = ShowWeekly; renderedPulse = PulseKey; renderedFrame = frame; renderedMotion = motion;
                     return true;
                 }
                 finally
@@ -223,7 +222,7 @@ namespace Taskcode.Probe
         internal string Provider;
         internal TaskbarTheme Theme;
         internal Label Caption;
-        internal Label SpeedCaption;
+        internal SpeedReadout SpeedCaption;
         internal DemoReading Reading;
         internal DateTime RenderTimeUtc = DateTime.UtcNow;
         internal QuotaBar()
@@ -260,6 +259,7 @@ namespace Taskcode.Probe
     {
         private TaskbarTheme theme = TaskbarTheme.Read();
         private readonly Timer periodTimer = new Timer { Interval = 1000 };
+        private readonly Timer animationTimer = new Timer { Interval = 33 };
         private readonly ToolTip hints = new ToolTip();
         private readonly UsageDemo usage;
         internal DetailWindow(UsageDemo usage = null)
@@ -288,8 +288,13 @@ namespace Taskcode.Probe
             KeyDown += delegate(object sender, KeyEventArgs e) { if (e.KeyCode == Keys.Escape) Hide(); };
             FormClosing += delegate(object sender, FormClosingEventArgs e) { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } };
             periodTimer.Tick += delegate { RefreshPeriods(); };
-            VisibleChanged += delegate { periodTimer.Enabled = Visible; if (Visible) RefreshPeriods(); };
-            Disposed += delegate { periodTimer.Dispose(); hints.Dispose(); };
+            animationTimer.Tick += delegate
+            {
+                foreach (Control control in Controls)
+                { var readout = control as SpeedReadout; if (readout != null && readout.HasArrows) readout.Invalidate(); }
+            };
+            VisibleChanged += delegate { periodTimer.Enabled = Visible; if (Visible) RefreshPeriods(); else animationTimer.Stop(); };
+            Disposed += delegate { periodTimer.Dispose(); animationTimer.Dispose(); hints.Dispose(); };
             ApplyTheme(theme);
         }
         private Label AddText(string text, int x, int y, float size, FontStyle style, Color color)
@@ -307,7 +312,8 @@ namespace Taskcode.Probe
             AddText(window, 18, y, 9, FontStyle.Regular, ForeColor);
             AddText(remaining + "%", 270, y, 9, FontStyle.Bold, color);
             var caption = AddText("", 18, y + 41, 8, FontStyle.Regular, Color.LightGray);
-            var speedCaption = AddText("", 18, y + 59, 8.5f, FontStyle.Regular, color);
+            var speedCaption = new SpeedReadout { Location = new Point(18, y + 57), Size = new Size(294, 24), ForeColor = color, Tag = provider.ToLowerInvariant() };
+            Controls.Add(speedCaption);
             Controls.Add(new QuotaBar
             {
                 Location = new Point(12, y + 20), Size = new Size(306, 17),
@@ -321,6 +327,7 @@ namespace Taskcode.Probe
         {
             var now = DateTime.UtcNow;
             usage.Tick(now);
+            bool hasArrows = false;
             foreach (Control control in Controls)
             {
                 var bar = control as QuotaBar;
@@ -328,7 +335,10 @@ namespace Taskcode.Probe
                 bar.RenderTimeUtc = now;
                 bar.Caption.Text = bar.Period.CaptionAt(now);
                 var speed = bar.Reading.Speed.EstimateAt(now);
-                bar.SpeedCaption.Text = speed.Summary;
+                bar.SpeedCaption.Estimate = speed;
+                bar.SpeedCaption.AccessibleName = (speed.State == SpeedState.Active ? speed.Level + " speed arrows. " : "") + speed.Summary;
+                bar.SpeedCaption.Invalidate();
+                hasArrows |= bar.SpeedCaption.HasArrows;
                 hints.SetToolTip(bar.SpeedCaption, speed.State == SpeedState.Active ? speed.PointsPerHour.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " percentage points/hour · 15-second recent window. Estimate, not a guarantee." : speed.Summary);
                 var elapsed = bar.Period.ElapsedAt(now);
                 string description = Math.Round(bar.Period.UsedFraction * 100) + "% quota used; " +
@@ -337,6 +347,7 @@ namespace Taskcode.Probe
                 hints.SetToolTip(bar, description);
                 bar.Invalidate();
             }
+            animationTimer.Enabled = Visible && hasArrows && SpeedArrows.IsAnimated;
         }
         internal void ApplyTheme(TaskbarTheme value)
         {
@@ -349,6 +360,7 @@ namespace Taskcode.Probe
                 var bar = control as QuotaBar;
                 if (bar != null) { bar.Theme = value; bar.BackColor = value.PreviewBackground; bar.Invalidate(); continue; }
                 string role = control.Tag as string;
+                control.BackColor = value.PreviewBackground;
                 control.ForeColor = role == "claude" ? value.Claude : role == "codex" ? value.Codex : role == "muted" ? value.Muted : value.Text;
             }
             Invalidate();

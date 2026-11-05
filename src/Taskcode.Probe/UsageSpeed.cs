@@ -22,10 +22,10 @@ namespace Taskcode.Probe
                 if (State == SpeedState.Unavailable) return "Usage estimate unavailable";
                 if (State != SpeedState.Active || !TimeToExhaustion.HasValue) return "Calculating recent usage...";
                 var span = TimeToExhaustion.Value;
-                if (span <= TimeSpan.Zero) return "›››  Quota exhausted";
+                if (span <= TimeSpan.Zero) return "Quota exhausted";
                 string duration = span.TotalDays >= 1 ? span.TotalDays.ToString("0.0", CultureInfo.InvariantCulture) + "d" :
                     span.TotalHours >= 1 ? (int)span.TotalHours + "h " + span.Minutes + "m" : Math.Max(1, (int)Math.Ceiling(span.TotalMinutes)) + "m";
-                return new string('›', Level) + "  ~" + duration + " of use at this rate";
+                return "~" + duration + " of use at this rate";
             }
         }
     }
