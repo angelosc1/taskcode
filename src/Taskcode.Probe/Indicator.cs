@@ -264,13 +264,13 @@ namespace Taskcode.Probe
             using (var fill = new SolidBrush(Provider == "claude" ? Theme.Claude : Theme.Codex))
             using (var marker = new SolidBrush(Theme.Text))
             {
-                // Both the used-quota boundary and the time marker advance left to right.
-                // Remaining quota stays colored to the right of the consumed portion.
+                // Match the taskbar: remaining quota fills from the left.
+                // The independent time marker still advances left to right.
                 const float inset = 6;
                 float width = Math.Max(0, Width - 2 * inset);
-                float used = (float)Period.UsedFraction * width;
+                float remaining = (1 - (float)Period.UsedFraction) * width;
                 e.Graphics.FillRectangle(track, inset, 9, width, 6);
-                e.Graphics.FillRectangle(fill, inset + used, 9, width - used, 6);
+                e.Graphics.FillRectangle(fill, inset, 9, remaining, 6);
                 var elapsed = Period.ElapsedAt(RenderTimeUtc);
                 if (elapsed.HasValue)
                 {

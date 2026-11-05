@@ -19,7 +19,7 @@ The same command also checks transparent background pixels, rendered content, an
 
 The details panel includes separate remaining-quota bars for each provider's five-hour and weekly windows. Normal startup reads account data. `--demo` runs an explicit offline preview with Claude 68% / 81% and Codex 42% / 63%. The build writes `out/probe/details-check.png` using sample data for an offscreen layout review in both themes.
 
-Each detail bar has a downward arrow tracking elapsed time. The arrow moves from the start at reset to the end at renewal, independently of quota consumption. Muted space on the left means used quota; provider-colored space on the right means remaining quota. A consumption boundary beyond the arrow means usage is ahead of time. Hover over a bar for the numeric pace comparison.
+Each detail bar has a downward arrow tracking elapsed time. The arrow moves from the start at reset to the end at renewal, independently of quota consumption. Provider-colored space on the left means remaining quota; muted space on the right means used quota, matching the taskbar. Hover over a bar for the numeric budget-pace comparison; the arrow tracks elapsed time while the fill tracks remaining quota.
 
 Elapsed time and reset countdowns refresh once per second while the details panel is visible. Live periods use source reset timestamps. Demo dates are simulated only in offline preview mode. The self-test includes ten assertions for time boundaries, unavailable timing, and pace comparisons.
 
