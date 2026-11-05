@@ -29,6 +29,10 @@ The same command also checks transparent background pixels, rendered content, an
 
 The actual taskbar indicator has a per-pixel transparent background. Its colors follow the Windows taskbar's light/dark setting, including theme changes while running. The preview uses a solid sample background to make each palette visible; that sample background is not applied to the taskbar indicator. The control window itself still uses the prototype's dark appearance.
 
+Placement changes how the indicator is hosted, not its appearance: **Embedded** attaches it as a child of the taskbar window; **Overlay** keeps it as an independent window over the same measured gap. Both modes use the same style, transparent surface, and theme palette.
+
+Indicator text uses 11-pixel logical fonts with one DPI transform. Icons, meter sizes, and spacing are adjusted separately from text size.
+
 The prototype runs as the current user, without administrator rights. It does not install itself, register startup tasks, or change taskbar settings. Preferences are stored in `settings.xml` beside the executable. Deleting that file while the prototype is closed restores default style and placement on the next run.
 
 The `out/` directory is ignored by Git. Do not commit local executable files or settings.

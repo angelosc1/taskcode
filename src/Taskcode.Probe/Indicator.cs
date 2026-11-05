@@ -24,7 +24,7 @@ namespace Taskcode.Probe
             AccessibleRole = AccessibleRole.PushButton;
             TabStop = true;
         }
-        internal static int LogicalWidth(IndicatorStyle style) { return style == IndicatorStyle.Essential ? 166 : style == IndicatorStyle.Blocks ? 242 : 220; }
+        internal static int LogicalWidth(IndicatorStyle style) { return style == IndicatorStyle.Essential ? 188 : style == IndicatorStyle.Blocks ? 278 : 246; }
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
@@ -46,10 +46,10 @@ namespace Taskcode.Probe
             using (var muted = new SolidBrush(theme.Muted))
             {
                 g.DrawString("DEMO", small, muted, 2, 13);
-                int second = style == IndicatorStyle.Essential ? 106 : style == IndicatorStyle.Blocks ? 142 : 130;
-                DrawProvider(g, font, bold, text, "Claude", 68, theme.Claude, 32, style, theme);
+                int second = style == IndicatorStyle.Essential ? 120 : style == IndicatorStyle.Blocks ? 162 : 148;
+                DrawProvider(g, font, bold, text, "Claude", 68, theme.Claude, 36, style, theme);
                 DrawProvider(g, font, bold, text, "Codex", 42, theme.Codex, second, style, theme);
-                using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 9, 10, second - 9, 24);
+                using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 11, 9, second - 11, 25);
             }
             g.Restore(state);
         }
@@ -61,26 +61,26 @@ namespace Taskcode.Probe
                 if (style == IndicatorStyle.Essential)
                 {
                     DrawMark(g, font, accent, name, x);
-                    g.DrawString(remaining + "%", font, text, x + 22, 10);
+                    g.DrawString(remaining + "%", font, text, x + 26, 10);
                     return;
                 }
                 if (style == IndicatorStyle.Lines)
                 {
                     g.DrawString(name, font, text, x, 4);
-                    g.DrawString(remaining + "%", font, text, x + 49, 4);
-                    g.FillRectangle(track, x + 1, 24, 76, 2);
-                    g.FillRectangle(accent, x + 1, 24, 76 * remaining / 100f, 2);
+                    g.DrawString(remaining + "%", font, text, x + 53, 4);
+                    g.FillRectangle(track, x + 1, 24, 88, 3);
+                    g.FillRectangle(accent, x + 1, 24, 88 * remaining / 100f, 3);
                     return;
                 }
                 DrawMark(g, font, accent, name, x);
-                for (int i = 0; i < 10; i++) g.FillRectangle(i < (int)Math.Round(remaining / 10.0) ? accent : track, x + 21 + i * 4.2f, 14, 3.2f, 6);
-                g.DrawString(remaining + "%", font, text, x + 67, 10);
+                for (int i = 0; i < 10; i++) g.FillRectangle(i < (int)Math.Round(remaining / 10.0) ? accent : track, x + 25 + i * 5, 13, 4, 8);
+                g.DrawString(remaining + "%", font, text, x + 78, 10);
             }
         }
         private static void DrawMark(Graphics g, Font font, Brush accent, string name, int x)
         {
-            if (name == "Claude") BrandMarks.DrawClaude(g, accent, new RectangleF(x, 10, 14, 14));
-            else g.DrawString(">_", font, accent, x, 10);
+            if (name == "Claude") BrandMarks.DrawClaude(g, accent, new RectangleF(x, 9, 16, 16));
+            else using (var symbol = new Font("Segoe UI", 13f, FontStyle.Regular, GraphicsUnit.Pixel)) g.DrawString(">_", symbol, accent, x, 8);
         }
         protected override void OnKeyDown(KeyEventArgs e)
         {
