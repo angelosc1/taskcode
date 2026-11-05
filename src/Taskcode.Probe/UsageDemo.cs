@@ -67,6 +67,11 @@ namespace Taskcode.Probe
             var reading = Readings[index];
             return !IsLive ? reading.Period.Remaining : reading.Available && now < reading.Period.EndUtc && now - reading.ObservedUtc <= TimeSpan.FromMinutes(index < 2 ? 6 : 2) ? reading.Period.Remaining : -1;
         }
+        internal int DisplayUsed(int index, DateTime now)
+        {
+            int remaining = DisplayValue(index, now);
+            return remaining < 0 ? -1 : 100 - Math.Max(0, Math.Min(100, remaining));
+        }
         internal string ProviderStatus(int provider, DateTime now)
         {
             if (!IsLive) return "DEMO DATA / Simulated history";

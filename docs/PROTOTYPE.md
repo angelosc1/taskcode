@@ -17,9 +17,9 @@ Compiler warnings are treated as errors. Seven placement assertions run with `--
 
 The same command also checks transparent background pixels, rendered content, and palette contrast for every style in both light and dark mode. It writes `out/probe/appearance-check.png`, an offscreen renderer comparison, not a screenshot of the Windows taskbar.
 
-The details panel includes separate remaining-quota bars for each provider's five-hour and weekly windows. Normal startup reads account data. `--demo` runs an explicit offline preview with Claude 68% / 81% and Codex 42% / 63%. The build writes `out/probe/details-check.png` using sample data for an offscreen layout review in both themes.
+The details panel includes separate consumed-quota bars for each provider's five-hour and weekly windows. Normal startup reads account data. `--demo` runs an explicit offline preview with Claude 32% / 19% used and Codex 58% / 37% used. The build writes `out/probe/details-check.png` using sample data for an offscreen layout review in both themes.
 
-Each detail bar has a downward arrow tracking elapsed time. The arrow moves from the start at reset to the end at renewal, independently of quota consumption. Provider-colored space on the left means remaining quota; muted space on the right means used quota, matching the taskbar. Hover over a bar for the numeric budget-pace comparison; the arrow tracks elapsed time while the fill tracks remaining quota.
+Each detail bar has a downward arrow tracking elapsed time. The arrow moves from the start at reset to the end at renewal, independently of quota consumption. Provider-colored space on the left means consumed quota; muted space on the right means available quota, matching the taskbar. Hover over a bar for the numeric budget-pace comparison; the arrow tracks elapsed time while the fill tracks consumed quota.
 
 Elapsed time and reset countdowns refresh once per second while the details panel is visible. Live periods use source reset timestamps. Demo dates are simulated only in offline preview mode. The self-test includes ten assertions for time boundaries, unavailable timing, and pace comparisons.
 
@@ -35,7 +35,7 @@ The details also show animated, filled consumption-speed arrows and approximate 
 6. Uncheck **Show indicator on the primary taskbar** to pause it.
 7. Use **Exit Taskcode** or the tray menu's **Exit** to close the app and its indicator.
 
-**Show weekly quota in the indicator** is an optional setting, unchecked by default. Enabling it shows two compact rows per provider, labeled `5h` and `7d`, with provider symbols and remaining percentages. Lines adds thin meters; Blocks uses segmented meters; Essential shows numbers. Disabling it restores the original five-hour-only layout. The preference is saved, the preview updates immediately, and the detail panel continues to include weekly quota in either mode. The optional layout uses a little more horizontal space while retaining the same height.
+**Show weekly quota in the indicator** is an optional setting, unchecked by default. Enabling it shows two compact rows per provider, labeled `5h` and `7d`, with provider symbols and consumed percentages. Lines adds thin meters; Blocks uses segmented meters; Essential shows numbers. Disabling it restores the original five-hour-only layout. The preference is saved, the preview updates immediately, and the detail panel continues to include weekly quota in either mode. The optional layout uses a little more horizontal space while retaining the same height.
 
 The taskbar indicator retains its transparent appearance. The settings menu, previews, details, and connection windows follow the Windows taskbar's light/dark palette, including theme changes while running. A subtle filled preview area makes the indicator readable inside settings; that fill is not applied to the taskbar strip.
 

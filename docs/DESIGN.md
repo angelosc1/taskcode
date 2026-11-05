@@ -20,9 +20,9 @@ Settings use a compact borderless menu with Appearance, Accounts, and General na
 
 ## Data semantics
 
-Percentages represent remaining quota and must be labeled accordingly in the details panel. Claude and Codex use the same convention. Do not mix remaining and consumed percentages.
+Percentages represent consumed quota and must be labeled accordingly in the details panel. Claude and Codex use the same convention. Do not mix remaining and consumed percentages.
 
-Detail bars use the same fill convention as the taskbar: colored remaining quota on the left and muted used quota on the right. A downward arrow independently advances from left to right as the period elapses. Its position represents elapsed time, while the colored bar represents remaining quota; their percentages use opposite directions. Use the tooltip's numeric budget-pace comparison to compare consumption with elapsed time.
+Detail bars use the same fill convention as the taskbar: colored consumed quota on the left and muted available quota on the right. A downward arrow advances from left to right as the period elapses. If the colored fill extends beyond the arrow, consumption is ahead of the time budget; if it stays behind, consumption is below that pace.
 
 The arrow starts at zero on reset and reaches the end at renewal. Unknown or invalid time bounds hide the arrow instead of guessing. Expired data stays at the end until a new period is supplied. The tooltip includes used quota, elapsed time, and budget pace; a two-percentage-point tolerance is treated as on pace.
 
@@ -33,7 +33,7 @@ Offline preview values are simulated; normal startup uses the selected account s
 ## Behavior
 
 - Hover opens a panel containing only the selected provider's five-hour and weekly details. The hit regions follow each rendered style and optional weekly layout. Moving to another provider replaces the current panel; both panels are never shown together.
-- Details use a compact borderless card: provider identity, remaining percentages, quota bars/time markers, reset countdowns, and available recent-speed estimates. App titles, native close controls, legends, source labels, and footers are omitted. Source/freshness and pace explanations remain in tooltips and accessibility descriptions.
+- Details use a compact borderless card: provider identity, consumed percentages, quota bars/time markers, reset countdowns, and available recent-speed estimates. App titles, native close controls, legends, source labels, and footers are omitted. Source/freshness and pace explanations remain in tooltips and accessibility descriptions.
 - Both hover-opened and click-opened cards close after the pointer leaves the card and its trigger, with a 220ms grace period for crossing the small gap. Click does not pin the card. Escape also dismisses it.
 - **Open details** defaults to **Hover**, with a saved **Click only** alternative. Click-only mode disables both native hover events and dwell-based opening. Changing the preference dismisses the current panel immediately.
 - Support click and keyboard access rather than relying exclusively on hover.

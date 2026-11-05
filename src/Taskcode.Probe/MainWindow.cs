@@ -235,7 +235,7 @@ namespace Taskcode.Probe
             Show();
             Activate();
         }
-        internal void RequestExit() { exiting = true; Close(); }
+        internal void RequestExit() { Program.RecordLifecycle("Exit requested"); exiting = true; Close(); }
         private void Save()
         {
             try { settings.Save(); saveError = null; }

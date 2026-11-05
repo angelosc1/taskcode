@@ -31,7 +31,7 @@ Windows discovery supports the standard npm x64 installation, `.local/bin/codex.
 
 ## Freshness and identity
 
-The strip shows remaining subscription quota, not context size or API spending. Unknown, missing, expired, disconnected, and stale readings appear as `--`. Codex readings expire after two minutes; Claude readings after six minutes to allow its five-minute usage interval. Hover the provider identity or percentage in Details for source/freshness information; connection messages remain in settings. Successful responses with missing windows clear them; temporary failures preserve recent readings until they expire.
+The strip shows consumed subscription quota, not context size or API spending. Unknown, missing, expired, disconnected, and stale readings appear as `--`. Codex readings expire after two minutes; Claude readings after six minutes to allow its five-minute usage interval. Hover the provider identity or percentage in Details for source/freshness information; connection messages remain in settings. Successful responses with missing windows clear them; temporary failures preserve recent readings until they expire.
 
 Only provider-reported 300-minute and 10,080-minute Codex windows are assigned to five-hour and weekly quota. Reset timestamps anchor time markers. Fractional percentages are retained for speed estimates; displayed values are rounded. Repainting, polling an unchanged cache, and signing in do not fabricate consumption samples.
 
@@ -44,3 +44,5 @@ Taskcode currently monitors one selected account per provider. You can switch be
 `--demo`, self-tests, and tray tests use offline values and never authenticate or change Claude settings. `--login-flow-check` starts and cancels a separate Codex browser request without opening a browser or authenticating. The ignored output contains only sanitized results. `--connect-claude` installs the optional bridge; it is not an account sign-in command.
 
 The adapted Codenotch behavior is MIT-licensed and credited in [third-party notices](../THIRD-PARTY-NOTICES.md). Taskcode remains an experimental Windows application; endpoint availability and official client versions determine what can be read.
+
+Connection errors preserve recent readings until their freshness limit, then show `--`; polling retries automatically. Codex cleanup tolerates a broken app-server pipe. Unexpected process errors are recorded in `lifecycle.log` beside the executable using exception types and method names only, without messages, credentials, or service responses. The log also distinguishes requested exits from an unexpected error.

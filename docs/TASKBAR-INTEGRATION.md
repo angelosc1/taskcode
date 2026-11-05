@@ -47,7 +47,7 @@ Initial desktop: Windows build 26300; primary taskbar at 120 DPI. The legacy reg
 | Embedded mode | Host verified that its parent handle matches the taskbar; UI reports active |
 | Overlay mode | Placement path activated; UI reports active |
 | Switch between all three styles | All three previews visually reviewed; no clipped provider values observed |
-| Open demo details | English provider names, remaining percentages, reset times, and sample-data disclosure visually reviewed |
+| Open demo details | English provider names, consumed percentages, reset times, and sample-data disclosure visually reviewed |
 | Keyboard navigation | Style selector reached with Shift+Tab and reset with Home |
 | Pause indicator | Paused state observed |
 | Restore settings after restart | Blocks and Overlay restored successfully |

@@ -169,6 +169,7 @@ namespace Taskcode.Probe
             if (owned == null) return;
             try { if (!owned.HasExited) { owned.StandardInput.Close(); if (!owned.WaitForExit(500)) owned.Kill(); } }
             catch (InvalidOperationException) { }
+            catch (IOException) { } // A disconnected app-server pipe must not escape recovery cleanup.
             catch (System.ComponentModel.Win32Exception) { }
             finally { owned.Dispose(); }
         }

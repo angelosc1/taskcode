@@ -8,6 +8,20 @@ namespace Taskcode.Probe
     {
         internal static void Run()
         {
+            var usage = new UsageDemo();
+            var nowUtc = DateTime.UtcNow;
+            Check(usage.DisplayUsed(0, nowUtc) == 32 && usage.DisplayUsed(3, nowUtc) == 37, "Demo percentages must show consumption.");
+            usage.BeginLive();
+            Check(usage.DisplayUsed(0, nowUtc) == -1, "Unknown consumption must stay unavailable, not become 101 percent.");
+            foreach (int remaining in new[] { 100, 75, 0 })
+            using (var bar = new QuotaBar { Size = new Size(280, 17), Provider = "claude", Theme = TaskbarTheme.Create(true), Period = new QuotaPeriod { Remaining = remaining } })
+            using (var image = new Bitmap(280, 17))
+            {
+                bar.DrawToBitmap(image, bar.ClientRectangle);
+                float boundary = 6 + 268 * (100 - remaining) / 100f;
+                foreach (int x in new[] { 10, 60, 100, 270 })
+                    Check(image.GetPixel(x, 11).ToArgb() == (x < boundary ? bar.Theme.Claude : bar.Theme.Track).ToArgb(), "Colored fill must grow with consumed quota, including empty and exhausted limits.");
+            }
             foreach (int provider in new[] { 0, 1 })
             using (var panel = new DetailWindow(new UsageDemo(), provider) { Location = new Point(-30000, -30000), HoverAnchor = new Rectangle(-30000, -29750, 150, 40) })
             {

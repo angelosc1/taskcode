@@ -48,7 +48,7 @@ Settings open from the tray icon as a compact menu that follows the taskbar them
 
 - Windows, with initial validation on Windows 11.
 - Claude and Codex.
-- Remaining quota and reset times, when available from the data source.
+- Consumed quota and reset times, when available from the data source.
 - A details panel on hover.
 - Style selection under **Indicator style** in the settings window, with an immediate preview and a saved preference.
 - Indicator style independent of light or dark mode.

@@ -41,9 +41,39 @@ namespace Taskcode.Probe
                 }
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
+                // Preserve normal fatal-error behavior, but record safe diagnostics first.
+                Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
+                AppDomain.CurrentDomain.UnhandledException += delegate(object sender, UnhandledExceptionEventArgs e)
+                {
+                    var error = e.ExceptionObject as Exception;
+                    RecordLifecycle("Unhandled " + (error == null ? "unknown error" : error.GetType().FullName));
+                    if (error != null)
+                    {
+                        var frames = new System.Diagnostics.StackTrace(error, false).GetFrames();
+                        if (frames != null) foreach (var frame in frames)
+                        {
+                            var method = frame.GetMethod();
+                            if (method != null) RecordLifecycle("at " + (method.DeclaringType == null ? "" : method.DeclaringType.FullName + ".") + method.Name);
+                        }
+                    }
+                };
+                RecordLifecycle("Started");
                 Application.Run(new MainWindow(startInTray, Array.IndexOf(args, "--demo") < 0));
+                RecordLifecycle("Message loop ended");
             }
             return 0;
+        }
+        internal static void RecordLifecycle(string entry)
+        {
+            try
+            {
+                string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "lifecycle.log");
+                if (File.Exists(path) && new FileInfo(path).Length > 65536) File.Delete(path);
+                File.AppendAllText(path, DateTime.UtcNow.ToString("o") + " " + entry + Environment.NewLine);
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            catch (System.Security.SecurityException) { }
         }
         private static int TraySelfTest()
         {
