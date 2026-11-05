@@ -18,6 +18,10 @@ Proposed setting: **Settings > Appearance > Indicator style**. Selection provide
 
 Percentages represent remaining quota and must be labeled accordingly in the details panel. Claude and Codex use the same convention. Do not mix remaining and consumed percentages.
 
+In the details panel, quota bars also compare consumption with elapsed time. The muted segment on the left is used quota; the colored segment on the right is remaining quota. The boundary between them advances with consumption. A downward arrow above each bar advances from left to right as the period elapses. When the consumption boundary is to the right of the arrow, usage is faster than the period's time pace. This direction applies to the detail bars; taskbar indicators continue to show remaining quota in their compact styles.
+
+The arrow starts at zero on reset and reaches the end at renewal. Unknown or invalid time bounds hide the arrow instead of guessing. Expired data stays at the end until a new period is supplied. The tooltip includes used quota, elapsed time, and budget pace; a two-percentage-point tolerance is treated as on pace.
+
 The main indicator must identify which quota window it represents. This choice depends on the actual available data and has not yet been validated. The mockup uses a five-hour window as the primary value, with weekly limits in the details panel.
 
 Mockup values are not real readings. Displayed reset times and limits will depend on each provider's data source.

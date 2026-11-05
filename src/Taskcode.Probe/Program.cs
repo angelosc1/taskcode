@@ -37,8 +37,23 @@ namespace Taskcode.Probe
                 Assert(!Placement.TrySlot(new Rectangle(0, 0, 48, 1080), tray, 0, 248, 34, 8, out slot), "Vertical taskbars are not supported by this probe.");
                 Assert(Placement.TrySlot(new Rectangle(-1920, 0, 1920, 48), new Rectangle(-270, 0, 270, 48), -1000, 248, 34, 8, out slot) && slot.Left == -526, "Negative monitor coordinates must work.");
                 Assert(Placement.TrySlot(new Rectangle(0, 1560, 2880, 60), new Rectangle(2475, 1560, 405, 60), 1800, 310, 43, 10, out slot) && slot.Right == 2465, "Scaled coordinates must preserve the tray gap.");
+                var start = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                var period = new QuotaPeriod { StartUtc = start, EndUtc = start.AddHours(5), Remaining = 50 };
+                Assert(period.ElapsedAt(start.AddHours(-1)) == 0, "Time before reset must clamp to the start.");
+                Assert(period.ElapsedAt(start) == 0, "Time marker must start at zero on reset.");
+                Assert(period.ElapsedAt(start.AddHours(2.5)) == 0.5, "Half the period must put the time marker in the middle.");
+                Assert(period.ElapsedAt(start.AddHours(5)) == 1, "Time marker must reach the end at renewal.");
+                Assert(period.ElapsedAt(start.AddHours(6)) == 1, "Expired periods must clamp to the end.");
+                Assert(period.PaceAt(start.AddHours(2.5)) == "On budget pace", "Matching consumption and time must be on pace.");
+                period.Remaining = 20;
+                Assert(period.PaceAt(start.AddHours(2.5)) == "Above budget pace", "Faster consumption must be above budget pace.");
+                period.Remaining = 80;
+                Assert(period.PaceAt(start.AddHours(2.5)) == "Below budget pace", "Slower consumption must be below budget pace.");
+                Assert(period.ElapsedAt(DateTime.SpecifyKind(start, DateTimeKind.Unspecified)) == null, "Ambiguous timestamps must not generate a marker.");
+                period.EndUtc = start;
+                Assert(period.ElapsedAt(start) == null, "Invalid period bounds must hide the marker.");
                 RenderChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
-                File.WriteAllText(output, "PASS: 7 placement assertions.\nPASS: all 3 styles in light/dark palettes, transparent backgrounds, visible vector/text content, and palette contrast.\n");
+                File.WriteAllText(output, "PASS: 7 placement assertions.\nPASS: 10 time-progress and budget-pace assertions.\nPASS: all 3 styles in light/dark palettes, transparent backgrounds, visible vector/text content, and palette contrast.\n");
                 return 0;
             }
             catch (Exception ex) { File.WriteAllText(output, "FAIL: " + ex.Message); return 1; }

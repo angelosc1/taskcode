@@ -143,9 +143,11 @@ namespace Taskcode.Probe
 
     internal sealed class QuotaBar : Control
     {
-        internal int Remaining;
+        internal QuotaPeriod Period;
         internal string Provider;
         internal TaskbarTheme Theme;
+        internal Label Caption;
+        internal DateTime RenderTimeUtc = DateTime.UtcNow;
         internal QuotaBar()
         {
             SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
@@ -156,9 +158,22 @@ namespace Taskcode.Probe
             base.OnPaint(e);
             using (var track = new SolidBrush(Theme.Track))
             using (var fill = new SolidBrush(Provider == "claude" ? Theme.Claude : Theme.Codex))
+            using (var marker = new SolidBrush(Theme.Text))
             {
-                e.Graphics.FillRectangle(track, ClientRectangle);
-                e.Graphics.FillRectangle(fill, 0, 0, Width * Math.Max(0, Math.Min(100, Remaining)) / 100f, Height);
+                // Both the used-quota boundary and the time marker advance left to right.
+                // Remaining quota stays colored to the right of the consumed portion.
+                const float inset = 6;
+                float width = Math.Max(0, Width - 2 * inset);
+                float used = (float)Period.UsedFraction * width;
+                e.Graphics.FillRectangle(track, inset, 9, width, 6);
+                e.Graphics.FillRectangle(fill, inset + used, 9, width - used, 6);
+                var elapsed = Period.ElapsedAt(RenderTimeUtc);
+                if (elapsed.HasValue)
+                {
+                    float x = inset + width * (float)elapsed.Value;
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    e.Graphics.FillPolygon(marker, new[] { new PointF(x - 3.5f, 0), new PointF(x + 3.5f, 0), new PointF(x, 7) });
+                }
             }
         }
     }
@@ -166,13 +181,15 @@ namespace Taskcode.Probe
     internal sealed class DetailWindow : Form
     {
         private TaskbarTheme theme = TaskbarTheme.Read();
+        private readonly Timer periodTimer = new Timer { Interval = 1000 };
+        private readonly ToolTip hints = new ToolTip();
         internal DetailWindow()
         {
             Text = "Taskcode - demo details";
             FormBorderStyle = FormBorderStyle.FixedToolWindow;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.Manual;
-            ClientSize = new Size(330, 400);
+            ClientSize = new Size(330, 436);
             BackColor = Color.FromArgb(29, 32, 36);
             ForeColor = Color.FromArgb(238, 241, 245);
             Font = new Font("Segoe UI", 10f);
@@ -180,34 +197,59 @@ namespace Taskcode.Probe
             AddText("Taskcode", 18, 14, 13, FontStyle.Bold, ForeColor);
             AddText("DEMO DATA  /  Remaining quota", 18, 49, 9, FontStyle.Regular, Color.LightGray);
             AddText("Claude", 42, 80, 10, FontStyle.Bold, IndicatorView.Claude);
-            AddQuota("Claude", "5-hour window", 68, 110, "Resets in 2h 14m");
-            AddQuota("Claude", "Weekly", 81, 172, null);
-            AddText(">_", 18, 230, 10, FontStyle.Bold, IndicatorView.Codex);
-            AddText("Codex", 42, 230, 10, FontStyle.Bold, IndicatorView.Codex);
-            AddQuota("Codex", "5-hour window", 42, 260, "Resets in 1h 08m");
-            AddQuota("Codex", "Weekly", 63, 322, null);
-            AddText("Sample values only. No accounts connected.", 18, 378, 8, FontStyle.Regular, Color.LightGray);
+            var now = DateTime.UtcNow;
+            AddQuota("Claude", "5-hour window", 68, 110, now.AddHours(-5).AddHours(2).AddMinutes(14), now.AddHours(2).AddMinutes(14));
+            AddQuota("Claude", "Weekly", 81, 172, now.AddDays(-1.75), now.AddDays(5.25));
+            AddText(">_", 18, 244, 10, FontStyle.Bold, IndicatorView.Codex);
+            AddText("Codex", 42, 244, 10, FontStyle.Bold, IndicatorView.Codex);
+            AddQuota("Codex", "5-hour window", 42, 274, now.AddHours(-5).AddHours(1).AddMinutes(8), now.AddHours(1).AddMinutes(8));
+            AddQuota("Codex", "Weekly", 63, 336, now.AddDays(-1.96), now.AddDays(5.04));
+            AddText("Gray: used · Color: remaining · ▼: time", 18, 398, 8, FontStyle.Regular, Color.LightGray);
+            AddText("Sample values and periods. No accounts connected.", 18, 417, 7.5f, FontStyle.Regular, Color.LightGray);
             KeyDown += delegate(object sender, KeyEventArgs e) { if (e.KeyCode == Keys.Escape) Hide(); };
             FormClosing += delegate(object sender, FormClosingEventArgs e) { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } };
+            periodTimer.Tick += delegate { RefreshPeriods(); };
+            VisibleChanged += delegate { periodTimer.Enabled = Visible; if (Visible) RefreshPeriods(); };
+            Disposed += delegate { periodTimer.Dispose(); hints.Dispose(); };
             ApplyTheme(theme);
         }
-        private void AddText(string text, int x, int y, float size, FontStyle style, Color color)
+        private Label AddText(string text, int x, int y, float size, FontStyle style, Color color)
         {
             string role = color == IndicatorView.Claude ? "claude" : color == IndicatorView.Codex ? "codex" : color == Color.LightGray ? "muted" : "text";
-            Controls.Add(new Label { Text = text, Location = new Point(x, y), AutoSize = true, Font = new Font("Segoe UI", size, style), ForeColor = color, Tag = role });
+            var label = new Label { Text = text, Location = new Point(x, y), AutoSize = true, Font = new Font("Segoe UI", size, style), ForeColor = color, Tag = role };
+            Controls.Add(label);
+            return label;
         }
-        private void AddQuota(string provider, string window, int remaining, int y, string reset)
+        private void AddQuota(string provider, string window, int remaining, int y, DateTime startUtc, DateTime endUtc)
         {
             var color = provider == "Claude" ? IndicatorView.Claude : IndicatorView.Codex;
             AddText(window, 18, y, 9, FontStyle.Regular, ForeColor);
             AddText(remaining + "%", 270, y, 9, FontStyle.Bold, color);
+            var caption = AddText("", 18, y + 41, 8, FontStyle.Regular, Color.LightGray);
             Controls.Add(new QuotaBar
             {
-                Location = new Point(18, y + 25), Size = new Size(294, 6),
-                Remaining = remaining, Provider = provider.ToLowerInvariant(), Theme = theme,
+                Location = new Point(12, y + 20), Size = new Size(306, 17),
+                Period = new QuotaPeriod { Remaining = remaining, StartUtc = startUtc, EndUtc = endUtc },
+                Provider = provider.ToLowerInvariant(), Theme = theme, Caption = caption,
                 AccessibleName = provider + ", " + window + ", " + remaining + " percent remaining"
             });
-            if (reset != null) AddText(reset, 18, y + 38, 8, FontStyle.Regular, Color.LightGray);
+        }
+        private void RefreshPeriods()
+        {
+            var now = DateTime.UtcNow;
+            foreach (Control control in Controls)
+            {
+                var bar = control as QuotaBar;
+                if (bar == null) continue;
+                bar.RenderTimeUtc = now;
+                bar.Caption.Text = bar.Period.CaptionAt(now);
+                var elapsed = bar.Period.ElapsedAt(now);
+                string description = Math.Round(bar.Period.UsedFraction * 100) + "% quota used; " +
+                    (elapsed.HasValue ? Math.Round(elapsed.Value * 100) + "% time elapsed. " : "") + bar.Period.PaceAt(now) + ".";
+                bar.AccessibleDescription = description;
+                hints.SetToolTip(bar, description);
+                bar.Invalidate();
+            }
         }
         internal void ApplyTheme(TaskbarTheme value)
         {

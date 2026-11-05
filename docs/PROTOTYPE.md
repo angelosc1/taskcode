@@ -19,6 +19,10 @@ The same command also checks transparent background pixels, rendered content, an
 
 The details panel includes separate remaining-quota bars for each provider's five-hour and weekly windows. Sample values are Claude 68% / 81% and Codex 42% / 63%. The build also writes `out/probe/details-check.png` for an offscreen layout review of the panel in both themes.
 
+Each detail bar has a downward arrow tracking elapsed time. The arrow moves from the start at reset to the end at renewal, independently of quota consumption. Muted space on the left means used quota; provider-colored space on the right means remaining quota. A consumption boundary beyond the arrow means usage is ahead of time. Hover over a bar for the numeric pace comparison.
+
+Elapsed time and reset countdowns refresh once per second while the details panel is visible. Demo period dates are simulated at application startup, including the weekly periods. Real provider periods are not connected yet. The self-test includes ten assertions for time boundaries, unavailable timing, and pace comparisons.
+
 ## Controls
 
 1. Keep **Lines (default)** or select **Essential** or **Blocks**.
