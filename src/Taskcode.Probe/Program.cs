@@ -52,8 +52,9 @@ namespace Taskcode.Probe
                 Assert(period.ElapsedAt(DateTime.SpecifyKind(start, DateTimeKind.Unspecified)) == null, "Ambiguous timestamps must not generate a marker.");
                 period.EndUtc = start;
                 Assert(period.ElapsedAt(start) == null, "Invalid period bounds must hide the marker.");
+                SpeedChecks.Run();
                 RenderChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
-                File.WriteAllText(output, "PASS: 7 placement assertions.\nPASS: 10 time-progress and budget-pace assertions.\nPASS: all 3 styles in light/dark palettes, transparent backgrounds, visible vector/text content, and palette contrast.\n");
+                File.WriteAllText(output, "PASS: 7 placement assertions.\nPASS: 10 time-progress and budget-pace assertions.\nPASS: 21 recent-speed and projection assertions.\nPASS: all 3 styles in light/dark palettes, transparent backgrounds, visible vector/text content, and palette contrast.\n");
                 return 0;
             }
             catch (Exception ex) { File.WriteAllText(output, "FAIL: " + ex.Message); return 1; }

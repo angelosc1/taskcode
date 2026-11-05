@@ -14,7 +14,8 @@ namespace Taskcode.Probe
         private readonly Label status = new Label();
         private readonly CheckBox enabled = new CheckBox();
         private IndicatorWindow indicator;
-        private readonly DetailWindow details = new DetailWindow();
+        private readonly UsageDemo usage = new UsageDemo();
+        private readonly DetailWindow details;
         private IntPtr attachedParent;
         private Rectangle indicatorBounds;
         private DateTime leftAt = DateTime.UtcNow;
@@ -26,6 +27,7 @@ namespace Taskcode.Probe
 
         internal MainWindow()
         {
+            details = new DetailWindow(usage);
             Text = "Taskcode - positioning prototype";
             StartPosition = FormStartPosition.CenterScreen;
             ClientSize = new Size(590, 567);
@@ -78,6 +80,15 @@ namespace Taskcode.Probe
             var exit = new Button { Text = "Exit prototype", Location = new Point(415, 507), Size = new Size(145, 34) };
             Controls.Add(detailsButton);
             Controls.Add(exit);
+            var simulate = new Button { Text = "Simulate speed", Location = new Point(185, 507), Size = new Size(210, 34) };
+            Controls.Add(simulate);
+            simulate.Click += delegate
+            {
+                usage.Cycle(DateTime.UtcNow);
+                details.RefreshUsage();
+                TickLayout();
+                ShowDetails(true, true);
+            };
             detailsButton.Click += delegate { ShowDetails(true, true); };
             preview.Click += delegate { ShowDetails(true, true); };
             exit.Click += delegate { Close(); };
@@ -149,6 +160,9 @@ namespace Taskcode.Probe
         }
         private void TickLayout()
         {
+            usage.Tick(DateTime.UtcNow);
+            int pulse = usage.PulseKey(DateTime.UtcNow, settings.ShowWeekly);
+            if (preview.PulseKey != pulse) { preview.PulseKey = pulse; preview.Invalidate(); }
             if (DateTime.UtcNow >= nextThemeCheck)
             {
                 nextThemeCheck = DateTime.UtcNow.AddSeconds(1);
@@ -182,6 +196,7 @@ namespace Taskcode.Probe
             if (indicator == null || indicator.IsDisposed || (attachedParent != IntPtr.Zero && !Native.IsWindow(indicator.Handle))) RecreateIndicator();
             indicator.DisplayStyle = settings.Style;
             indicator.ShowWeekly = settings.ShowWeekly;
+            indicator.PulseKey = pulse;
             indicator.AccessibleName = IndicatorView.AccessibleText(settings.ShowWeekly);
             indicator.Theme = theme;
             IntPtr expected = settings.Mode == HostMode.Embedded ? layout.Taskbar : IntPtr.Zero;
@@ -203,7 +218,7 @@ namespace Taskcode.Probe
             if (!indicator.RenderAlpha())
             { PauseIndicator("Windows rejected the transparent surface. Try the other placement mode."); return; }
             indicatorBounds = slot;
-            status.Text = (expected == IntPtr.Zero ? "Overlay active" : "Embedded child window active") + " · " + layout.Dpi + " DPI · " + (theme.Dark ? "Dark" : "Light") + " taskbar\nTransparent indicator. Demo data only." + (saveError == null ? "" : "\n" + saveError);
+            status.Text = (expected == IntPtr.Zero ? "Overlay active" : "Embedded child window active") + " · " + layout.Dpi + " DPI · " + (theme.Dark ? "Dark" : "Light") + " taskbar\nDEMO · Recent-history scenario: " + usage.ScenarioName + (saveError == null ? "" : "\n" + saveError);
             // The alpha surface has real transparent gaps between glyphs. Track the
             // complete indicator rectangle so those gaps do not reset hover dwell.
             if (indicatorBounds.Contains(Cursor.Position))

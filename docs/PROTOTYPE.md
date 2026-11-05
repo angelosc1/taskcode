@@ -23,6 +23,8 @@ Each detail bar has a downward arrow tracking elapsed time. The arrow moves from
 
 Elapsed time and reset countdowns refresh once per second while the details panel is visible. Demo period dates are simulated at application startup, including the weekly periods. Real provider periods are not connected yet. The self-test includes ten assertions for time boundaries, unavailable timing, and pace comparisons.
 
+The details also show recent-consumption chevrons and approximate time to exhaustion, using a 15-second observation window. Use **Simulate speed** to preview changes. These are simulated histories, not real account readings. See [recent consumption speed](USAGE-SPEED.md) for thresholds, stabilization, data-quality handling, and the temporary taskbar hints.
+
 ## Controls
 
 1. Keep **Lines (default)** or select **Essential** or **Blocks**.

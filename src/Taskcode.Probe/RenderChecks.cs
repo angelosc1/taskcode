@@ -9,6 +9,7 @@ namespace Taskcode.Probe
     {
         internal static void Run(string directory)
         {
+            foreach (int pulse in new[] { 0, 121 })
             using (var board = new Bitmap(960, 650))
             using (var canvas = Graphics.FromImage(board))
             using (var label = new Font("Segoe UI", 11f, FontStyle.Regular, GraphicsUnit.Pixel))
@@ -26,7 +27,7 @@ namespace Taskcode.Probe
                         var size = new Size((int)Math.Round(IndicatorView.LogicalWidth(style, weekly) * 1.25), (int)Math.Round(IndicatorView.LogicalHeight * 1.25));
                         using (var surface = new Bitmap(size.Width, size.Height, PixelFormat.Format32bppPArgb))
                         {
-                            using (var graphics = Graphics.FromImage(surface)) IndicatorView.Draw(graphics, size, style, theme, weekly);
+                            using (var graphics = Graphics.FromImage(surface)) IndicatorView.Draw(graphics, size, style, theme, weekly, pulse);
                             if (surface.GetPixel(0, 0).A != 0 || surface.GetPixel(surface.Width - 1, surface.Height - 1).A != 0)
                                 throw new InvalidOperationException("Indicator background must remain fully transparent.");
                             int painted = 0;
@@ -38,7 +39,7 @@ namespace Taskcode.Probe
                         }
                     }
                 }
-                board.Save(Path.Combine(directory, "appearance-check.png"), ImageFormat.Png);
+                board.Save(Path.Combine(directory, pulse == 0 ? "appearance-check.png" : "speed-check.png"), ImageFormat.Png);
             }
             using (var details = new DetailWindow())
             {
