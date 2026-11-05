@@ -12,6 +12,7 @@ namespace Taskcode.Probe
     internal sealed class IndicatorView : Control
     {
         internal IndicatorStyle Style = IndicatorStyle.Lines;
+        internal bool ShowWeekly;
         internal TaskbarTheme Theme = TaskbarTheme.Read();
         internal static readonly Color Claude = Color.FromArgb(222, 157, 126), Codex = Color.FromArgb(144, 219, 188);
         internal IndicatorView()
@@ -25,18 +26,27 @@ namespace Taskcode.Probe
             TabStop = true;
         }
         private const float IndicatorScale = 1.17f;
-        private static int ContentWidth(IndicatorStyle style) { return style == IndicatorStyle.Essential ? 156 : style == IndicatorStyle.Blocks ? 246 : 214; }
-        internal static int LogicalWidth(IndicatorStyle style) { return (int)Math.Ceiling(ContentWidth(style) * IndicatorScale); }
+        private static int ContentWidth(IndicatorStyle style, bool showWeekly)
+        {
+            if (showWeekly) return style == IndicatorStyle.Essential ? 184 : 268;
+            return style == IndicatorStyle.Essential ? 156 : style == IndicatorStyle.Blocks ? 246 : 214;
+        }
+        internal static int LogicalWidth(IndicatorStyle style, bool showWeekly = false) { return (int)Math.Ceiling(ContentWidth(style, showWeekly) * IndicatorScale); }
+        internal static string AccessibleText(bool weekly)
+        {
+            return weekly ? "Taskcode demo: Claude 5 hours 68 percent, weekly 81 percent remaining; Codex 5 hours 42 percent, weekly 63 percent remaining" :
+                "Taskcode demo: Claude 68 percent remaining, Codex 42 percent remaining";
+        }
         internal static int LogicalHeight { get { return (int)Math.Ceiling(34 * IndicatorScale); } }
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            Draw(e.Graphics, ClientSize, Style, Theme);
+            Draw(e.Graphics, ClientSize, Style, Theme, ShowWeekly);
         }
-        internal static void Draw(Graphics g, Size size, IndicatorStyle style, TaskbarTheme theme)
+        internal static void Draw(Graphics g, Size size, IndicatorStyle style, TaskbarTheme theme, bool showWeekly = false)
         {
             var state = g.Save();
-            float scale = Math.Min(size.Width / (float)ContentWidth(style), size.Height / 34f);
+            float scale = Math.Min(size.Width / (float)ContentWidth(style, showWeekly), size.Height / 34f);
             g.ScaleTransform(scale, scale);
             // Remove the former demo-label gutter while enlarging the entire content.
             g.TranslateTransform(-32, 0);
@@ -48,12 +58,51 @@ namespace Taskcode.Probe
             using (var bold = new Font("Segoe UI", 11f, FontStyle.Bold, GraphicsUnit.Pixel))
             using (var text = new SolidBrush(theme.Text))
             {
-                int second = style == IndicatorStyle.Essential ? 120 : style == IndicatorStyle.Blocks ? 162 : 148;
-                DrawProvider(g, font, bold, text, "Claude", 68, theme.Claude, 36, style, theme);
-                DrawProvider(g, font, bold, text, "Codex", 42, theme.Codex, second, style, theme);
-                using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 11, 9, second - 11, 25);
+                if (showWeekly)
+                {
+                    int second = style == IndicatorStyle.Essential ? 132 : 172;
+                    DrawWeeklyProvider(g, font, text, "Claude", 68, 81, theme.Claude, 36, style, theme);
+                    DrawWeeklyProvider(g, font, text, "Codex", 42, 63, theme.Codex, second, style, theme);
+                    using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 12, 3, second - 12, 31);
+                }
+                else
+                {
+                    int second = style == IndicatorStyle.Essential ? 120 : style == IndicatorStyle.Blocks ? 162 : 148;
+                    DrawProvider(g, font, bold, text, "Claude", 68, theme.Claude, 36, style, theme);
+                    DrawProvider(g, font, bold, text, "Codex", 42, theme.Codex, second, style, theme);
+                    using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 11, 9, second - 11, 25);
+                }
             }
             g.Restore(state);
+        }
+        private static void DrawWeeklyProvider(Graphics g, Font font, Brush text, string name, int shortRemaining, int weeklyRemaining, Color color, int x, IndicatorStyle style, TaskbarTheme theme)
+        {
+            using (var accent = new SolidBrush(color))
+            using (var track = new SolidBrush(theme.Track))
+            using (var muted = new SolidBrush(theme.Muted))
+            using (var periodFont = new Font("Segoe UI", 8f, FontStyle.Regular, GraphicsUnit.Pixel))
+            {
+                DrawMark(g, font, accent, name, x);
+                for (int row = 0; row < 2; row++)
+                {
+                    int y = row * 18;
+                    int remaining = row == 0 ? shortRemaining : weeklyRemaining;
+                    g.DrawString(row == 0 ? "5h" : "7d", periodFont, muted, x + 23, y + 2);
+                    if (style == IndicatorStyle.Essential)
+                    { g.DrawString(remaining + "%", font, text, x + 43, y); continue; }
+                    if (style == IndicatorStyle.Lines)
+                    {
+                        g.FillRectangle(track, x + 40, y + 6, 44, 3);
+                        g.FillRectangle(accent, x + 40, y + 6, 44 * remaining / 100f, 3);
+                    }
+                    else
+                    {
+                        for (int block = 0; block < 10; block++)
+                            g.FillRectangle(block < (int)Math.Round(remaining / 10.0) ? accent : track, x + 40 + block * 4.4f, y + 5, 3.4f, 5);
+                    }
+                    g.DrawString(remaining + "%", font, text, x + 91, y);
+                }
+            }
         }
         private static void DrawProvider(Graphics g, Font font, Font bold, Brush text, string name, int remaining, Color color, int x, IndicatorStyle style, TaskbarTheme theme)
         {
@@ -97,7 +146,9 @@ namespace Taskcode.Probe
         private IntPtr renderedHandle;
         private IndicatorStyle renderedStyle;
         private TaskbarTheme renderedTheme;
+        private bool renderedWeekly;
         internal IndicatorStyle DisplayStyle;
+        internal bool ShowWeekly;
         internal TaskbarTheme Theme;
         internal IndicatorWindow()
         {
@@ -115,11 +166,11 @@ namespace Taskcode.Probe
         }
         internal bool RenderAlpha()
         {
-            if (renderedHandle == Handle && renderedSize == Size && renderedStyle == DisplayStyle && renderedTheme == Theme) return true;
+            if (renderedHandle == Handle && renderedSize == Size && renderedStyle == DisplayStyle && renderedTheme == Theme && renderedWeekly == ShowWeekly) return true;
             if (Width <= 0 || Height <= 0) return false;
             using (var bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppPArgb))
             {
-                using (var graphics = Graphics.FromImage(bitmap)) IndicatorView.Draw(graphics, bitmap.Size, DisplayStyle, Theme);
+                using (var graphics = Graphics.FromImage(bitmap)) IndicatorView.Draw(graphics, bitmap.Size, DisplayStyle, Theme, ShowWeekly);
                 IntPtr screen = Native.GetDC(IntPtr.Zero), memory = Native.CreateCompatibleDC(screen);
                 IntPtr image = bitmap.GetHbitmap(Color.FromArgb(0));
                 IntPtr previous = Native.SelectObject(memory, image);
@@ -129,7 +180,7 @@ namespace Taskcode.Probe
                     var source = new Native.Point();
                     var blend = new Native.Blend { SourceConstantAlpha = 255, AlphaFormat = 1 };
                     if (!Native.UpdateLayeredWindow(Handle, screen, IntPtr.Zero, ref size, memory, ref source, 0, ref blend, 2)) return false;
-                    renderedHandle = Handle; renderedSize = Size; renderedStyle = DisplayStyle; renderedTheme = Theme;
+                    renderedHandle = Handle; renderedSize = Size; renderedStyle = DisplayStyle; renderedTheme = Theme; renderedWeekly = ShowWeekly;
                     return true;
                 }
                 finally

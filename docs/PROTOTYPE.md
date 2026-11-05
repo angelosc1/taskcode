@@ -33,6 +33,8 @@ Elapsed time and reset countdowns refresh once per second while the details pane
 6. Uncheck **Show indicator on the primary taskbar** to pause it.
 7. Use **Exit prototype** to close the prototype and its indicator.
 
+**Show weekly quota in the indicator** is an optional setting, unchecked by default. Enabling it shows two compact rows per provider, labeled `5h` and `7d`, with provider symbols and remaining percentages. Lines adds thin meters; Blocks uses segmented meters; Essential shows numbers. Disabling it restores the original five-hour-only layout. The preference is saved, the preview updates immediately, and the detail panel continues to include weekly quota in either mode. The optional layout uses a little more horizontal space while retaining the same height.
+
 The actual taskbar indicator has a per-pixel transparent background. Its colors follow the Windows taskbar's light/dark setting, including theme changes while running. The preview uses a solid sample background to make each palette visible; that sample background is not applied to the taskbar indicator. The control window itself still uses the prototype's dark appearance.
 
 Placement changes how the indicator is hosted, not its appearance: **Embedded** attaches it as a child of the taskbar window; **Overlay** keeps it as an independent window over the same measured gap. Both modes use the same style, transparent surface, and theme palette.

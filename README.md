@@ -30,6 +30,7 @@ The Floating concept illustrates an overlay placement option if taskbar integrat
 - A details panel on hover.
 - Style selection under **Settings > Appearance > Indicator style**, with an immediate preview and a saved preference.
 - Indicator style independent of light or dark mode.
+- Optional weekly quota in the taskbar indicator, disabled by default.
 - Transparent taskbar indicator with colors following the Windows taskbar theme.
 - Explicit states for stale data, connection errors, and unavailable quota information.
 

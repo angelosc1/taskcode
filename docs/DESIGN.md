@@ -12,6 +12,8 @@ Integration and overlay are technical approaches to validate, independent of the
 2. **Essential:** compact symbols and percentages.
 3. **Blocks:** horizontal segmented meters.
 
+Weekly readings are opt-in through **Show weekly quota in the indicator**, disabled by default. When enabled, each provider is identified by its symbol and receives two rows labeled `5h` and `7d`, using the selected style. The height stays constant; the width expands to keep both readings legible. The detail panel always retains both periods.
+
 Proposed setting: **Settings > Appearance > Indicator style**. Selection provides an immediate preview and is saved. Light/dark mode is a separate preference.
 
 ## Data semantics

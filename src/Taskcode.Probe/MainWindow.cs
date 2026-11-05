@@ -28,7 +28,7 @@ namespace Taskcode.Probe
         {
             Text = "Taskcode - positioning prototype";
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(590, 535);
+            ClientSize = new Size(590, 567);
             MinimumSize = Size;
             MaximumSize = Size;
             MaximizeBox = false;
@@ -56,8 +56,10 @@ namespace Taskcode.Probe
             Controls.Add(trigger);
             AddLabel("Preview", 26, 287, 10, FontStyle.Regular, 180, 26);
             preview.Location = new Point(220, 282);
-            preview.Size = new Size(IndicatorView.LogicalWidth(settings.Style), IndicatorView.LogicalHeight);
+            preview.Size = new Size(IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly), IndicatorView.LogicalHeight);
             preview.Style = settings.Style;
+            preview.ShowWeekly = settings.ShowWeekly;
+            preview.AccessibleName = IndicatorView.AccessibleText(settings.ShowWeekly);
             preview.Theme = theme;
             preview.BackColor = theme.PreviewBackground;
             Controls.Add(preview);
@@ -66,12 +68,14 @@ namespace Taskcode.Probe
             enabled.Size = new Size(520, 28);
             enabled.Checked = true;
             Controls.Add(enabled);
-            status.Location = new Point(26, 383);
+            var weekly = new CheckBox { Text = "Show weekly quota in the indicator", Location = new Point(26, 375), Size = new Size(520, 28), Checked = settings.ShowWeekly };
+            Controls.Add(weekly);
+            status.Location = new Point(26, 415);
             status.Size = new Size(534, 74);
             status.ForeColor = Color.FromArgb(184, 194, 207);
             Controls.Add(status);
-            var detailsButton = new Button { Text = "Demo details", Location = new Point(26, 475), Size = new Size(145, 34) };
-            var exit = new Button { Text = "Exit prototype", Location = new Point(415, 475), Size = new Size(145, 34) };
+            var detailsButton = new Button { Text = "Demo details", Location = new Point(26, 507), Size = new Size(145, 34) };
+            var exit = new Button { Text = "Exit prototype", Location = new Point(415, 507), Size = new Size(145, 34) };
             Controls.Add(detailsButton);
             Controls.Add(exit);
             detailsButton.Click += delegate { ShowDetails(true, true); };
@@ -81,7 +85,17 @@ namespace Taskcode.Probe
             {
                 settings.Style = (IndicatorStyle)style.SelectedIndex;
                 preview.Style = settings.Style;
-                preview.Width = IndicatorView.LogicalWidth(settings.Style);
+                preview.Width = IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly);
+                preview.Invalidate();
+                Save();
+                TickLayout();
+            };
+            weekly.CheckedChanged += delegate
+            {
+                settings.ShowWeekly = weekly.Checked;
+                preview.ShowWeekly = settings.ShowWeekly;
+                preview.AccessibleName = IndicatorView.AccessibleText(settings.ShowWeekly);
+                preview.Width = IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly);
                 preview.Invalidate();
                 Save();
                 TickLayout();
@@ -160,13 +174,15 @@ namespace Taskcode.Probe
             if (Rectangle.Intersect(screen.Bounds, layout.Bar).Height < layout.Bar.Height / 2)
             { PauseIndicator("Taskbar is hidden."); return; }
             float scale = Math.Max(96, layout.Dpi) / 96f;
-            int width = (int)Math.Round(IndicatorView.LogicalWidth(settings.Style) * scale);
+            int width = (int)Math.Round(IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly) * scale);
             int height = (int)Math.Round(IndicatorView.LogicalHeight * scale);
             Rectangle slot;
             if (!Placement.TrySlot(layout.Bar, layout.Tray, layout.OccupiedRight, width, height, (int)Math.Round(8 * scale), out slot))
             { PauseIndicator("Not enough verified space before the system tray.\nTry Essential or reduce the number of taskbar buttons."); return; }
             if (indicator == null || indicator.IsDisposed || (attachedParent != IntPtr.Zero && !Native.IsWindow(indicator.Handle))) RecreateIndicator();
             indicator.DisplayStyle = settings.Style;
+            indicator.ShowWeekly = settings.ShowWeekly;
+            indicator.AccessibleName = IndicatorView.AccessibleText(settings.ShowWeekly);
             indicator.Theme = theme;
             IntPtr expected = settings.Mode == HostMode.Embedded ? layout.Taskbar : IntPtr.Zero;
             if (attachedParent != expected || Native.GetParent(indicator.Handle) != expected)
