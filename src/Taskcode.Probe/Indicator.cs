@@ -14,6 +14,7 @@ namespace Taskcode.Probe
         internal IndicatorStyle Style = IndicatorStyle.Lines;
         internal bool ShowWeekly;
         internal int PulseKey;
+        internal UsageDemo Usage;
         internal TaskbarTheme Theme = TaskbarTheme.Read();
         internal static readonly Color Claude = Color.FromArgb(222, 157, 126), Codex = Color.FromArgb(144, 219, 188);
         internal IndicatorView()
@@ -56,9 +57,9 @@ namespace Taskcode.Probe
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            Draw(e.Graphics, ClientSize, Style, Theme, ShowWeekly, PulseKey);
+            Draw(e.Graphics, ClientSize, Style, Theme, ShowWeekly, PulseKey, Usage);
         }
-        internal static void Draw(Graphics g, Size size, IndicatorStyle style, TaskbarTheme theme, bool showWeekly = false, int pulseKey = 0)
+        internal static void Draw(Graphics g, Size size, IndicatorStyle style, TaskbarTheme theme, bool showWeekly = false, int pulseKey = 0, UsageDemo usage = null)
         {
             var state = g.Save();
             float scale = Math.Min(size.Width / (float)ContentWidth(style, showWeekly), size.Height / 34f);
@@ -76,8 +77,8 @@ namespace Taskcode.Probe
                 if (showWeekly)
                 {
                     int second = SecondProviderX(style, true);
-                    DrawWeeklyProvider(g, font, text, "Claude", 68, 81, theme.Claude, 36, style, theme);
-                    DrawWeeklyProvider(g, font, text, "Codex", 42, 63, theme.Codex, second, style, theme);
+                    DrawWeeklyProvider(g, font, text, "Claude", Value(usage, 0), Value(usage, 1), theme.Claude, 36, style, theme);
+                    DrawWeeklyProvider(g, font, text, "Codex", Value(usage, 2), Value(usage, 3), theme.Codex, second, style, theme);
                     using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 12, 3, second - 12, 31);
                     DrawSpeedHint(g, theme.Claude, 36, style, true, pulseKey & 3, (pulseKey >> 2) & 3);
                     DrawSpeedHint(g, theme.Codex, second, style, true, (pulseKey >> 4) & 3, (pulseKey >> 6) & 3);
@@ -85,14 +86,21 @@ namespace Taskcode.Probe
                 else
                 {
                     int second = SecondProviderX(style, false);
-                    DrawProvider(g, font, bold, text, "Claude", 68, theme.Claude, 36, style, theme);
-                    DrawProvider(g, font, bold, text, "Codex", 42, theme.Codex, second, style, theme);
+                    DrawProvider(g, font, bold, text, "Claude", Value(usage, 0), theme.Claude, 36, style, theme);
+                    DrawProvider(g, font, bold, text, "Codex", Value(usage, 2), theme.Codex, second, style, theme);
                     using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 11, 9, second - 11, 25);
                     DrawSpeedHint(g, theme.Claude, 36, style, false, pulseKey & 3, 0);
                     DrawSpeedHint(g, theme.Codex, second, style, false, (pulseKey >> 4) & 3, 0);
                 }
             }
             g.Restore(state);
+        }
+        private static int Value(UsageDemo usage, int index) { return usage == null ? new[] { 68, 81, 42, 63 }[index] : usage.DisplayValue(index, DateTime.UtcNow); }
+        private static string Percentage(int value) { return value < 0 ? "--" : value + "%"; }
+        internal static string LiveAccessibleText(UsageDemo usage, bool weekly)
+        {
+            if (usage == null || !usage.IsLive) return AccessibleText(weekly);
+            return "Taskcode: Claude " + Percentage(Value(usage, 0)) + (weekly ? ", weekly " + Percentage(Value(usage, 1)) : "") + "; Codex " + Percentage(Value(usage, 2)) + (weekly ? ", weekly " + Percentage(Value(usage, 3)) : "") + " remaining. -- means unavailable.";
         }
         private static void DrawSpeedHint(Graphics g, Color color, int x, IndicatorStyle style, bool weekly, int shortLevel, int weeklyLevel)
         {
@@ -121,18 +129,18 @@ namespace Taskcode.Probe
                     int remaining = row == 0 ? shortRemaining : weeklyRemaining;
                     g.DrawString(row == 0 ? "5h" : "7d", periodFont, muted, x + 23, y + 2);
                     if (style == IndicatorStyle.Essential)
-                    { g.DrawString(remaining + "%", font, text, x + 43, y); continue; }
+                    { g.DrawString(Percentage(remaining), font, text, x + 43, y); continue; }
                     if (style == IndicatorStyle.Lines)
                     {
                         g.FillRectangle(track, x + 40, y + 6, 44, 3);
-                        g.FillRectangle(accent, x + 40, y + 6, 44 * remaining / 100f, 3);
+                        if (remaining >= 0) g.FillRectangle(accent, x + 40, y + 6, 44 * remaining / 100f, 3);
                     }
                     else
                     {
                         for (int block = 0; block < 10; block++)
                             g.FillRectangle(block < (int)Math.Round(remaining / 10.0) ? accent : track, x + 40 + block * 4.4f, y + 5, 3.4f, 5);
                     }
-                    g.DrawString(remaining + "%", font, text, x + 91, y);
+                    g.DrawString(Percentage(remaining), font, text, x + 91, y);
                 }
             }
         }
@@ -144,20 +152,20 @@ namespace Taskcode.Probe
                 if (style == IndicatorStyle.Essential)
                 {
                     DrawMark(g, font, accent, name, x);
-                    g.DrawString(remaining + "%", font, text, x + 26, 10);
+                    g.DrawString(Percentage(remaining), font, text, x + 26, 10);
                     return;
                 }
                 if (style == IndicatorStyle.Lines)
                 {
                     g.DrawString(name, font, text, x, 4);
-                    g.DrawString(remaining + "%", font, text, x + 53, 4);
+                    g.DrawString(Percentage(remaining), font, text, x + 53, 4);
                     g.FillRectangle(track, x + 1, 24, 88, 3);
-                    g.FillRectangle(accent, x + 1, 24, 88 * remaining / 100f, 3);
+                    if (remaining >= 0) g.FillRectangle(accent, x + 1, 24, 88 * remaining / 100f, 3);
                     return;
                 }
                 DrawMark(g, font, accent, name, x);
                 for (int i = 0; i < 10; i++) g.FillRectangle(i < (int)Math.Round(remaining / 10.0) ? accent : track, x + 25 + i * 5, 13, 4, 8);
-                g.DrawString(remaining + "%", font, text, x + 78, 10);
+                g.DrawString(Percentage(remaining), font, text, x + 78, 10);
             }
         }
         private static void DrawMark(Graphics g, Font font, Brush accent, string name, int x)
@@ -182,13 +190,15 @@ namespace Taskcode.Probe
         private int renderedPulse;
         private int renderedFrame;
         private bool renderedMotion;
+        private string renderedValues;
         internal IndicatorStyle DisplayStyle;
         internal bool ShowWeekly;
         internal int PulseKey;
+        internal UsageDemo Usage;
         internal TaskbarTheme Theme;
         internal IndicatorWindow()
         {
-            Text = "Taskcode demo indicator";
+            Text = "Taskcode indicator";
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
             AutoScaleMode = AutoScaleMode.None;
@@ -204,11 +214,12 @@ namespace Taskcode.Probe
         {
             bool motion = PulseKey != 0 && SpeedArrows.IsAnimated;
             int frame = motion ? SpeedArrows.Frame : 0;
-            if (renderedHandle == Handle && renderedSize == Size && renderedStyle == DisplayStyle && renderedTheme == Theme && renderedWeekly == ShowWeekly && renderedPulse == PulseKey && renderedFrame == frame && renderedMotion == motion) return true;
+            string values = IndicatorView.LiveAccessibleText(Usage, ShowWeekly);
+            if (renderedHandle == Handle && renderedSize == Size && renderedStyle == DisplayStyle && renderedTheme == Theme && renderedWeekly == ShowWeekly && renderedPulse == PulseKey && renderedFrame == frame && renderedMotion == motion && renderedValues == values) return true;
             if (Width <= 0 || Height <= 0) return false;
             using (var bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppPArgb))
             {
-                using (var graphics = Graphics.FromImage(bitmap)) IndicatorView.Draw(graphics, bitmap.Size, DisplayStyle, Theme, ShowWeekly, PulseKey);
+                using (var graphics = Graphics.FromImage(bitmap)) IndicatorView.Draw(graphics, bitmap.Size, DisplayStyle, Theme, ShowWeekly, PulseKey, Usage);
                 IntPtr screen = Native.GetDC(IntPtr.Zero), memory = Native.CreateCompatibleDC(screen);
                 IntPtr image = bitmap.GetHbitmap(Color.FromArgb(0));
                 IntPtr previous = Native.SelectObject(memory, image);
@@ -218,7 +229,7 @@ namespace Taskcode.Probe
                     var source = new Native.Point();
                     var blend = new Native.Blend { SourceConstantAlpha = 255, AlphaFormat = 1 };
                     if (!Native.UpdateLayeredWindow(Handle, screen, IntPtr.Zero, ref size, memory, ref source, 0, ref blend, 2)) return false;
-                    renderedHandle = Handle; renderedSize = Size; renderedStyle = DisplayStyle; renderedTheme = Theme; renderedWeekly = ShowWeekly; renderedPulse = PulseKey; renderedFrame = frame; renderedMotion = motion;
+                    renderedHandle = Handle; renderedSize = Size; renderedStyle = DisplayStyle; renderedTheme = Theme; renderedWeekly = ShowWeekly; renderedPulse = PulseKey; renderedFrame = frame; renderedMotion = motion; renderedValues = values;
                     return true;
                 }
                 finally
@@ -238,6 +249,7 @@ namespace Taskcode.Probe
         internal Label Caption;
         internal SpeedReadout SpeedCaption;
         internal DemoReading Reading;
+        internal Label ValueCaption;
         internal DateTime RenderTimeUtc = DateTime.UtcNow;
         internal QuotaBar()
         {
@@ -247,6 +259,7 @@ namespace Taskcode.Probe
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
+            if (Reading != null && (!Reading.Available || Period.EndUtc <= RenderTimeUtc || (Reading.ObservedUtc != DateTime.MinValue && RenderTimeUtc - Reading.ObservedUtc > TimeSpan.FromMinutes(2)))) return;
             using (var track = new SolidBrush(Theme.Track))
             using (var fill = new SolidBrush(Provider == "claude" ? Theme.Claude : Theme.Codex))
             using (var marker = new SolidBrush(Theme.Text))
@@ -276,6 +289,7 @@ namespace Taskcode.Probe
         private readonly Timer animationTimer = new Timer { Interval = 33 };
         private readonly ToolTip hints = new ToolTip();
         private readonly UsageDemo usage;
+        private readonly Label sourceLabel, sourceFooter;
         internal readonly int ProviderIndex;
         internal DetailWindow(UsageDemo usage = null, int providerIndex = 0)
         {
@@ -293,14 +307,15 @@ namespace Taskcode.Probe
             Font = new Font("Segoe UI", 10f);
             KeyPreview = true;
             AddText("Taskcode", 18, 14, 13, FontStyle.Bold, ForeColor);
-            AddText("DEMO DATA  /  Remaining quota", 18, 49, 9, FontStyle.Regular, Color.LightGray);
+            sourceLabel = AddText("DEMO DATA  /  Remaining quota", 18, 49, 9, FontStyle.Regular, Color.LightGray);
             var providerColor = providerIndex == 0 ? IndicatorView.Claude : IndicatorView.Codex;
             AddText(provider, 42, 80, 10, FontStyle.Bold, providerColor);
             if (providerIndex == 1) AddText(">_", 18, 80, 10, FontStyle.Bold, providerColor);
             AddQuota(this.usage.Readings[providerIndex * 2], 110);
             AddQuota(this.usage.Readings[providerIndex * 2 + 1], 196);
             AddText("Gray: used · Color: remaining · ▼: time", 18, 286, 8, FontStyle.Regular, Color.LightGray);
-            AddText("Simulated usage history. No accounts connected.", 18, 305, 7.5f, FontStyle.Regular, Color.LightGray);
+            sourceFooter = AddText("Simulated usage history. No accounts connected.", 18, 305, 7.5f, FontStyle.Regular, Color.LightGray);
+            sourceFooter.AutoSize = false; sourceFooter.Size = new Size(294, 18); sourceFooter.AutoEllipsis = true;
             KeyDown += delegate(object sender, KeyEventArgs e) { if (e.KeyCode == Keys.Escape) Hide(); };
             FormClosing += delegate(object sender, FormClosingEventArgs e) { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } };
             periodTimer.Tick += delegate { RefreshPeriods(); };
@@ -326,14 +341,14 @@ namespace Taskcode.Probe
             int remaining = reading.Period.Remaining;
             var color = provider == "Claude" ? IndicatorView.Claude : IndicatorView.Codex;
             AddText(window, 18, y, 9, FontStyle.Regular, ForeColor);
-            AddText(remaining + "%", 270, y, 9, FontStyle.Bold, color);
+            var valueCaption = AddText(remaining + "%", 270, y, 9, FontStyle.Bold, color);
             var caption = AddText("", 18, y + 41, 8, FontStyle.Regular, Color.LightGray);
             var speedCaption = new SpeedReadout { Location = new Point(18, y + 57), Size = new Size(294, 24), ForeColor = color, Tag = provider.ToLowerInvariant() };
             Controls.Add(speedCaption);
             Controls.Add(new QuotaBar
             {
                 Location = new Point(12, y + 20), Size = new Size(306, 17),
-                Period = reading.Period, Reading = reading, SpeedCaption = speedCaption,
+                Period = reading.Period, Reading = reading, SpeedCaption = speedCaption, ValueCaption = valueCaption,
                 Provider = provider.ToLowerInvariant(), Theme = theme, Caption = caption,
                 AccessibleName = provider + ", " + window + ", " + remaining + " percent remaining"
             });
@@ -343,14 +358,19 @@ namespace Taskcode.Probe
         {
             var now = DateTime.UtcNow;
             usage.Tick(now);
+            sourceLabel.Text = usage.IsLive ? "ACCOUNT DATA / Remaining quota" : "DEMO DATA / Remaining quota";
+            sourceFooter.Text = usage.ProviderStatus(ProviderIndex, now);
+            hints.SetToolTip(sourceFooter, sourceFooter.Text);
             bool hasArrows = false;
             foreach (Control control in Controls)
             {
                 var bar = control as QuotaBar;
                 if (bar == null) continue;
                 bar.RenderTimeUtc = now;
-                bar.Caption.Text = bar.Period.CaptionAt(now);
-                var speed = bar.Reading.Speed.EstimateAt(now);
+                int value = usage.DisplayValue(ProviderIndex * 2 + (bar.Reading.Window == "Weekly" ? 1 : 0), now);
+                bar.ValueCaption.Text = value < 0 ? "--" : value + "%";
+                bar.Caption.Text = value < 0 ? "Waiting for current quota data" : bar.Period.CaptionAt(now);
+                var speed = value < 0 ? new SpeedEstimate { State = SpeedState.Unavailable } : bar.Reading.Speed.EstimateAt(now);
                 bar.SpeedCaption.Estimate = speed;
                 bar.SpeedCaption.AccessibleName = (speed.State == SpeedState.Active ? speed.Level + " speed arrows. " : "") + speed.Summary;
                 bar.SpeedCaption.Invalidate();

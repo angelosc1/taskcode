@@ -34,16 +34,30 @@ namespace Taskcode.Probe
         private readonly ContextMenuStrip trayMenu;
         private readonly Icon trayImage;
         private bool startInTray, exiting;
+        private readonly AccountConnections connections;
+        private readonly Label accountNotice;
 
-        internal MainWindow(bool startInTray = false)
+        internal MainWindow(bool startInTray = false, bool connectAccounts = true)
         {
             this.startInTray = startInTray;
+            if (connectAccounts)
+            {
+                usage.BeginLive();
+                connections = new AccountConnections { CodexEnabled = settings.CodexEnabled, ClaudeEnabled = settings.ClaudeEnabled };
+                connections.OpenLogin = delegate(string url)
+                {
+                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); }
+                    catch (System.ComponentModel.Win32Exception) { saveError = "Could not open the sign-in browser. Check your default browser."; }
+                };
+                if (!settings.ClaudeEnabled) usage.ClearProvider(0, "Disconnected from Taskcode.");
+                if (!settings.CodexEnabled) usage.ClearProvider(1, "Disconnected from Taskcode.");
+            }
             providerDetails = new[] { new DetailWindow(usage, 0), new DetailWindow(usage, 1) };
             details = providerDetails[0];
             Text = WindowTitle;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(590, 599);
+            ClientSize = new Size(590, 762);
             MinimumSize = Size;
             MaximumSize = Size;
             MaximizeBox = false;
@@ -51,9 +65,9 @@ namespace Taskcode.Probe
             ForeColor = Color.FromArgb(237, 240, 244);
             Font = new Font("Segoe UI", 10f);
             AddLabel("Taskcode", 24, 20, 23, FontStyle.Bold, 540, 45);
-            AddLabel("Taskbar positioning prototype", 26, 70, 11, FontStyle.Regular, 540, 26);
-            var notice = AddLabel("DEMO DATA  /  No accounts connected", 26, 108, 9, FontStyle.Bold, 540, 26);
-            notice.ForeColor = IndicatorView.Claude;
+            AddLabel("AI quota monitor", 26, 70, 11, FontStyle.Regular, 540, 26);
+            accountNotice = AddLabel(connectAccounts ? "Account data / Connecting..." : "DEMO DATA / Offline preview", 26, 108, 9, FontStyle.Regular, 540, 42);
+            accountNotice.ForeColor = IndicatorView.Claude;
             AddLabel("Indicator style", 26, 154, 10, FontStyle.Regular, 180, 26);
             var style = new ComboBox { Location = new Point(220, 150), Width = 340, DropDownStyle = ComboBoxStyle.DropDownList, AccessibleName = "Indicator style" };
             style.Items.AddRange(new object[] { "Lines (default)", "Essential", "Blocks" });
@@ -74,8 +88,9 @@ namespace Taskcode.Probe
             preview.Size = new Size(IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly), IndicatorView.LogicalHeight);
             preview.Style = settings.Style;
             preview.ShowWeekly = settings.ShowWeekly;
-            preview.AccessibleName = IndicatorView.AccessibleText(settings.ShowWeekly);
+            preview.AccessibleName = IndicatorView.LiveAccessibleText(usage, settings.ShowWeekly);
             preview.Theme = theme;
+            preview.Usage = usage;
             preview.BackColor = theme.PreviewBackground;
             Controls.Add(preview);
             enabled.Text = "Show indicator on the primary taskbar";
@@ -114,19 +129,40 @@ namespace Taskcode.Probe
             status.Size = new Size(534, 74);
             status.ForeColor = Color.FromArgb(184, 194, 207);
             Controls.Add(status);
-            var detailsButton = new Button { Text = "Demo details", Location = new Point(26, 539), Size = new Size(145, 34) };
-            var exit = new Button { Text = "Exit Taskcode", Location = new Point(415, 539), Size = new Size(145, 34) };
+            var detailsButton = new Button { Text = "Details", Location = new Point(26, 702), Size = new Size(145, 34) };
+            var exit = new Button { Text = "Exit Taskcode", Location = new Point(415, 702), Size = new Size(145, 34) };
             Controls.Add(detailsButton);
             Controls.Add(exit);
-            var simulate = new Button { Text = "Simulate speed", Location = new Point(185, 539), Size = new Size(210, 34) };
+            var simulate = new Button { Text = connectAccounts ? "Refresh accounts" : "Simulate speed", Location = new Point(185, 702), Size = new Size(210, 34) };
             Controls.Add(simulate);
             simulate.Click += delegate
             {
+                if (connections != null) { connections.Refresh(); return; }
                 usage.Cycle(DateTime.UtcNow);
                 details.RefreshUsage();
                 TickLayout();
                 ShowDetails(true, true, selectedProvider);
             };
+            AddLabel("Accounts", 26, 534, 11, FontStyle.Bold, 520, 25);
+            var claudeConnect = new Button { Text = "Connect Claude", Location = new Point(26, 569), Size = new Size(168, 34), Enabled = connectAccounts };
+            var codexConnect = new Button { Text = "Connect Codex", Location = new Point(210, 569), Size = new Size(168, 34), Enabled = connectAccounts };
+            var disconnect = new Button { Text = "Disconnect...", Location = new Point(394, 569), Size = new Size(166, 34), Enabled = connectAccounts };
+            Controls.Add(claudeConnect); Controls.Add(codexConnect); Controls.Add(disconnect);
+            AddLabel("Claude uses Claude Code's status line; Codex uses its CLI login.\nPasswords and tokens are managed by their official apps.", 26, 617, 9, FontStyle.Regular, 534, 60);
+            claudeConnect.Click += delegate
+            {
+                try { ClaudeBridge.Install(); settings.ClaudeEnabled = connections.ClaudeEnabled = true; Save(); connections.Refresh(); }
+                catch (Exception ex) { MessageBox.Show(this, "Claude could not be connected. " + (ex is InvalidOperationException ? ex.Message : "Check access to Claude Code settings and the bridge executable."), "Connect Claude", MessageBoxButtons.OK, MessageBoxIcon.Information); }
+            };
+            codexConnect.Click += delegate { settings.CodexEnabled = true; connections.ConnectCodex(); Save(); };
+            var disconnectMenu = new ContextMenuStrip();
+            disconnectMenu.Items.Add("Disconnect Claude (restore status line)", null, delegate
+            {
+                try { ClaudeBridge.Uninstall(); settings.ClaudeEnabled = connections.ClaudeEnabled = false; usage.ClearProvider(0, "Disconnected from Taskcode."); Save(); }
+                catch (Exception) { MessageBox.Show(this, "Could not restore Claude Code's status line. Settings were left connected.", "Disconnect Claude", MessageBoxButtons.OK, MessageBoxIcon.Information); }
+            });
+            disconnectMenu.Items.Add("Disconnect Codex from Taskcode", null, delegate { settings.CodexEnabled = connections.CodexEnabled = false; usage.ClearProvider(1, "Disconnected from Taskcode. Your Codex login was preserved."); Save(); });
+            disconnect.Click += delegate { disconnectMenu.Show(disconnect, new Point(0, disconnect.Height)); };
             var detailsMenu = new ContextMenuStrip();
             detailsMenu.Items.Add("Claude details", null, delegate { ShowDetails(true, true, 0); });
             detailsMenu.Items.Add("Codex details", null, delegate { ShowDetails(true, true, 1); });
@@ -150,7 +186,7 @@ namespace Taskcode.Probe
             {
                 settings.ShowWeekly = weekly.Checked;
                 preview.ShowWeekly = settings.ShowWeekly;
-                preview.AccessibleName = IndicatorView.AccessibleText(settings.ShowWeekly);
+                preview.AccessibleName = IndicatorView.LiveAccessibleText(usage, settings.ShowWeekly);
                 preview.Width = IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly);
                 preview.Invalidate();
                 Save();
@@ -193,6 +229,8 @@ namespace Taskcode.Probe
             FormClosed += delegate
             {
                 timer.Stop(); timer.Dispose(); animationTimer.Dispose(); watcher.Dispose();
+                if (connections != null) connections.Dispose();
+                disconnectMenu.Dispose();
                 if (indicator != null && !indicator.IsDisposed) indicator.Dispose();
                 foreach (var panel in providerDetails) panel.Dispose();
                 detailsMenu.Dispose();
@@ -263,6 +301,13 @@ namespace Taskcode.Probe
         }
         private void TickLayout()
         {
+            if (connections != null)
+            {
+                connections.Tick(usage);
+                accountNotice.Text = "Claude: " + usage.AccountStatus[0] + "\nCodex: " + usage.AccountStatus[1];
+                preview.AccessibleName = IndicatorView.LiveAccessibleText(usage, settings.ShowWeekly);
+                preview.Invalidate();
+            }
             usage.Tick(DateTime.UtcNow);
             int pulse = usage.PulseKey(DateTime.UtcNow, settings.ShowWeekly);
             animationTimer.Enabled = pulse != 0 && enabled.Checked && SpeedArrows.IsAnimated;
@@ -301,7 +346,8 @@ namespace Taskcode.Probe
             indicator.DisplayStyle = settings.Style;
             indicator.ShowWeekly = settings.ShowWeekly;
             indicator.PulseKey = pulse;
-            indicator.AccessibleName = IndicatorView.AccessibleText(settings.ShowWeekly);
+            indicator.Usage = usage;
+            indicator.AccessibleName = IndicatorView.LiveAccessibleText(usage, settings.ShowWeekly);
             indicator.Theme = theme;
             IntPtr expected = settings.Mode == HostMode.Embedded ? layout.Taskbar : IntPtr.Zero;
             if (attachedParent != expected || Native.GetParent(indicator.Handle) != expected)
@@ -322,7 +368,7 @@ namespace Taskcode.Probe
             if (!indicator.RenderAlpha())
             { PauseIndicator("Windows rejected the transparent surface. Try the other placement mode."); return; }
             indicatorBounds = slot;
-            status.Text = (expected == IntPtr.Zero ? "Overlay active" : "Embedded child window active") + " · " + layout.Dpi + " DPI · " + (theme.Dark ? "Dark" : "Light") + " taskbar\nDEMO · Recent-history scenario: " + usage.ScenarioName + (saveError == null ? "" : "\n" + saveError);
+            status.Text = (expected == IntPtr.Zero ? "Overlay active" : "Embedded child window active") + " · " + layout.Dpi + " DPI · " + (theme.Dark ? "Dark" : "Light") + " taskbar\n" + (usage.IsLive ? "Account data · -- means unavailable or stale" : "DEMO · Recent-history scenario: " + usage.ScenarioName) + (saveError == null ? "" : "\n" + saveError);
             // The alpha surface has real transparent gaps between glyphs. Track the
             // complete indicator rectangle so those gaps do not reset hover dwell.
             if (indicatorBounds.Contains(Cursor.Position))

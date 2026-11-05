@@ -12,6 +12,7 @@ namespace Taskcode.Probe
         internal HostMode Mode = HostMode.Embedded;
         internal DetailsTrigger DetailsTrigger = DetailsTrigger.Hover;
         internal bool ShowWeekly;
+        internal bool CodexEnabled = true, ClaudeEnabled = true;
         internal static readonly string Path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.xml");
         internal static Settings Load()
         {
@@ -28,6 +29,9 @@ namespace Taskcode.Probe
                 if (Enum.TryParse(doc.DocumentElement.GetAttribute("mode"), out mode) && Enum.IsDefined(typeof(HostMode), mode)) value.Mode = mode;
                 if (Enum.TryParse(doc.DocumentElement.GetAttribute("detailsTrigger"), out detailsTrigger) && Enum.IsDefined(typeof(DetailsTrigger), detailsTrigger)) value.DetailsTrigger = detailsTrigger;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("showWeekly"), out showWeekly)) value.ShowWeekly = showWeekly;
+                bool connected;
+                if (bool.TryParse(doc.DocumentElement.GetAttribute("codexEnabled"), out connected)) value.CodexEnabled = connected;
+                if (bool.TryParse(doc.DocumentElement.GetAttribute("claudeEnabled"), out connected)) value.ClaudeEnabled = connected;
             }
             catch (IOException) { }
             catch (XmlException) { }
@@ -43,6 +47,8 @@ namespace Taskcode.Probe
                 writer.WriteAttributeString("mode", Mode.ToString());
                 writer.WriteAttributeString("detailsTrigger", DetailsTrigger.ToString());
                 writer.WriteAttributeString("showWeekly", ShowWeekly.ToString());
+                writer.WriteAttributeString("codexEnabled", CodexEnabled.ToString());
+                writer.WriteAttributeString("claudeEnabled", ClaudeEnabled.ToString());
                 writer.WriteEndElement();
             }
         }

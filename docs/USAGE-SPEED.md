@@ -10,7 +10,7 @@ The details panel estimates time to quota exhaustion from recent observations, s
 | `››` | From 0.8 through 1.2: quota is projected to run out around reset |
 | `›››` | Less than 0.8: quota is projected to run out well before reset |
 
-The estimate is remaining quota divided by the observed consumption rate. The rate is measured in percentage points per hour; its observation window is **15 seconds**, as requested. The details show approximate remaining usage time and identify the data as simulated in this prototype. An estimate assumes the recent rate continues; it is not a guarantee.
+The estimate is remaining quota divided by the observed consumption rate. The rate is measured in percentage points per hour; its observation window is **15 seconds**. Details show approximate remaining usage time and identify the source. An estimate assumes the recent rate continues; it is not a guarantee.
 
 ## Calculation rules
 
@@ -22,7 +22,7 @@ The estimate is remaining quota divided by the observed consumption rate. The ra
 - Show **Calculating** before sufficient history, **Idle** without recent consumption, and a stale/expired/unavailable state when appropriate. Those states do not show speed arrows.
 - Do not generate new observations just because the display timer ticks. A repeated unchanged reading is valid only when the data source has supplied that observation.
 
-Real provider refresh frequency will limit responsiveness. Polling an unchanged cached response more often does not reveal new consumption; the 15-second experience requires sufficiently frequent source readings. Providers are not connected yet.
+Provider refresh frequency limits responsiveness. Codex is queried approximately every ten seconds; Claude supplies event-driven status-line observations. Reading an unchanged Claude cache more often does not reveal new consumption. Slow or absent observations leave the estimator calculating or stale. See [account connections](ACCOUNTS.md).
 
 ## Taskbar hints
 
@@ -32,7 +32,7 @@ The arrowheads are vector shapes with subtly rounded corners and narrow spacing.
 
 ## Testing the prototype
 
-Use **Simulate speed** in the control window to cycle through Mixed, Comfortable, Near reset, Fast, Idle, and Calculating scenarios. It opens the details panel and creates clearly simulated recent histories; it does not consume real quota or read account data.
+Start with `--demo` and use **Simulate speed** to cycle through Mixed, Comfortable, Near reset, Fast, Idle, and Calculating scenarios. It opens details and creates clearly simulated histories; it does not consume real quota or read account data. Normal live mode offers **Refresh accounts** instead.
 
 The demo initially seeds fifteen seconds of past activity. Subsequent synthetic observations arrive every two seconds with unchanged quota, so the simulated burst naturally decays to Idle when no new activity is simulated. Clicking the button seeds another history and previews changed arrow counts immediately. This explicit preview does not bypass stabilization for real incoming observations.
 

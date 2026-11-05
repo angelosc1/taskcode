@@ -6,7 +6,7 @@
 
 Taskcode is a Windows taskbar companion for monitoring Claude and Codex quota without interrupting your work. Its indicator sits to the left of the taskbar's hidden-icons arrow, with details available on hover or click.
 
-**Status: experimental positioning prototype.** A runnable Windows probe demonstrates the three styles and tests taskbar embedding and overlay placement with sample data. Real provider connections and production compatibility are not implemented.
+**Status: experimental Windows prototype.** The app connects to Codex through its official CLI and receives Claude quota through Claude Code's status line. Taskbar embedding, packaging, and wider Windows compatibility are still experimental. See [account setup and privacy](docs/ACCOUNTS.md).
 
 ## Current prototype
 
@@ -28,13 +28,15 @@ Weekly readings are optional and disabled by default. Enabling them adds labeled
 
 ![Current details panel in dark and light mode](docs/images/current-details.png)
 
-Each provider has its own panel with five-hour and weekly quota, elapsed-period markers, and recent-consumption projections with animated filled arrows. Hovering or clicking Claude opens Claude's panel; Codex opens its own. Only one panel is visible at a time. The preview above shows both provider windows in both themes. Percentages show remaining quota; period dates and usage histories are currently simulated.
+Each provider has its own panel with five-hour and weekly quota, elapsed-period markers, and recent-consumption projections with animated filled arrows. Hovering or clicking Claude opens Claude's panel; Codex opens its own. Only one panel is visible at a time. The preview above uses simulated values in both themes. Normal startup uses account data, and unavailable or stale quota appears as `--`.
 
 ### Settings
 
 ![Current Taskcode settings with optional weekly readings and Windows startup](docs/images/current-settings.png)
 
 Settings open from the tray icon. Windows startup is opt-in; closing the settings window keeps Taskcode running in the tray.
+
+Use **Connect Codex** to reuse the official CLI login or open its sign-in flow. **Connect Claude** installs a local Claude Code status-line bridge and preserves the original status line. Claude Code must supply quota observations; this does not independently connect the Claude website or desktop app. Read [connection instructions](docs/ACCOUNTS.md) before removing the bridge.
 
 ## Planned first version
 
@@ -45,7 +47,7 @@ Settings open from the tray icon. Windows startup is opt-in; closing the setting
 - Style selection under **Indicator style** in the settings window, with an immediate preview and a saved preference.
 - Indicator style independent of light or dark mode.
 - Optional weekly quota in the taskbar indicator, disabled by default.
-- Recent-consumption projections with one to three animated, filled arrows, currently demonstrated using simulated histories.
+- Recent-consumption projections with one to three animated, filled arrows when sufficiently frequent source observations are available.
 - Transparent taskbar indicator with colors following the Windows taskbar theme.
 - Tray icon for settings and exit, plus optional Windows sign-in startup (off by default).
 - Explicit states for stale data, connection errors, and unavailable quota information.

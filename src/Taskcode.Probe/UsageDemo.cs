@@ -8,6 +8,8 @@ namespace Taskcode.Probe
         internal QuotaPeriod Period;
         internal UsageSpeed Speed;
         internal DateTime PulseUntil;
+        internal bool Available = true;
+        internal DateTime ObservedUtc;
     }
 
     internal sealed class UsageDemo
@@ -15,6 +17,57 @@ namespace Taskcode.Probe
         internal readonly DemoReading[] Readings;
         private int scenario;
         private DateTime nextSample;
+        internal bool IsLive;
+        internal int Revision;
+        internal readonly string[] AccountStatus = { "Demo data", "Demo data" };
+        internal void BeginLive()
+        {
+            IsLive = true;
+            for (int provider = 0; provider < 2; provider++) ClearProvider(provider, "Connecting...");
+        }
+        internal void ClearProvider(int provider, string status)
+        {
+            AccountStatus[provider] = status;
+            for (int i = provider * 2; i < provider * 2 + 2; i++)
+            {
+                Readings[i].Available = false; Readings[i].ObservedUtc = DateTime.MinValue;
+                Readings[i].Period.Remaining = -1; Readings[i].Period.StartUtc = Readings[i].Period.EndUtc = DateTime.MinValue;
+                Readings[i].Speed = new UsageSpeed(); Readings[i].PulseUntil = DateTime.MinValue;
+            }
+            Revision++;
+        }
+        internal void Apply(int provider, AccountSnapshot snapshot)
+        {
+            AccountStatus[provider] = snapshot.Status;
+            if (snapshot.Failed) { Revision++; return; }
+            for (int index = 0; index < 2; index++)
+            {
+                var reading = Readings[provider * 2 + index];
+                var period = snapshot.Periods[index];
+                if (period == null) { reading.Available = false; reading.Period.Remaining = -1; reading.Speed = new UsageSpeed(); reading.PulseUntil = DateTime.MinValue; continue; }
+                if (snapshot.ObservedUtc == reading.ObservedUtc && reading.Available && period.Remaining == reading.Period.Remaining && period.StartUtc == reading.Period.StartUtc && period.EndUtc == reading.Period.EndUtc) continue;
+                int previous = reading.Speed.EstimateAt(snapshot.ObservedUtc).Level;
+                reading.Available = true; reading.ObservedUtc = snapshot.ObservedUtc;
+                reading.Period.Remaining = period.Remaining; reading.Period.StartUtc = period.StartUtc; reading.Period.EndUtc = period.EndUtc;
+                reading.Speed.Observe(snapshot.ObservedUtc, snapshot.Remaining[index].Value, period.StartUtc, period.EndUtc);
+                int current = reading.Speed.EstimateAt(snapshot.ObservedUtc).Level;
+                if (previous != current && current > 0) reading.PulseUntil = DateTime.UtcNow.AddSeconds(8);
+            }
+            Revision++;
+        }
+        internal int DisplayValue(int index, DateTime now)
+        {
+            var reading = Readings[index];
+            return !IsLive ? reading.Period.Remaining : reading.Available && now < reading.Period.EndUtc && now - reading.ObservedUtc <= TimeSpan.FromMinutes(2) ? reading.Period.Remaining : -1;
+        }
+        internal string ProviderStatus(int provider, DateTime now)
+        {
+            if (!IsLive) return "DEMO DATA / Simulated history";
+            var reading = Readings[provider * 2].Available ? Readings[provider * 2] : Readings[provider * 2 + 1];
+            if (!reading.Available) return AccountStatus[provider];
+            if (now >= reading.Period.EndUtc) return "Period ended. Waiting for fresh quota data.";
+            return AccountStatus[provider] + " / Updated " + Math.Max(0, (int)(now - reading.ObservedUtc).TotalSeconds) + "s ago";
+        }
         internal UsageDemo()
         {
             var now = DateTime.UtcNow;
@@ -50,6 +103,7 @@ namespace Taskcode.Probe
         }
         internal void Tick(DateTime now)
         {
+            if (IsLive) return; // Only fresh provider observations can feed the speed estimate.
             if (now < nextSample) return;
             nextSample = now.AddSeconds(2);
             foreach (var reading in Readings)
@@ -64,7 +118,7 @@ namespace Taskcode.Probe
         {
             int key = 0;
             for (int index = 0; index < Readings.Length; index++)
-                if ((includeWeekly || index % 2 == 0) && Readings[index].PulseUntil > now)
+                if (DisplayValue(index, now) >= 0 && (includeWeekly || index % 2 == 0) && Readings[index].PulseUntil > now)
                     key |= Readings[index].Speed.EstimateAt(now).Level << (index * 2);
             return key;
         }

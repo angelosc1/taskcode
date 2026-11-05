@@ -33,12 +33,15 @@
 
 ## 4. Connect providers
 
-- [ ] Investigate data sources and authentication for Claude and Codex separately.
-- [ ] Document available fields, limitations, and any dependencies on non-public interfaces.
-- [ ] Distinguish subscription limits, usage, and API spending.
-- [ ] Implement secure credential storage if needed, keeping credentials out of the repository.
-- [ ] Implement an appropriate refresh interval and handle expired authentication.
-- [ ] Show unavailable data explicitly, without inventing quota values or treating zero as a successful reading.
+- [x] Connect Codex through the official CLI app-server and browser sign-in.
+- [x] Receive Claude quota through Claude Code's official status-line input.
+- [x] Document fields, installation, freshness, privacy, and client dependencies.
+- [x] Distinguish subscription quota from context usage and API spending.
+- [x] Delegate credential storage to the official clients; keep credentials out of Taskcode.
+- [x] Refresh in the background with error backoff and reconnect controls.
+- [x] Show missing, stale, expired, and disconnected data explicitly.
+- [ ] Validate Claude quota delivery from a real signed-in Claude Code session.
+- [ ] Investigate a separate connection for users of only the Claude website/desktop app.
 
 ## 5. Publish a test release
 
