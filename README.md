@@ -1,6 +1,8 @@
-﻿# Taskcode
+<p align="center"><img src="assets/branding/taskcode.png" alt="Taskcode" width="112" height="112"></p>
 
-Your AI quota, on the Windows taskbar.
+<h1 align="center">Taskcode</h1>
+
+<p align="center">Your AI quota, on the Windows taskbar.</p>
 
 Taskcode is a Windows taskbar companion for monitoring Claude and Codex quota without interrupting your work. Its indicator sits to the left of the taskbar's hidden-icons arrow, with details available on hover or click.
 
