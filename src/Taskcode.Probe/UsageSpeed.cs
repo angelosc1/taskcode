@@ -11,13 +11,14 @@ namespace Taskcode.Probe
         internal SpeedState State;
         internal int Level;
         internal double PointsPerHour;
+        internal double WindowSeconds;
         internal TimeSpan? TimeToExhaustion;
         internal string Summary
         {
             get
             {
                 if (State == SpeedState.Idle) return "Idle · no recent consumption";
-                if (State == SpeedState.Stale) return "Recent readings are stale";
+            if (State == SpeedState.Stale) return "Waiting for fresh quota readings";
                 if (State == SpeedState.Expired) return "Period ended · waiting for new readings";
                 if (State == SpeedState.Unavailable) return "Usage estimate unavailable";
                 if (State != SpeedState.Active || !TimeToExhaustion.HasValue) return "Calculating recent usage...";
@@ -37,7 +38,15 @@ namespace Taskcode.Probe
         private DateTime periodStart, periodEnd;
         private int stableLevel, pendingLevel, pendingCount;
         private bool hasBaseline;
-        private static readonly TimeSpan Window = TimeSpan.FromSeconds(15);
+        private readonly TimeSpan Window, freshness;
+        private readonly int minimumSamples;
+        internal UsageSpeed() : this(TimeSpan.FromSeconds(2)) { }
+        internal UsageSpeed(TimeSpan expectedInterval)
+        {
+            Window = TimeSpan.FromSeconds(Math.Max(15, expectedInterval.TotalSeconds * 2));
+            freshness = TimeSpan.FromSeconds(Math.Max(30, expectedInterval.TotalSeconds * 1.2));
+            minimumSamples = expectedInterval.TotalSeconds > 15 ? 2 : 3;
+        }
 
         internal bool Observe(DateTime at, double remaining, DateTime start, DateTime end)
         {
@@ -45,7 +54,7 @@ namespace Taskcode.Probe
                 double.IsNaN(remaining) || double.IsInfinity(remaining) || remaining < 0 || remaining > 100) return false;
             if (samples.Count > 0 && at <= samples[samples.Count - 1].At) return false;
             if (periodStart != start || periodEnd != end || (samples.Count > 0 &&
-                (remaining > samples[samples.Count - 1].Remaining + 0.00001 || at - samples[samples.Count - 1].At > TimeSpan.FromSeconds(30))))
+                (remaining > samples[samples.Count - 1].Remaining + 0.00001 || at - samples[samples.Count - 1].At > freshness)))
             { samples.Clear(); stableLevel = pendingLevel = pendingCount = 0; hasBaseline = false; }
             periodStart = start; periodEnd = end;
             samples.Add(new Sample { At = at, Remaining = remaining });
@@ -82,8 +91,8 @@ namespace Taskcode.Probe
             var last = samples[samples.Count - 1];
             if (now < last.At) return new SpeedEstimate { State = SpeedState.Unavailable };
             if (now >= periodEnd) return new SpeedEstimate { State = SpeedState.Expired };
-            if (now - last.At > TimeSpan.FromSeconds(30)) return new SpeedEstimate { State = SpeedState.Stale };
-            if (samples.Count < 3 || last.At - samples[0].At < TimeSpan.FromSeconds(5)) return new SpeedEstimate { State = SpeedState.Calculating };
+            if (now - last.At > freshness) return new SpeedEstimate { State = SpeedState.Stale };
+            if (samples.Count < minimumSamples || last.At - samples[0].At < TimeSpan.FromSeconds(5)) return new SpeedEstimate { State = SpeedState.Calculating };
             DateTime from = last.At - Window;
             double initial = samples[0].Remaining;
             if (samples[0].At > from) from = samples[0].At;
@@ -93,12 +102,12 @@ namespace Taskcode.Probe
                 initial += fraction * (samples[1].Remaining - initial);
             }
             double rate = Math.Max(0, initial - last.Remaining) / (last.At - from).TotalHours;
-            if (rate < 0.00001) return new SpeedEstimate { State = SpeedState.Idle };
+            if (rate < 0.00001) return new SpeedEstimate { State = SpeedState.Idle, WindowSeconds = (last.At - from).TotalSeconds };
             double hours = last.Remaining / rate;
             if (double.IsNaN(hours) || double.IsInfinity(hours) || hours > TimeSpan.MaxValue.TotalHours / 2)
                 return new SpeedEstimate { State = SpeedState.Unavailable };
             double ratio = hours / (periodEnd - now).TotalHours;
-            return new SpeedEstimate { State = SpeedState.Active, PointsPerHour = rate, TimeToExhaustion = TimeSpan.FromHours(hours), Level = ratio < 0.8 ? 3 : ratio <= 1.2 ? 2 : 1 };
+            return new SpeedEstimate { State = SpeedState.Active, PointsPerHour = rate, WindowSeconds = (last.At - from).TotalSeconds, TimeToExhaustion = TimeSpan.FromHours(hours), Level = ratio < 0.8 ? 3 : ratio <= 1.2 ? 2 : 1 };
         }
     }
 }

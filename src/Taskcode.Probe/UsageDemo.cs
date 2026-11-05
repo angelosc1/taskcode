@@ -38,7 +38,7 @@ namespace Taskcode.Probe
             {
                 Readings[i].Available = false; Readings[i].ObservedUtc = DateTime.MinValue;
                 Readings[i].Period.Remaining = -1; Readings[i].Period.StartUtc = Readings[i].Period.EndUtc = DateTime.MinValue;
-                Readings[i].Speed = new UsageSpeed(); Readings[i].PulseUntil = DateTime.MinValue;
+                Readings[i].Speed = LiveSpeed(provider); Readings[i].PulseUntil = DateTime.MinValue;
             }
             Revision++;
         }
@@ -51,7 +51,7 @@ namespace Taskcode.Probe
             {
                 var reading = Readings[provider * 2 + index];
                 var period = snapshot.Periods[index];
-                if (period == null) { reading.Available = false; reading.Period.Remaining = -1; reading.Speed = new UsageSpeed(); reading.PulseUntil = DateTime.MinValue; continue; }
+                if (period == null) { reading.Available = false; reading.Period.Remaining = -1; reading.Speed = LiveSpeed(provider); reading.PulseUntil = DateTime.MinValue; continue; }
                 if (snapshot.ObservedUtc == reading.ObservedUtc && reading.Available && period.Remaining == reading.Period.Remaining && period.StartUtc == reading.Period.StartUtc && period.EndUtc == reading.Period.EndUtc) continue;
                 int previous = reading.Speed.EstimateAt(snapshot.ObservedUtc).Level;
                 reading.Available = true; reading.ObservedUtc = snapshot.ObservedUtc;
@@ -67,6 +67,8 @@ namespace Taskcode.Probe
             var reading = Readings[index];
             return !IsLive ? reading.Period.Remaining : reading.Available && now < reading.Period.EndUtc && now - reading.ObservedUtc <= TimeSpan.FromMinutes(index < 2 ? 6 : 2) ? reading.Period.Remaining : -1;
         }
+        private static UsageSpeed LiveSpeed(int provider)
+        { return new UsageSpeed(TimeSpan.FromSeconds(provider == 0 ? 300 : 10)); }
         internal int DisplayUsed(int index, DateTime now)
         {
             int remaining = DisplayValue(index, now);

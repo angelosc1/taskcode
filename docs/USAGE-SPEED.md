@@ -10,19 +10,19 @@ The details panel estimates time to quota exhaustion from recent observations, s
 | `››` | From 0.8 through 1.2: quota is projected to run out around reset |
 | `›››` | Less than 0.8: quota is projected to run out well before reset |
 
-The estimate is remaining quota divided by the observed consumption rate. The rate is measured in percentage points per hour; its observation window is **15 seconds**. Details show approximate remaining usage time and identify the source. An estimate assumes the recent rate continues; it is not a guarantee.
+The estimate is remaining quota divided by the observed consumption rate. The rate is measured in percentage points per hour; its observation window adapts to the source cadence: **15 seconds** for the demo, **20 seconds** for ten-second Codex updates, and up to **10 minutes** for five-minute Claude quota updates. Details show approximate remaining usage time and identify the source. An estimate assumes the recent rate continues; it is not a guarantee.
 
 ## Calculation rules
 
-- Require at least three distinct observations covering at least five seconds.
-- Use a rolling 15-second window, interpolating the sample interval that crosses its boundary.
+- Require three distinct observations covering at least five seconds for frequent updates. Sparse sources such as Claude require two actual responses spanning their polling interval.
+- Use a rolling window of at least 15 seconds and two expected polling intervals, interpolating the sample interval that crosses its boundary. The tooltip reports the actual measured interval.
 - Require three consecutive new observations proposing a different level before changing an established arrow count.
 - Do not treat duplicate, out-of-order, non-UTC, or invalid observations as new activity.
-- Discard history when period bounds change, quota increases, or a sampling gap exceeds 30 seconds.
+- Discard history when period bounds change, quota increases, or a sampling gap exceeds the source freshness allowance: 30 seconds for Codex and six minutes for Claude.
 - Show **Calculating** before sufficient history, **Idle** without recent consumption, and a stale/expired/unavailable state when appropriate. Those states do not show speed arrows. The row stays visible with its calculation or availability status. Each quota also shows consumed percentage versus elapsed-time percentage directly above the reset countdown.
 - Do not generate new observations just because the display timer ticks. A repeated unchanged reading is valid only when the data source has supplied that observation.
 
-Provider refresh frequency limits responsiveness. Codex is queried approximately every ten seconds; Claude's direct usage check has a five-minute minimum interval and can also receive newer local status-line observations when using the matching local CLI account. Rechecking a cached response does not reveal new consumption. Slow or absent observations leave the estimator calculating or stale. See [account connections](ACCOUNTS.md).
+Provider refresh frequency limits responsiveness. Codex is queried approximately every ten seconds; Claude's direct usage check has a five-minute minimum interval and can also receive newer local status-line observations when using the matching local CLI account. Rechecking a cached response does not reveal new consumption. The estimator waits for real observations and tolerates the expected delay between polls. Missing a refresh beyond the freshness allowance shows "Waiting for fresh quota readings". Local execution activity drives Ripple independently; a running model does not itself provide a quota measurement. See [account connections](ACCOUNTS.md).
 
 ## Taskbar hints
 
@@ -36,4 +36,4 @@ Start with `--demo` and use **Simulate speed** to cycle through Mixed, Comfortab
 
 The demo initially seeds fifteen seconds of past activity. Subsequent synthetic observations arrive every two seconds with unchanged quota, so the simulated burst naturally decays to Idle when no new activity is simulated. Clicking the button seeds another history and previews changed arrow counts immediately. This explicit preview does not bypass stabilization for real incoming observations.
 
-The self-test includes twenty-six assertions for rates, projections, warmup, stale and invalid readings, interpolation, resets, resuming from Idle, three-observation stabilization, and sequential opacity transitions. Offscreen artifacts include `details-check.png`, `speed-check.png`, and an `animation-check.png` contact sheet for visual review in both themes.
+The self-test includes thirty-three assertions for rates, projections, warmup, stale and invalid readings, interpolation, resets, resuming from Idle, three-observation stabilization, and sequential opacity transitions. Offscreen artifacts include `details-check.png`, `speed-check.png`, and an `animation-check.png` contact sheet for visual review in both themes.

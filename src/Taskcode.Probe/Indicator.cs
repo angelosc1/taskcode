@@ -422,7 +422,7 @@ namespace Taskcode.Probe
                 bar.SpeedCaption.AccessibleName = (speed.State == SpeedState.Active ? speed.Level + " speed arrows. " : "") + speed.Summary;
                 bar.SpeedCaption.Invalidate();
                 hasArrows |= bar.SpeedCaption.HasArrows;
-                hints.SetToolTip(bar.SpeedCaption, speed.State == SpeedState.Active ? speed.PointsPerHour.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " percentage points/hour · 15-second recent window. Estimate, not a guarantee." : speed.Summary);
+                hints.SetToolTip(bar.SpeedCaption, speed.State == SpeedState.Active ? speed.PointsPerHour.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " percentage points/hour · " + speed.WindowSeconds.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + "-second observation window. Estimate, not a guarantee." : speed.Summary);
                 var elapsed = bar.Period.ElapsedAt(now);
                 bar.BudgetCaption.Text = value < 0 ? "-- used / -- time" : value + "% used / " +
                     (elapsed.HasValue ? Math.Round(elapsed.Value * 100) + "% time" : "-- time");

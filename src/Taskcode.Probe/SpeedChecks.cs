@@ -58,6 +58,21 @@ namespace Taskcode.Probe
             Check(SpeedArrows.OpacityAt(0.4, 2) > SpeedArrows.OpacityAt(0.4, 1), "Brightness must progress from the second arrow to the third.");
             Check(Math.Abs(SpeedArrows.OpacityAt(0.625, 0) - 0.2) < 0.000001, "Fade must keep a faint arrow visible for counting.");
             Check(Math.Abs(SpeedArrows.OpacityAt(1.25, 0) - SpeedArrows.OpacityAt(0, 0)) < 0.000001, "Animation must loop without a brightness discontinuity.");
+            var codex = new UsageSpeed(TimeSpan.FromSeconds(10));
+            for (int sample = 0; sample <= 4; sample++) codex.Observe(now.AddSeconds(sample * 10), 80 - sample, start, end);
+            Check(codex.EstimateAt(now.AddSeconds(40)).State == SpeedState.Active && codex.EstimateAt(now.AddSeconds(40)).WindowSeconds == 20,
+                "Ten-second Codex updates must retain enough real samples for a rolling estimate.");
+            var claude = new UsageSpeed(TimeSpan.FromMinutes(5));
+            claude.Observe(now, 80, start, end);
+            Check(claude.EstimateAt(now.AddSeconds(31)).State == SpeedState.Calculating, "Claude must not become stale before its scheduled refresh.");
+            claude.Observe(now.AddMinutes(5), 79, start, end);
+            Check(claude.EstimateAt(now.AddMinutes(5)).State == SpeedState.Active && Math.Abs(claude.EstimateAt(now.AddMinutes(5)).PointsPerHour - 12) < 0.0001,
+                "Sparse Claude readings must estimate measured consumption across their real interval.");
+            Check(claude.EstimateAt(now.AddMinutes(10)).State == SpeedState.Active, "A Claude estimate must remain valid through the next scheduled poll.");
+            Check(claude.EstimateAt(now.AddMinutes(11).AddSeconds(1)).State == SpeedState.Stale, "Missed Claude refreshes must still expire estimates.");
+            Check(!claude.Observe(now.AddMinutes(5), 78, start, end), "Cached Claude data must never count as another speed observation.");
+            claude.Observe(now.AddMinutes(12), 77, start, end);
+            Check(claude.EstimateAt(now.AddMinutes(12)).State == SpeedState.Calculating, "An actual outage must reset sparse history on recovery.");
         }
         private static UsageSpeed Seed(DateTime now, double remaining, DateTime start, DateTime end, double ratio)
         {
