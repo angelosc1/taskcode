@@ -64,12 +64,19 @@ namespace Taskcode.Probe
                 "Ten-second Codex updates must retain enough real samples for a rolling estimate.");
             var claude = new UsageSpeed(TimeSpan.FromMinutes(5));
             claude.Observe(now, 80, start, end);
+            var initial = claude.DisplayEstimateAt(now);
+            Check(initial.State == SpeedState.Active && initial.PeriodAverage && initial.Level == 1 && initial.Summary.Contains("period avg"),
+                "A fresh first quota reading must show a clearly labelled period-average forecast.");
+            Check(Math.Abs(initial.TimeToExhaustion.Value.TotalHours - 12) < 0.0001 && claude.EstimateAt(now).State == SpeedState.Calculating,
+                "Period average must use observed consumption since reset without changing the recent estimator's history.");
             Check(claude.EstimateAt(now.AddSeconds(31)).State == SpeedState.Calculating, "Claude must not become stale before its scheduled refresh.");
             claude.Observe(now.AddMinutes(5), 79, start, end);
             Check(claude.EstimateAt(now.AddMinutes(5)).State == SpeedState.Active && Math.Abs(claude.EstimateAt(now.AddMinutes(5)).PointsPerHour - 12) < 0.0001,
                 "Sparse Claude readings must estimate measured consumption across their real interval.");
+            Check(!claude.DisplayEstimateAt(now.AddMinutes(5)).PeriodAverage, "Real recent observations must automatically replace the initial period average.");
             Check(claude.EstimateAt(now.AddMinutes(10)).State == SpeedState.Active, "A Claude estimate must remain valid through the next scheduled poll.");
             Check(claude.EstimateAt(now.AddMinutes(11).AddSeconds(1)).State == SpeedState.Stale, "Missed Claude refreshes must still expire estimates.");
+            Check(claude.DisplayEstimateAt(now.AddMinutes(11).AddSeconds(1)).State == SpeedState.Stale, "A period average must never disguise stale quota data.");
             Check(!claude.Observe(now.AddMinutes(5), 78, start, end), "Cached Claude data must never count as another speed observation.");
             claude.Observe(now.AddMinutes(12), 77, start, end);
             Check(claude.EstimateAt(now.AddMinutes(12)).State == SpeedState.Calculating, "An actual outage must reset sparse history on recovery.");

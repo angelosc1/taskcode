@@ -415,14 +415,14 @@ namespace Taskcode.Probe
                 bar.ValueCaption.Text = value < 0 ? "--" : value + "%";
                 bar.AccessibleName = bar.Reading.Provider + ", " + bar.Reading.Window + ", " + (value < 0 ? "quota unavailable" : value + " percent used");
                 bar.Caption.Text = value < 0 ? "Unavailable" : bar.Period.ResetCaptionAt(now);
-                var speed = value < 0 ? new SpeedEstimate { State = SpeedState.Unavailable } : bar.Reading.Speed.EstimateAt(now);
+                var speed = value < 0 ? new SpeedEstimate { State = SpeedState.Unavailable } : bar.Reading.Speed.DisplayEstimateAt(now);
                 bar.SpeedCaption.Estimate = speed;
                 bar.SpeedCaption.Visible = true;
                 hints.SetToolTip(bar.ValueCaption, "Used quota. " + AccessibleDescription);
                 bar.SpeedCaption.AccessibleName = (speed.State == SpeedState.Active ? speed.Level + " speed arrows. " : "") + speed.Summary;
                 bar.SpeedCaption.Invalidate();
                 hasArrows |= bar.SpeedCaption.HasArrows;
-                hints.SetToolTip(bar.SpeedCaption, speed.State == SpeedState.Active ? speed.PointsPerHour.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " percentage points/hour · " + speed.WindowSeconds.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + "-second observation window. Estimate, not a guarantee." : speed.Summary);
+                hints.SetToolTip(bar.SpeedCaption, speed.State == SpeedState.Active ? (speed.PeriodAverage ? "Average since reset, not recent speed. " : "Recent measured speed. ") + speed.PointsPerHour.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " percentage points/hour · " + speed.WindowSeconds.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + "-second observation window. Estimate, not a guarantee." : speed.Summary);
                 var elapsed = bar.Period.ElapsedAt(now);
                 bar.BudgetCaption.Text = value < 0 ? "-- used / -- time" : value + "% used / " +
                     (elapsed.HasValue ? Math.Round(elapsed.Value * 100) + "% time" : "-- time");

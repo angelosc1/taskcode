@@ -12,6 +12,10 @@ The details panel estimates time to quota exhaustion from recent observations, s
 
 The estimate is remaining quota divided by the observed consumption rate. The rate is measured in percentage points per hour; its observation window adapts to the source cadence: **15 seconds** for the demo, **20 seconds** for ten-second Codex updates, and up to **10 minutes** for five-minute Claude quota updates. Details show approximate remaining usage time and identify the source. An estimate assumes the recent rate continues; it is not a guarantee.
 
+## Initial estimate
+
+Before enough recent observations arrive, Details can show a forecast labelled **period avg**, with arrow levels computed from the average consumed quota since reset. It uses the timestamp of the actual quota reading, does not add samples to the recent estimator, and automatically yields to the recent estimate. It never replaces stale or unavailable readings. Zero measured consumption shows a waiting status without arrows. Taskbar speed-change hints continue to use recent observations only.
+
 ## Calculation rules
 
 - Require three distinct observations covering at least five seconds for frequent updates. Sparse sources such as Claude require two actual responses spanning their polling interval.
@@ -36,4 +40,4 @@ Start with `--demo` and use **Simulate speed** to cycle through Mixed, Comfortab
 
 The demo initially seeds fifteen seconds of past activity. Subsequent synthetic observations arrive every two seconds with unchanged quota, so the simulated burst naturally decays to Idle when no new activity is simulated. Clicking the button seeds another history and previews changed arrow counts immediately. This explicit preview does not bypass stabilization for real incoming observations.
 
-The self-test includes thirty-three assertions for rates, projections, warmup, stale and invalid readings, interpolation, resets, resuming from Idle, three-observation stabilization, and sequential opacity transitions. Offscreen artifacts include `details-check.png`, `speed-check.png`, and an `animation-check.png` contact sheet for visual review in both themes.
+The self-test includes regression checks for rates, projections, warmup, stale and invalid readings, interpolation, resets, resuming from Idle, three-observation stabilization, and sequential opacity transitions. Offscreen artifacts include `details-check.png`, `speed-check.png`, and an `animation-check.png` contact sheet for visual review in both themes.

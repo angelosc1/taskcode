@@ -12,13 +12,14 @@ namespace Taskcode.Probe
         internal int Level;
         internal double PointsPerHour;
         internal double WindowSeconds;
+        internal bool PeriodAverage;
         internal TimeSpan? TimeToExhaustion;
         internal string Summary
         {
             get
             {
-                if (State == SpeedState.Idle) return "Idle · no recent consumption";
-            if (State == SpeedState.Stale) return "Waiting for fresh quota readings";
+                if (State == SpeedState.Idle) return PeriodAverage ? "No measured consumption yet" : "Idle · no recent consumption";
+                if (State == SpeedState.Stale) return "Waiting for fresh quota readings";
                 if (State == SpeedState.Expired) return "Period ended · waiting for new readings";
                 if (State == SpeedState.Unavailable) return "Usage estimate unavailable";
                 if (State != SpeedState.Active || !TimeToExhaustion.HasValue) return "Calculating recent usage...";
@@ -26,7 +27,7 @@ namespace Taskcode.Probe
                 if (span <= TimeSpan.Zero) return "Quota exhausted";
                 string duration = span.TotalDays >= 1 ? span.TotalDays.ToString("0.0", CultureInfo.InvariantCulture) + "d" :
                     span.TotalHours >= 1 ? (int)span.TotalHours + "h " + span.Minutes + "m" : Math.Max(1, (int)Math.Ceiling(span.TotalMinutes)) + "m";
-                return "~" + duration + " of use at this rate";
+                return PeriodAverage ? "~" + duration + " left · period avg" : "~" + duration + " of use at this rate";
             }
         }
     }
@@ -83,6 +84,24 @@ namespace Taskcode.Probe
                 if (stableLevel == 0) result.State = SpeedState.Calculating;
             }
             return result;
+        }
+        internal SpeedEstimate DisplayEstimateAt(DateTime now)
+        {
+            var recent = EstimateAt(now);
+            if (recent.State != SpeedState.Calculating || samples.Count == 0) return recent;
+            var last = samples[samples.Count - 1];
+            // A real quota observation can provide a labelled period average while
+            // the recent estimator warms up. Never insert synthetic observations.
+            double elapsed = (last.At - periodStart).TotalHours;
+            if (elapsed < 5.0 / 3600) return recent;
+            double used = 100 - last.Remaining;
+            if (used <= 0) return new SpeedEstimate { State = SpeedState.Idle, PeriodAverage = true };
+            double hours = last.Remaining / (used / elapsed);
+            if (double.IsNaN(hours) || double.IsInfinity(hours) || hours > TimeSpan.MaxValue.TotalHours / 2) return recent;
+            double ratio = hours / (periodEnd - now).TotalHours;
+            return new SpeedEstimate { State = SpeedState.Active, PeriodAverage = true,
+                PointsPerHour = used / elapsed, WindowSeconds = elapsed * 3600,
+                TimeToExhaustion = TimeSpan.FromHours(hours), Level = ratio < 0.8 ? 3 : ratio <= 1.2 ? 2 : 1 };
         }
         private SpeedEstimate Calculate(DateTime now)
         {
