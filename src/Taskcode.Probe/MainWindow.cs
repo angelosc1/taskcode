@@ -28,7 +28,7 @@ namespace Taskcode.Probe
         {
             Text = "Taskcode - positioning prototype";
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(590, 490);
+            ClientSize = new Size(590, 535);
             MinimumSize = Size;
             MaximumSize = Size;
             MaximizeBox = false;
@@ -49,24 +49,29 @@ namespace Taskcode.Probe
             mode.Items.AddRange(new object[] { "Embedded (experimental)", "Overlay" });
             mode.SelectedIndex = (int)settings.Mode;
             Controls.Add(mode);
-            AddLabel("Preview", 26, 242, 10, FontStyle.Regular, 180, 26);
-            preview.Location = new Point(220, 237);
+            AddLabel("Open details", 26, 240, 10, FontStyle.Regular, 180, 26);
+            var trigger = new ComboBox { Location = new Point(220, 236), Width = 340, DropDownStyle = ComboBoxStyle.DropDownList, AccessibleName = "Open details" };
+            trigger.Items.AddRange(new object[] { "Hover (default)", "Click only" });
+            trigger.SelectedIndex = (int)settings.DetailsTrigger;
+            Controls.Add(trigger);
+            AddLabel("Preview", 26, 287, 10, FontStyle.Regular, 180, 26);
+            preview.Location = new Point(220, 282);
             preview.Size = new Size(IndicatorView.LogicalWidth(settings.Style), IndicatorView.LogicalHeight);
             preview.Style = settings.Style;
             preview.Theme = theme;
             preview.BackColor = theme.PreviewBackground;
             Controls.Add(preview);
             enabled.Text = "Show indicator on the primary taskbar";
-            enabled.Location = new Point(26, 298);
+            enabled.Location = new Point(26, 343);
             enabled.Size = new Size(520, 28);
             enabled.Checked = true;
             Controls.Add(enabled);
-            status.Location = new Point(26, 338);
+            status.Location = new Point(26, 383);
             status.Size = new Size(534, 74);
             status.ForeColor = Color.FromArgb(184, 194, 207);
             Controls.Add(status);
-            var detailsButton = new Button { Text = "Demo details", Location = new Point(26, 430), Size = new Size(145, 34) };
-            var exit = new Button { Text = "Exit prototype", Location = new Point(415, 430), Size = new Size(145, 34) };
+            var detailsButton = new Button { Text = "Demo details", Location = new Point(26, 475), Size = new Size(145, 34) };
+            var exit = new Button { Text = "Exit prototype", Location = new Point(415, 475), Size = new Size(145, 34) };
             Controls.Add(detailsButton);
             Controls.Add(exit);
             detailsButton.Click += delegate { ShowDetails(true, true); };
@@ -82,6 +87,14 @@ namespace Taskcode.Probe
                 TickLayout();
             };
             mode.SelectedIndexChanged += delegate { settings.Mode = (HostMode)mode.SelectedIndex; RecreateIndicator(); Save(); TickLayout(); };
+            trigger.SelectedIndexChanged += delegate
+            {
+                settings.DetailsTrigger = (DetailsTrigger)trigger.SelectedIndex;
+                hoverSince = null;
+                pinned = false;
+                details.Hide();
+                Save();
+            };
             enabled.CheckedChanged += delegate { TickLayout(); };
             timer.Tick += delegate { TickLayout(); };
             Shown += delegate { RecreateIndicator(); timer.Start(); };
@@ -180,8 +193,12 @@ namespace Taskcode.Probe
             if (indicatorBounds.Contains(Cursor.Position))
             {
                 leftAt = DateTime.UtcNow;
-                if (!hoverSince.HasValue) hoverSince = DateTime.UtcNow;
-                if (!details.Visible && DateTime.UtcNow - hoverSince.Value > TimeSpan.FromMilliseconds(400)) ShowDetails(false, false);
+                if (settings.DetailsTrigger == DetailsTrigger.Hover)
+                {
+                    if (!hoverSince.HasValue) hoverSince = DateTime.UtcNow;
+                    if (!details.Visible && DateTime.UtcNow - hoverSince.Value > TimeSpan.FromMilliseconds(400)) ShowDetails(false, false);
+                }
+                else hoverSince = null;
             }
             else
             {
@@ -192,6 +209,8 @@ namespace Taskcode.Probe
         }
         private void ShowDetails(bool focus, bool fromPreview)
         {
+            // Both native MouseHover and rectangle-based dwell share this guard.
+            if (!focus && (settings.DetailsTrigger != DetailsTrigger.Hover || details.Visible)) return;
             Rectangle anchor = fromPreview || indicatorBounds.IsEmpty ? RectangleToScreen(preview.Bounds) : indicatorBounds;
             var area = Screen.FromRectangle(anchor).WorkingArea;
             int x = Math.Max(area.Left, Math.Min(anchor.Right - details.Width, area.Right - details.Width));

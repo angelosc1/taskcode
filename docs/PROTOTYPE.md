@@ -28,7 +28,7 @@ Elapsed time and reset countdowns refresh once per second while the details pane
 1. Keep **Lines (default)** or select **Essential** or **Blocks**.
 2. Start with **Embedded (experimental)** and check the status below the preview.
 3. Look just before the primary taskbar's system tray for the provider readings. Sample data is identified in the control window and details panel.
-4. Hover or click the indicator for sample details. The **Demo details** button also opens the panel from the control window.
+4. Choose **Open details > Hover (default)** to open the panel on hover or click, or **Click only** to prevent hover from opening it. The preference is saved. Click-opened panels stay open until dismissed; the **Demo details** button remains available in either mode.
 5. Select **Overlay** to compare the fallback. If verified space is insufficient, the indicator hides and explains why.
 6. Uncheck **Show indicator on the primary taskbar** to pause it.
 7. Use **Exit prototype** to close the prototype and its indicator.

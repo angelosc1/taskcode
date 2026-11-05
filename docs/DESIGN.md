@@ -29,6 +29,7 @@ Mockup values are not real readings. Displayed reset times and limits will depen
 ## Behavior
 
 - Hover opens a panel with both providers and their quota details.
+- **Open details** defaults to **Hover**, with a saved **Click only** alternative. Click-only mode disables both native hover events and dwell-based opening. Changing the preference dismisses the current panel immediately.
 - Support click and keyboard access rather than relying exclusively on hover.
 - Show the last update time and connection state.
 - Make missing or stale data explicit.
