@@ -14,7 +14,7 @@ namespace Taskcode.Probe
         {
             internal ComboBox Style, Placement, Trigger;
             internal CheckBox Weekly, Startup;
-            internal Button Details, Exit, Refresh, Claude, Codex, Disconnect;
+            internal Button Details, Close, Refresh, Claude, Codex, Disconnect;
         }
         private MenuControls BuildSettingsMenu(bool live)
         {
@@ -91,7 +91,8 @@ namespace Taskcode.Probe
             settingsHints.SetToolTip(result.Placement, "Embedded attaches to the taskbar. Overlay uses the same position in a separate window.");
             AddDivider(this, 16, 400, 488);
             status.Location = new Point(18, 411); status.Size = new Size(365, 20); status.AutoEllipsis = true; status.Tag = "muted"; status.Font = new Font("Segoe UI", 8f); status.Text = "Starting..."; Controls.Add(status);
-            result.Exit = MenuButton(this, "Exit", 414, 406, 90, 26, "ghost");
+            result.Close = MenuButton(this, "Close", 414, 406, 90, 26, "ghost");
+            result.Close.AccessibleName = "Close settings panel";
             Disposed += delegate { settingsHints.Dispose(); };
             ApplySettingsTheme(theme); ShowSettingsPage(0);
             return result;

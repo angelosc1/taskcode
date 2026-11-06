@@ -63,7 +63,7 @@ namespace Taskcode.Probe
             var menu = BuildSettingsMenu(connectAccounts);
             var style = menu.Style; var mode = menu.Placement; var trigger = menu.Trigger;
             var weekly = menu.Weekly; var startup = menu.Startup;
-            var detailsButton = menu.Details; var exit = menu.Exit; var simulate = menu.Refresh;
+            var detailsButton = menu.Details; var closeSettings = menu.Close; var simulate = menu.Refresh;
             var claudeConnect = menu.Claude; var codexConnect = menu.Codex; var disconnect = menu.Disconnect;
             try { startup.Checked = StartupRegistration.IsEnabled(Application.ExecutablePath); }
             catch (Exception ex)
@@ -124,7 +124,7 @@ namespace Taskcode.Probe
                 int provider = IndicatorView.ProviderAt(preview.PointToClient(Cursor.Position), preview.ClientSize, settings.Style, settings.ShowWeekly);
                 if (provider >= 0) ShowDetails(false, true, provider);
             };
-            exit.Click += delegate { RequestExit(); };
+            closeSettings.Click += delegate { Hide(); };
             style.SelectedIndexChanged += delegate
             {
                 settings.Style = (IndicatorStyle)style.SelectedIndex;

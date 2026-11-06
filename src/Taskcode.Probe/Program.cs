@@ -118,6 +118,17 @@ namespace Taskcode.Probe
                         Assert(window.VisibleDetailProvider == 0 && window.VisibleDetailCount == 1, "Selecting Claude must open only Claude details.");
                         window.ShowDetails(true, true, 1);
                         Assert(window.VisibleDetailProvider == 1 && window.VisibleDetailCount == 1, "Selecting Codex must replace Claude details without showing both.");
+                        Button closeSettings = null;
+                        foreach (Control control in SettingsMenuChecks.Descendants(window))
+                        {
+                            var button = control as Button;
+                            Assert(button == null || button.Text != "Exit", "Settings must not expose an app-exit button.");
+                            if (button != null && button.AccessibleName == "Close settings panel") closeSettings = button;
+                        }
+                        Assert(closeSettings != null && closeSettings.Text == "Close", "Settings must offer a clearly named Close action.");
+                        closeSettings.PerformClick();
+                        Assert(!window.Visible && !window.IsDisposed && window.TrayVisible, "The Close button must hide only settings and preserve the tray app.");
+                        window.OpenSettings();
                         window.Close();
                         Assert(!window.Visible && !window.IsDisposed && window.TrayVisible, "Closing settings must hide them while keeping the tray application alive.");
                         Assert(startupBefore == StartupRegistration.IsEnabled(Application.ExecutablePath), "Opening and closing the app must not enable startup.");

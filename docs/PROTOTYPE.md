@@ -45,7 +45,7 @@ The indicator uses a 117% content scale, in addition to one monitor-DPI transfor
 
 ## Tray and Windows startup
 
-Taskcode has a tray icon instead of a normal taskbar application button. Left-click the tray icon to open settings, or right-click for **Open settings** and **Exit**. Windows may place a new tray icon under the hidden-icons arrow. Closing or minimizing settings hides the window while the quota indicator keeps running. Running the executable again reopens the existing instance's settings rather than creating another instance.
+Taskcode has a tray icon instead of a normal taskbar application button. Left-click the tray icon to open settings, or right-click for **Open settings** and **Exit**. Windows may place a new tray icon under the hidden-icons arrow. The footer **Close** button, header close control, Escape, and minimizing hide settings while the quota indicator keeps running. To stop the app, choose **Exit** from the tray icon or taskbar indicator right-click menu. Running the executable again reopens the existing instance's settings rather than creating another instance.
 
 The compact settings menu has **Appearance**, **Accounts**, and **General** sections. It uses smaller typography and themed native selectors, with one section visible at a time. Drag its header to reposition it; the close button and Escape hide it. Status text is kept short, with placement diagnostics and full connection messages available on hover. **Start with Windows** remains in General and is never enabled by opening the menu.
 
