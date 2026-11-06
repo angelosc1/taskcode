@@ -23,7 +23,7 @@ namespace Taskcode.Probe
                     Check(image.GetPixel(x, 11).ToArgb() == (x < boundary ? bar.Theme.Claude : bar.Theme.Track).ToArgb(), "Colored fill must grow with consumed quota, including empty and exhausted limits.");
             }
             foreach (int provider in new[] { 0, 1 })
-            using (var panel = new DetailWindow(new UsageDemo(), provider) { Location = new Point(-30000, -30000), HoverAnchor = new Rectangle(-30000, -29750, 150, 40) })
+            using (var panel = new DetailWindow(new UsageDemo(), provider) { Location = new Point(-30000, -30000), HoverAnchor = new Rectangle(-30000, -29740, 150, 40) })
             {
                 panel.Show();
                 Check(panel.TopMost && (Native.GetStyle(panel.Handle, -20).ToInt64() & 8L) != 0,
@@ -47,12 +47,12 @@ namespace Taskcode.Probe
                 }
                 var now = DateTime.UtcNow;
                 panel.TrackPointer(new Point(panel.HoverAnchor.Left + 5, panel.HoverAnchor.Top + 5), now);
-                panel.TrackPointer(new Point(-25000, -25000), now.AddMilliseconds(100));
-                Check(panel.Visible, "Crossing the short gap between indicator and card must not dismiss it immediately.");
-                panel.TrackPointer(new Point(panel.Left + 100, panel.Top + 70), now.AddMilliseconds(180));
+                panel.TrackPointer(new Point(panel.Left + 60, panel.Bottom + 4), now);
+                Check(panel.Visible, "The direct bridge between trigger and card must remain traversable without a time delay.");
+                panel.TrackPointer(new Point(panel.Left + 100, panel.Top + 70), now);
                 Check(panel.Visible, "Pointer over a card's child controls must keep the card open.");
-                panel.TrackPointer(new Point(-25000, -25000), now.AddMilliseconds(450));
-                Check(!panel.Visible, "Leaving both card and trigger must automatically dismiss every provider card.");
+                panel.TrackPointer(new Point(-25000, -25000), now);
+                Check(!panel.Visible, "Leaving card, trigger, and crossing must immediately dismiss every provider card.");
             }
             using (var panel = new DetailWindow(usage) { Location = new Point(-30000, -30000) })
             {

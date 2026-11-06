@@ -336,11 +336,10 @@ namespace Taskcode.Probe
         private TaskbarTheme theme = TaskbarTheme.Read();
         private readonly Timer periodTimer = new Timer { Interval = 1000 };
         private readonly Timer animationTimer = new Timer { Interval = 33 };
-        private readonly Timer dismissalTimer = new Timer { Interval = 100 };
+        private readonly Timer dismissalTimer = new Timer { Interval = 16 };
         private readonly ToolTip hints = new ToolTip();
         private readonly UsageDemo usage;
         private readonly Label providerLabel;
-        private DateTime lastPointerInside;
         internal Rectangle HoverAnchor { get; set; }
         internal readonly int ProviderIndex;
         internal DetailWindow(UsageDemo usage = null, int providerIndex = 0)
@@ -376,7 +375,7 @@ namespace Taskcode.Probe
             VisibleChanged += delegate
             {
                 periodTimer.Enabled = dismissalTimer.Enabled = Visible;
-                if (Visible) { lastPointerInside = DateTime.UtcNow; RefreshPeriods(); } else animationTimer.Stop();
+                if (Visible) { RefreshPeriods(); } else animationTimer.Stop();
             };
             Disposed += delegate { periodTimer.Dispose(); animationTimer.Dispose(); dismissalTimer.Dispose(); hints.Dispose(); };
             ApplyTheme(theme);
@@ -414,8 +413,16 @@ namespace Taskcode.Probe
         internal void TrackPointer(Point pointer, DateTime now)
         {
             if (!Visible) return;
-            if (Bounds.Contains(pointer) || HoverAnchor.Contains(pointer)) lastPointerInside = now;
-            else if (now - lastPointerInside >= TimeSpan.FromMilliseconds(220)) Hide();
+            if (Bounds.Contains(pointer) || HoverAnchor.Contains(pointer)) return;
+            // Keep only the short physical crossing between trigger and card open.
+            int left = Math.Max(Left, HoverAnchor.Left), right = Math.Min(Right, HoverAnchor.Right);
+            if (right > left)
+            {
+                var bridge = Bottom <= HoverAnchor.Top ? Rectangle.FromLTRB(left, Bottom, right, HoverAnchor.Top) :
+                    HoverAnchor.Bottom <= Top ? Rectangle.FromLTRB(left, HoverAnchor.Bottom, right, Top) : Rectangle.Empty;
+                if (bridge.Contains(pointer)) return;
+            }
+            Hide();
         }
         private void RefreshPeriods()
         {

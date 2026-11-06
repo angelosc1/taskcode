@@ -14,6 +14,7 @@ namespace Taskcode.Probe
         private readonly Settings settings = Settings.Load();
         private readonly TaskbarWatcher watcher = new TaskbarWatcher();
         private readonly Timer timer = new Timer { Interval = 250 };
+        private readonly Timer hoverTimer = new Timer { Interval = 16 };
         private readonly Timer animationTimer = new Timer { Interval = 33 };
         private readonly IndicatorView preview = new IndicatorView();
         private readonly Label status = new Label();
@@ -22,13 +23,12 @@ namespace Taskcode.Probe
         private readonly UsageDemo usage = new UsageDemo();
         private readonly DetailWindow[] providerDetails;
         private DetailWindow details;
-        private int selectedProvider, hoverProvider = -1;
+        private int selectedProvider;
         private IntPtr attachedParent;
         private Rectangle indicatorBounds;
         private string saveError;
         private TaskbarTheme theme = TaskbarTheme.Read();
         private DateTime nextThemeCheck;
-        private DateTime? hoverSince;
         private readonly NotifyIcon tray;
         private readonly ContextMenuStrip trayMenu;
         private readonly Icon trayImage;
@@ -119,7 +119,7 @@ namespace Taskcode.Probe
                 int provider = IndicatorView.ProviderAt(preview.PointToClient(Cursor.Position), preview.ClientSize, settings.Style, settings.ShowWeekly);
                 ShowDetails(true, true, provider < 0 ? selectedProvider : provider);
             };
-            preview.MouseHover += delegate
+            preview.MouseEnter += delegate
             {
                 int provider = IndicatorView.ProviderAt(preview.PointToClient(Cursor.Position), preview.ClientSize, settings.Style, settings.ShowWeekly);
                 if (provider >= 0) ShowDetails(false, true, provider);
@@ -148,13 +148,13 @@ namespace Taskcode.Probe
             trigger.SelectedIndexChanged += delegate
             {
                 settings.DetailsTrigger = (DetailsTrigger)trigger.SelectedIndex;
-                hoverSince = null;
-                hoverProvider = -1;
                 details.Hide();
                 Save();
             };
             enabled.CheckedChanged += delegate { TickLayout(); };
             timer.Tick += delegate { TickLayout(); };
+            hoverTimer.Tick += delegate { UpdateHover(); };
+            preview.MouseMove += delegate { UpdateHover(); };
             animationTimer.Tick += delegate
             {
                 int key = usage.PulseKey(DateTime.UtcNow, settings.ShowWeekly);
@@ -175,7 +175,6 @@ namespace Taskcode.Probe
             trayMenu.Items.Add("Exit", null, delegate { RequestExit(); });
             trayMenu.Closed += delegate
             {
-                hoverSince = null; hoverProvider = -1;
                 if (indicator != null && !indicator.IsDisposed) indicator.InvalidateSurface();
             };
             tray = new NotifyIcon { Icon = trayImage, Text = "Taskcode - AI quota monitor", ContextMenuStrip = trayMenu, Visible = true };
@@ -187,7 +186,7 @@ namespace Taskcode.Probe
             };
             FormClosed += delegate
             {
-                timer.Stop(); timer.Dispose(); animationTimer.Dispose(); watcher.Dispose();
+                timer.Stop(); timer.Dispose(); hoverTimer.Dispose(); animationTimer.Dispose(); watcher.Dispose();
                 if (connections != null) connections.Dispose();
                 foreach (var accountWindow in accountWindows) if (accountWindow != null && !accountWindow.IsDisposed) accountWindow.Dispose();
                 disconnectMenu.Dispose();
@@ -199,7 +198,7 @@ namespace Taskcode.Probe
             // Keep the host alive even when startup suppresses the settings window.
             CreateHandle();
             RecreateIndicator();
-            timer.Start();
+            timer.Start(); hoverTimer.Start();
         }
         protected override void SetVisibleCore(bool value)
         {
@@ -252,9 +251,9 @@ namespace Taskcode.Probe
             if (indicator != null && !indicator.IsDisposed) indicator.Dispose();
             attachedParent = IntPtr.Zero;
             indicator = new IndicatorWindow();
+            indicator.MouseMove += delegate { UpdateHover(); };
             indicator.ContextRequested += delegate
             {
-                hoverSince = null; hoverProvider = -1;
                 details.Hide();
                 if (!trayMenu.Visible) trayMenu.Show(Cursor.Position);
             };
@@ -264,7 +263,7 @@ namespace Taskcode.Probe
                 int provider = IndicatorView.ProviderAt(e.Location, indicator.ClientSize, settings.Style, settings.ShowWeekly);
                 if (provider >= 0) ShowDetails(true, false, provider);
             };
-            indicator.MouseHover += delegate
+            indicator.MouseEnter += delegate
             {
                 int provider = IndicatorView.ProviderAt(indicator.PointToClient(Cursor.Position), indicator.ClientSize, settings.Style, settings.ShowWeekly);
                 if (provider >= 0) ShowDetails(false, false, provider);
@@ -275,8 +274,6 @@ namespace Taskcode.Probe
             if (indicator != null && !indicator.IsDisposed) indicator.Hide();
             details.Hide();
             indicatorBounds = Rectangle.Empty;
-            hoverSince = null;
-            hoverProvider = -1;
             SetSettingsStatus(reason + (saveError == null ? "" : "\n" + saveError), true);
         }
         private void TickLayout()
@@ -355,31 +352,23 @@ namespace Taskcode.Probe
             { PauseIndicator("Windows rejected the transparent surface. Try the other placement mode."); return; }
             indicatorBounds = indicator.RectangleToScreen(indicator.ClientRectangle);
             SetSettingsStatus((expected == IntPtr.Zero ? "Overlay active" : "Embedded child window active") + " · " + layout.Dpi + " DPI" + (saveError == null ? "" : "\n" + saveError), saveError != null);
-            // The alpha surface has real transparent gaps between glyphs. Track the
-            // complete indicator rectangle so those gaps do not reset hover dwell.
-            if (trayMenu.Visible) { hoverSince = null; hoverProvider = -1; return; }
-            if (indicatorBounds.Contains(Cursor.Position))
-            {
-                if (settings.DetailsTrigger == DetailsTrigger.Hover)
-                {
-                    int provider = IndicatorView.ProviderAt(new Point(Cursor.Position.X - indicatorBounds.X, Cursor.Position.Y - indicatorBounds.Y), indicatorBounds.Size, settings.Style, settings.ShowWeekly);
-                    if (provider != hoverProvider) { hoverProvider = provider; hoverSince = DateTime.UtcNow; }
-                    if (!hoverSince.HasValue) hoverSince = DateTime.UtcNow;
-                    if ((!details.Visible || selectedProvider != provider) && DateTime.UtcNow - hoverSince.Value > TimeSpan.FromMilliseconds(400)) ShowDetails(false, false, provider);
-                }
-                else { hoverSince = null; hoverProvider = -1; }
-            }
-            else
-            {
-                hoverSince = null;
-                hoverProvider = -1;
-            }
+            UpdateHover();
+        }
+        private void UpdateHover()
+        {
+            if (settings.DetailsTrigger != DetailsTrigger.Hover || trayMenu.Visible) return;
+            var pointer = Cursor.Position;
+            bool fromPreview = Visible && preview.Visible && preview.RectangleToScreen(preview.ClientRectangle).Contains(pointer);
+            var bounds = fromPreview ? preview.RectangleToScreen(preview.ClientRectangle) : indicatorBounds;
+            if (!fromPreview && (indicator == null || !indicator.Visible)) return;
+            int provider = IndicatorView.ProviderAt(new Point(pointer.X - bounds.X, pointer.Y - bounds.Y), bounds.Size, settings.Style, settings.ShowWeekly);
+            if (provider >= 0) ShowDetails(false, fromPreview, provider);
         }
         internal int VisibleDetailProvider { get { return details.Visible ? details.ProviderIndex : -1; } }
         internal int VisibleDetailCount { get { int count = 0; foreach (var panel in providerDetails) if (panel.Visible) count++; return count; } }
         internal void ShowDetails(bool focus, bool fromPreview, int provider = 0)
         {
-            // Both native MouseHover and rectangle-based dwell share this guard.
+            // Native entry and frame-rate pointer tracking share this guard.
             if (provider < 0 || provider > 1) return;
             if (!focus && (settings.DetailsTrigger != DetailsTrigger.Hover || (details.Visible && selectedProvider == provider))) return;
             if (selectedProvider != provider)
