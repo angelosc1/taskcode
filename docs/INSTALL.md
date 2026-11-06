@@ -49,6 +49,7 @@ Only one instance runs per Windows session. Running the executable again opens t
 - Application: `%LOCALAPPDATA%\Programs\Taskcode`.
 - Preferences: `%LOCALAPPDATA%\Taskcode\settings.xml`.
 - Separate official-client sign-ins: `%LOCALAPPDATA%\Taskcode\accounts`.
+- Managed Claude hook helper: `%LOCALAPPDATA%\Taskcode\Taskcode.ClaudeBridge.exe`, refreshed with installer updates.
 - Safe lifecycle diagnostics: `%LOCALAPPDATA%\Taskcode\lifecycle.log`.
 - Verified update downloads: `%LOCALAPPDATA%\Taskcode\updates`.
 

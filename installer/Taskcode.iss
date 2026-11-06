@@ -49,6 +49,7 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; Flags: unchecked
 Source: "{#SourceDir}\Taskcode.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\Taskcode.exe.config"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\Taskcode.ClaudeBridge.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourceDir}\Taskcode.ClaudeBridge.exe"; DestDir: "{localappdata}\Taskcode"; Flags: ignoreversion
 Source: "{#SourceDir}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\THIRD-PARTY-NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\INSTALL.md"; DestDir: "{app}"; Flags: ignoreversion
