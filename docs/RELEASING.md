@@ -24,3 +24,9 @@ Push the reviewed commit, then an annotated tag matching `VERSION`, for example 
 After publishing, verify asset names and digests against `SHA256SUMS`, install the setup edition, connect accounts, confirm saved preferences, and test **General > Check for updates**. A local older test build can exercise upgrade to the public version without publishing a dummy release.
 
 Do not replace binaries in an existing release with different bytes. Publish a new version instead.
+
+## Validate an existing release
+
+In **Actions > Windows release > Run workflow**, select **main**. This rebuilds and runs the checks, then verifies the current version's published Markdown notes, asset URLs and SHA-256 download digests. It skips publication and does not replace release binaries or move tags. The version in `VERSION` must already have a public release.
+
+A failed historical run stays failed after a later workflow fix. Re-running an old tag uses that tag's workflow; use a manual run on `main` to validate the corrected workflow against the existing release.

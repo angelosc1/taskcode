@@ -14,7 +14,9 @@ jobs:
         shell: powershell
         run: |
           $version = (Get-Content VERSION -Raw).Trim()
-          if ($env:GITHUB_REF_TYPE -ne 'tag' -or $env:GITHUB_REF_NAME -ne "v$version") { throw 'Run this workflow on the tag matching VERSION.' }
+          $tagRun = $env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -eq "v$version"
+          $validationRun = $env:GITHUB_EVENT_NAME -eq 'workflow_dispatch' -and $env:GITHUB_REF_NAME -eq 'main'
+          if (-not ($tagRun -or $validationRun)) { throw 'Use the tag matching VERSION to publish, or dispatch on main to validate without publishing.' }
           "TASKCODE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
       - name: Prepare compiler
         shell: powershell
@@ -23,6 +25,7 @@ jobs:
         shell: powershell
         run: .\scripts\build-release.ps1 -RunChecks
       - name: Publish verified assets
+        if: github.ref_type == 'tag'
         shell: powershell
         env:
           GH_TOKEN: ${{ github.token }}
@@ -43,3 +46,26 @@ jobs:
           $publishPayload = @{ tag_name = $tag; draft = $false; make_latest = 'true' } | ConvertTo-Json
           $published = Invoke-RestMethod -Method Patch -Uri $release.url -Headers $headers -ContentType 'application/json' -Body $publishPayload
           if ($published.draft -or $published.tag_name -cne $tag -or $published.body -cne $notes) { throw 'Release publication verification failed.' }
+      - name: Verify published release
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = $env:TASKCODE_VERSION
+          $headers = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json' }
+          $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases/tags/v$version" -Headers $headers
+          $notes = [System.IO.File]::ReadAllText((Join-Path $PWD "docs/release-notes/$version.md"))
+          if ($release.draft -or $release.tag_name -cne "v$version" -or $release.body -cne $notes) { throw 'Public release metadata does not match the source.' }
+          $expected = @("Taskcode-Setup-$version-win-x64.exe", "Taskcode-$version-win-x64.zip", 'SHA256SUMS')
+          if ($release.assets.Count -ne 3) { throw 'Expected three public release assets.' }
+          foreach ($name in $expected) {
+            $asset = @($release.assets | Where-Object { $_.name -ceq $name })
+            if ($asset.Count -ne 1 -or $asset[0].digest -notmatch '^sha256:[a-fA-F0-9]{64}$') { throw "Missing asset or digest: $name" }
+            $url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/v$version/$name"
+            if ($asset[0].browser_download_url -cne $url) { throw "Unexpected asset URL: $name" }
+            $destination = Join-Path $env:RUNNER_TEMP $name
+            Invoke-WebRequest -Uri $url -OutFile $destination
+            $actual = 'sha256:' + (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($actual -cne $asset[0].digest) { throw "Download integrity check failed: $name" }
+          }
+          Write-Output "Verified v$version release notes and all three public asset downloads."
