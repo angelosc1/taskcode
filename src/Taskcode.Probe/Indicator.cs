@@ -343,7 +343,7 @@ namespace Taskcode.Probe
             ControlBox = false;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.Manual;
-            ClientSize = new Size(300, 252);
+            ClientSize = new Size(300, 264);
             BackColor = Color.FromArgb(29, 32, 36);
             ForeColor = Color.FromArgb(238, 241, 245);
             Font = new Font("Segoe UI", 10f);
@@ -351,8 +351,8 @@ namespace Taskcode.Probe
             var providerColor = providerIndex == 0 ? IndicatorView.Claude : IndicatorView.Codex;
             providerLabel = AddText(provider, 44, 11, 10, FontStyle.Bold, providerColor);
             providerLabel.AutoSize = false; providerLabel.Size = new Size(230, 26); providerLabel.TextAlign = ContentAlignment.MiddleLeft;
-            AddQuota(this.usage.Readings[providerIndex * 2], 44);
-            AddQuota(this.usage.Readings[providerIndex * 2 + 1], 144);
+            AddQuota(this.usage.Readings[providerIndex * 2], 50);
+            AddQuota(this.usage.Readings[providerIndex * 2 + 1], 156);
             KeyDown += delegate(object sender, KeyEventArgs e) { if (e.KeyCode == Keys.Escape) Hide(); };
             FormClosing += delegate(object sender, FormClosingEventArgs e) { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } };
             periodTimer.Tick += delegate { RefreshPeriods(); };
@@ -470,8 +470,8 @@ namespace Taskcode.Probe
         {
             base.OnPaint(e);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            var state = e.Graphics.Save(); e.Graphics.ScaleTransform(Width / 300f, Height / 252f);
-            foreach (int y in new[] { 40, 140 })
+            var state = e.Graphics.Save(); e.Graphics.ScaleTransform(Width / 300f, Height / 264f);
+            foreach (int y in new[] { 46, 152 })
                 UiSurface.Draw(e.Graphics, new RectangleF(10, y, 280, 96), UiSurface.Card(theme), UiSurface.Blend(theme.PreviewBackground, theme.Text, .08), 10);
             var accent = ProviderIndex == 0 ? theme.Claude : theme.Codex;
             UiSurface.Draw(e.Graphics, new RectangleF(11, 10, 26, 26), UiSurface.Blend(theme.PreviewBackground, accent, .10), UiSurface.Blend(theme.PreviewBackground, accent, .18), 8);

@@ -23,13 +23,13 @@ namespace Taskcode.Probe
                     Check(image.GetPixel(x, 11).ToArgb() == (x < boundary ? bar.Theme.Claude : bar.Theme.Track).ToArgb(), "Colored fill must grow with consumed quota, including empty and exhausted limits.");
             }
             foreach (int provider in new[] { 0, 1 })
-            using (var panel = new DetailWindow(new UsageDemo(), provider) { Location = new Point(-30000, -30000), HoverAnchor = new Rectangle(-30000, -29740, 150, 40) })
+            using (var panel = new DetailWindow(new UsageDemo(), provider) { Location = new Point(-30000, -30000), HoverAnchor = new Rectangle(-30000, -29728, 150, 40) })
             {
                 panel.Show();
                 Check(panel.TopMost && (Native.GetStyle(panel.Handle, -20).ToInt64() & 8L) != 0,
                     "Hover cards must appear above the foreground app and topmost taskbar without requiring click activation.");
                 Check(panel.FormBorderStyle == FormBorderStyle.None && !panel.ControlBox && !panel.ShowInTaskbar, "Details must be a borderless card without native title/close controls.");
-                Check(panel.ClientSize.Height <= 252, "The compact card must fit the restored budget and speed rows.");
+                Check(panel.ClientSize.Height <= 264, "The compact card must fit the budget and speed rows with breathing room between sections.");
                 foreach (Control control in panel.Controls)
                 {
                     var bar = control as QuotaBar;
