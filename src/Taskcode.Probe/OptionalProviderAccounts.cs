@@ -25,6 +25,7 @@ namespace Taskcode.Probe
         private bool updating;
         private readonly ListBox providers = new ListBox();
         private readonly Label title = new Label(), help = new Label(), state = new Label(), loginState = new Label();
+        private readonly ProviderBrandMark titleMark = new ProviderBrandMark();
         private readonly Label keyPrompt = new Label();
         private readonly TextBox key = new TextBox { UseSystemPasswordChar = true };
         private readonly ComboBox region = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
@@ -43,9 +44,12 @@ namespace Taskcode.Probe
             AddLabel(new Label(), "Claude and Codex start enabled. Other providers start disabled.", 18, 16, 704, 30);
             providers.Location = new Point(18, 55); providers.Size = new Size(178, 356); providers.BorderStyle = BorderStyle.FixedSingle;
             providers.BackColor = Color.FromArgb(39, 42, 47); providers.ForeColor = ForeColor; providers.ItemHeight = 27;
+            providers.DrawMode = DrawMode.OwnerDrawFixed;
+            providers.DrawItem += DrawProviderItem;
             if (core != null) providers.Items.AddRange(new object[] { "Claude", "Codex" });
             foreach (string name in ProviderCatalog.Names) providers.Items.Add(name); Controls.Add(providers);
-            AddLabel(title, "", 214, 55, 506, 26); title.Font = new Font(Font.FontFamily, 12, FontStyle.Bold);
+            titleMark.Location = new Point(214, 60); titleMark.Size = new Size(18, 18); Controls.Add(titleMark);
+            AddLabel(title, "", 242, 55, 478, 26); title.Font = new Font(Font.FontFamily, 12, FontStyle.Bold);
             AddLabel(help, "", 214, 92, 506, 66);
             AddLabel(state, "", 214, 160, 506, 26);
             monitoring.Text = "Enable monitoring"; monitoring.Location = new Point(214, 187); monitoring.Size = new Size(506, 26); monitoring.AccessibleName = "Enable selected provider";
@@ -78,6 +82,25 @@ namespace Taskcode.Probe
             button.Click += delegate { try { action(); } catch (Exception) { loginState.Text = L10n.T("Could not complete this action. Check the official app and retry."); } };
             Controls.Add(button); return button;
         }
+        private void DrawProviderItem(object sender, DrawItemEventArgs e)
+        {
+            if (e.Index < 0) return;
+            int index = e.Index - (core == null ? 0 : 2);
+            Color accent = index < 0 ? (index == -2 ? IndicatorView.Claude : IndicatorView.Codex) : connections.Providers[index].Color;
+            using (var background = new SolidBrush((e.State & DrawItemState.Selected) != 0 ? Color.FromArgb(64, 72, 87) : providers.BackColor))
+                e.Graphics.FillRectangle(background, e.Bounds);
+            var state = e.Graphics.Save();
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            int side = (int)System.Math.Round(18f * DeviceDpi / 96f);
+            int gap = (int)System.Math.Round(8f * DeviceDpi / 96f);
+            using (var brush = new SolidBrush(accent))
+                ProviderBrandMark.Draw(e.Graphics, brush, index + 2, new RectangleF(e.Bounds.Left + gap, e.Bounds.Top + (e.Bounds.Height - side) / 2f, side, side));
+            e.Graphics.Restore(state);
+            var text = new Rectangle(e.Bounds.Left + side + gap * 2, e.Bounds.Top, e.Bounds.Width - side - gap * 2, e.Bounds.Height);
+            TextRenderer.DrawText(e.Graphics, providers.Items[e.Index].ToString(), e.Font, text, providers.ForeColor,
+                TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+            e.DrawFocusRectangle();
+        }
         private void UpdateState()
         {
             int index = Selected;
@@ -85,6 +108,7 @@ namespace Taskcode.Probe
             {
                 int selected = index + 2; bool active = core.Enabled(selected);
                 title.Text = selected == 0 ? "Claude" : "Codex"; title.ForeColor = selected == 0 ? IndicatorView.Claude : IndicatorView.Codex;
+                titleMark.SetProvider(selected, title.ForeColor, title.Text);
                 help.Text = L10n.T("Turn monitoring on or off without changing your official account login. Use Sign in to connect an account.");
                 state.Text = L10n.T(active ? core.Status(selected) : "Monitoring disabled");
                 connect.Enabled = !active; disconnect.Enabled = active;
@@ -94,6 +118,7 @@ namespace Taskcode.Probe
             }
             var provider = connections.Providers[index];
             title.Text = provider.Name; title.ForeColor = provider.Color; help.Text = L10n.T(ProviderCatalog.Help[index]);
+            titleMark.SetProvider(index + 2, provider.Color, provider.Name);
             state.Text = L10n.T(provider.Enabled ? provider.Snapshot.Status : "Monitoring disabled");
             connect.Enabled = !provider.Enabled; disconnect.Enabled = provider.Enabled;
             updating = true; monitoring.Checked = provider.Enabled; updating = false;

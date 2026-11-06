@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 - 2026-11-06
+
+- Replace optional-provider initials with embedded vector logos in all indicator styles, the provider list and provider headers.
+- Prevent brief taskbar measurement failures from immediately hiding the indicator; keep verified geometry within the existing four-second freshness limit, retain live geometry checks, and avoid native frame changes when placement is unchanged.
+- Refresh the transparent surface on visibility recovery and record indicator pause/resume reasons in the bounded lifecycle log.
+
 ## 0.3.0 - 2026-11-06
 
 - Add Dot Matrix and Color Strip styles with five-hour/weekly modes, independent consumption colors and existing provider visibility controls.

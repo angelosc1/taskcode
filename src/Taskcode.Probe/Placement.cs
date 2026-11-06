@@ -17,6 +17,16 @@ namespace Taskcode.Probe
 
     internal static class Placement
     {
+        internal static readonly TimeSpan MeasurementLifetime = TimeSpan.FromSeconds(4);
+        internal static LayoutSnapshot StabilizeMeasurement(LayoutSnapshot previous, LayoutSnapshot next)
+        {
+            // UI Automation can fail while Explorer updates its tree. Keep the last
+            // verified bounds briefly; TickLayout still checks the live native bounds.
+            if (next.Error != null && previous != null && previous.Error == null &&
+                next.MeasuredAt >= previous.MeasuredAt && next.MeasuredAt - previous.MeasuredAt <= MeasurementLifetime)
+                return previous;
+            return next;
+        }
         // Pure placement rule: never force a fit over existing controls.
         internal static bool TrySlot(Rectangle bar, Rectangle tray, int occupiedRight, int width, int height, int gap, out Rectangle slot)
         {
@@ -49,7 +59,7 @@ namespace Taskcode.Probe
                 LayoutSnapshot result;
                 try { result = Measure(); }
                 catch (Exception ex) { result = new LayoutSnapshot { Error = "Taskbar measurement unavailable (" + ex.GetType().Name + ").", MeasuredAt = DateTime.UtcNow }; }
-                lock (sync) latest = result;
+                lock (sync) latest = Placement.StabilizeMeasurement(latest, result);
             } while (!stop.WaitOne(1200));
         }
         private static LayoutSnapshot Measure()

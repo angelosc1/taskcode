@@ -291,7 +291,12 @@ namespace Taskcode.Probe
             var bounds = MarkBounds(x);
             if (name == "Claude") BrandMarks.DrawClaude(g, accent, bounds);
             else if (name == "Codex") BrandMarks.DrawCodex(g, accent, bounds);
-            else { int index = Array.IndexOf(ProviderCatalog.Names, name); g.DrawString(index < 0 ? "?" : ProviderCatalog.Marks[index], font, accent, bounds.X, bounds.Y + 1); }
+            else
+            {
+                int index = Array.IndexOf(ProviderCatalog.Names, name);
+                if (index >= 0) BrandMarks.DrawProvider(g, accent, index, bounds);
+                else g.DrawString("?", font, accent, bounds.X, bounds.Y + 1);
+            }
         }
         internal static RectangleF MarkBounds(int x) { return new RectangleF(x, 9, 16, 16); }
         internal static PointF MarkCenter(int x) { var bounds = MarkBounds(x); return new PointF(bounds.X + bounds.Width / 2, bounds.Y + bounds.Height / 2); }
@@ -346,6 +351,20 @@ namespace Taskcode.Probe
             base.WndProc(ref message);
         }
         internal void InvalidateSurface() { renderedHandle = IntPtr.Zero; }
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            if (Visible) InvalidateSurface();
+            base.OnVisibleChanged(e);
+        }
+        internal bool Place(Rectangle bounds, IntPtr parent, bool frameChanged)
+        {
+            Native.Rect current;
+            if (!frameChanged && Visible && Native.GetWindowRect(Handle, out current) && current.Bounds == bounds) return true;
+            var point = new Native.Point { X = bounds.Left, Y = bounds.Top };
+            if (parent != IntPtr.Zero && !Native.ScreenToClient(parent, ref point)) return false;
+            return Native.SetWindowPos(Handle, parent == IntPtr.Zero ? Native.TopMost : Native.Top,
+                point.X, point.Y, bounds.Width, bounds.Height, Native.NoActivate | (frameChanged ? Native.FrameChanged : 0));
+        }
         internal static void DrawInputSurface(Graphics graphics, Size size, IndicatorStyle style, TaskbarTheme theme, bool weekly, int pulse, UsageDemo usage, int activity, bool usageBarColors = false)
         {
             // Windows skips alpha-zero pixels during mouse hit testing. Alpha 1/255

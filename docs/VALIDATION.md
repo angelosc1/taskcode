@@ -1,5 +1,13 @@
 # Release validation
 
+## Local 0.3.0 provider-logo and stability checks
+
+A live taskbar probe observed a transient UI Automation `InvalidOperationException` followed by normal measurements. Previously, every failed measurement immediately replaced the valid layout and hid the indicator. The watcher now retains verified geometry only within the existing four-second freshness limit; native taskbar/tray checks and crowded-layout rejection remain active. Unchanged placement no longer sends native position/frame changes, and visibility recovery invalidates the layered surface.
+
+Deterministic checks cover initial failure, transient failure, expiry without timestamp renewal, recovery, crowded layouts, repeated unchanged native placement in Embedded/Overlay, movement and visibility recovery. The full Windows checks and release packaging passed. Offscreen previews cover all seven styles and all provider logos at 125%, 150% and 200%; list and header fixtures were visually inspected.
+
+The rebuilt local installer exited successfully, preserved settings byte-for-byte, and installed a binary matching the release build. After restarting, the real embedded indicator was visible in all 30 one-second samples with no pause transitions in the lifecycle log. This is a short local observation, not a long-duration or multi-machine guarantee. No public release was published or replaced.
+
 ## 0.2.0 localization checks
 
 The [official 0.2.0 release workflow](https://github.com/angelosc1/taskcode/actions/runs/42161151608) passed compilation, tests, publication and public asset verification. The [Windows contributor checks](https://github.com/angelosc1/taskcode/actions/runs/42161148015) passed independently.

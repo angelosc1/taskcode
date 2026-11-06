@@ -25,6 +25,7 @@ namespace Taskcode.Probe
         private int selectedProvider;
         private IntPtr attachedParent;
         private Rectangle indicatorBounds;
+        private string indicatorState;
         private string saveError;
         private TaskbarTheme theme = TaskbarTheme.Read();
         private DateTime nextThemeCheck;
@@ -312,11 +313,18 @@ namespace Taskcode.Probe
         }
         private void PauseIndicator(string reason)
         {
+            RecordIndicatorState("Paused: " + reason);
             if (indicator != null && !indicator.IsDisposed) indicator.Hide();
             foreach (var panel in optionalDetails) if (panel != null && panel.RequiresIndicator && !panel.Pinned) panel.Hide();
             if (details.RequiresIndicator && !details.Pinned) details.Hide();
             indicatorBounds = Rectangle.Empty;
             SetSettingsStatus(reason + (saveError == null ? "" : "\n" + saveError), true);
+        }
+        private void RecordIndicatorState(string state)
+        {
+            if (indicatorState == state) return;
+            indicatorState = state;
+            Program.RecordLifecycle("Indicator " + state.Replace('\n', ' '));
         }
         private void RefreshUpdateUi()
         {
@@ -377,7 +385,7 @@ namespace Taskcode.Probe
             if (usage.VisibleProviderCount == 0) { PauseIndicator("No providers enabled."); return; }
             var layout = watcher.Latest;
             if (layout == null) { PauseIndicator("Measuring available taskbar space..."); return; }
-            if (DateTime.UtcNow - layout.MeasuredAt > TimeSpan.FromSeconds(4)) { PauseIndicator("Waiting for a fresh taskbar measurement."); return; }
+            if (DateTime.UtcNow - layout.MeasuredAt > Placement.MeasurementLifetime) { PauseIndicator("Waiting for a fresh taskbar measurement."); return; }
             if (layout.Error != null) { PauseIndicator(layout.Error); return; }
             if (!Native.IsWindow(layout.Taskbar)) { PauseIndicator("Waiting for Explorer to recreate the taskbar."); return; }
             Native.Rect liveBar, liveTray;
@@ -404,7 +412,8 @@ namespace Taskcode.Probe
             indicator.AccessibleName = IndicatorView.LiveAccessibleText(usage, settings.ShowWeekly);
             indicator.Theme = theme;
             IntPtr expected = settings.Mode == HostMode.Embedded ? layout.Taskbar : IntPtr.Zero;
-            if (attachedParent != expected || Native.GetParent(indicator.Handle) != expected)
+            bool parentChanged = attachedParent != expected || Native.GetParent(indicator.Handle) != expected;
+            if (parentChanged)
             {
                 indicator.Hide();
                 long nativeStyle = Native.GetStyle(indicator.Handle, Native.GwlStyle).ToInt64();
@@ -414,14 +423,13 @@ namespace Taskcode.Probe
                 { PauseIndicator("Embedding failed. Select Overlay to test the fallback."); return; }
                 attachedParent = expected;
             }
-            var point = new Native.Point { X = slot.Left, Y = slot.Top };
-            if (expected != IntPtr.Zero && !Native.ScreenToClient(expected, ref point)) { PauseIndicator("Could not map taskbar coordinates."); return; }
-            if (!Native.SetWindowPos(indicator.Handle, expected == IntPtr.Zero ? Native.TopMost : Native.Top, point.X, point.Y, slot.Width, slot.Height, Native.NoActivate | Native.FrameChanged))
+            if (!indicator.Place(slot, expected, parentChanged))
             { PauseIndicator("Windows rejected indicator placement."); return; }
             indicator.Show();
             if (!indicator.RenderAlpha())
             { PauseIndicator("Windows rejected the transparent surface. Try the other placement mode."); return; }
             indicatorBounds = indicator.RectangleToScreen(indicator.ClientRectangle);
+            RecordIndicatorState(expected == IntPtr.Zero ? "Overlay active" : "Embedded active");
             SetSettingsStatus((expected == IntPtr.Zero ? "Overlay active" : "Embedded child window active") + " · " + layout.Dpi + " DPI" + (saveError == null ? "" : "\n" + saveError), saveError != null);
             UpdateHover();
         }

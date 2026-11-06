@@ -215,6 +215,7 @@ namespace Taskcode.Probe
                 AccountChecks.Run();
                 ActivityChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 InputChecks.Run();
+                PlacementChecks.Run();
                 SignInChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 DetailChecks.Run();
                 DetailOpeningChecks.Run();

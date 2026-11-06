@@ -9,6 +9,7 @@ namespace Taskcode.Probe
     {
         internal static void Run(string directory)
         {
+            ProviderLogoChecks.Run(directory);
             int styleCount = Enum.GetValues(typeof(IndicatorStyle)).Length;
             int columnWidth = 480;
             foreach (IndicatorStyle style in Enum.GetValues(typeof(IndicatorStyle)))

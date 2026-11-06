@@ -25,7 +25,9 @@ namespace Taskcode.Probe
             this.provider = provider; Text = "Taskcode - " + provider.Name;
             ClientSize = new Size(380, 420); FormBorderStyle = FormBorderStyle.None; ControlBox = false; ShowInTaskbar = false;
             StartPosition = FormStartPosition.Manual; BackColor = TaskbarTheme.Create(true).PreviewBackground; ForeColor = Color.WhiteSmoke; Font = new Font("Segoe UI", 9f);
-            status = new Label { Location = new Point(16, 12), Size = new Size(328, 62) }; Controls.Add(status);
+            var mark = new ProviderBrandMark { Location = new Point(16, 16), Size = new Size(18, 18) };
+            mark.SetProvider(provider.Index + 2, provider.Color, provider.Name); Controls.Add(mark);
+            status = new Label { Location = new Point(44, 12), Size = new Size(300, 62) }; Controls.Add(status);
             closeDetails = new Button { Text = "×", AccessibleName = "Close details", Location = new Point(350, 10), Size = new Size(22, 24), FlatStyle = FlatStyle.Flat, ForeColor = ForeColor, BackColor = BackColor, TabStop = false, Visible = false };
             closeDetails.FlatAppearance.BorderSize = 0; closeDetails.Click += delegate { Hide(); }; Controls.Add(closeDetails);
             rows = new FlowLayoutPanel { Location = new Point(12, 80), Size = new Size(356, 328), AutoScroll = true, FlowDirection = FlowDirection.TopDown, WrapContents = false }; Controls.Add(rows);

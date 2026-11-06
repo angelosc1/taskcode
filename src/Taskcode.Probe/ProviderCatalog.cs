@@ -8,7 +8,7 @@ namespace Taskcode.Probe
         internal const int Count = 9;
         internal static readonly string[] Ids = { "cursor", "antigravity", "glm", "grok", "copilot", "opencode", "commandcode", "qoder", "deepseek" };
         internal static readonly string[] Names = { "Cursor", "Antigravity", "GLM Coding Plan", "Grok", "GitHub Copilot", "OpenCode Go", "Command Code", "Qoder", "DeepSeek Harness" };
-        internal static readonly string[] Marks = { "Cu", "Ag", "GL", "Gr", "GH", "OC", "CC", "Qo", "DS" };
+        internal static readonly string[] Logos = { "cursor", "antigravity", "zai", "grok", "githubcopilot", "opencode", "commandcode", "qoder", "deepseek" };
         internal static readonly string[] ShortNames = { "Cursor", "Antigrav.", "GLM", "Grok", "Copilot", "OpenCode", "Command", "Qoder", "DeepSeek" };
         internal static readonly string[] Websites = { "https://cursor.com/downloads", "https://antigravity.google/download", "https://z.ai/manage-apikey/apikey-list", "https://grok.com", "https://cli.github.com", "https://opencode.ai", "https://commandcode.ai", "https://docs.qoder.com/cli/quick-start", "https://github.com/deepseek-ai" };
         internal static readonly string[] Help = {

@@ -7,6 +7,17 @@ namespace Taskcode.Probe
 {
     internal static class InputChecks
     {
+        private sealed class PositionMessages : NativeWindow, IDisposable
+        {
+            internal int Changes;
+            internal PositionMessages(IntPtr handle) { AssignHandle(handle); }
+            protected override void WndProc(ref Message message)
+            {
+                if (message.Msg == 0x0047) Changes++; // WM_WINDOWPOSCHANGED
+                base.WndProc(ref message);
+            }
+            public void Dispose() { ReleaseHandle(); }
+        }
         private sealed class Host : Form
         {
             internal int ContextMessages;
@@ -41,6 +52,19 @@ namespace Taskcode.Probe
                     Native.SetParent(indicator.Handle, embedded ? host.Handle : IntPtr.Zero);
                     indicator.Location = new Point(-30000, -30000);
                     indicator.Show(); indicator.RenderAlpha();
+                    using (var messages = new PositionMessages(indicator.Handle))
+                    {
+                        var bounds = indicator.RectangleToScreen(indicator.ClientRectangle);
+                        IntPtr parent = embedded ? host.Handle : IntPtr.Zero;
+                        Check(indicator.Place(bounds, parent, false) && indicator.Place(bounds, parent, false) && messages.Changes == 0,
+                            "Unchanged layout ticks must not reconfigure the native indicator window.");
+                        bounds.Offset(2, 0);
+                        Check(indicator.Place(bounds, parent, false) && messages.Changes > 0,
+                            "A changed taskbar slot must still reposition the indicator.");
+                        indicator.Hide();
+                        Check(indicator.Place(bounds, parent, false), "A hidden indicator must remain placeable for recovery.");
+                        indicator.Show(); Check(indicator.RenderAlpha(), "Recovered indicator must retain a valid layered surface.");
+                    }
                     int before = requests;
                     Native.SendMessage(indicator.Handle, 0x007B, indicator.Handle, new IntPtr(-1));
                     Check(requests == before + 1 && host.ContextMessages == 0, "Keyboard context-menu requests must be handled without reaching the parent.");
