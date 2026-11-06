@@ -63,11 +63,11 @@ The desktop inspection tool captures the prototype control window and its relate
 
 Right-click is handled by Taskcode and opens its own settings/exit menu, including when the indicator is embedded. The native `WM_CONTEXTMENU` message is consumed instead of being forwarded to Explorer. Mouse activation is suppressed, and the surface is refreshed after dismissing the menu. Hover details are paused while that menu is open.
 
-Windows passes clicks through alpha-zero pixels in layered windows. The live input surface therefore uses a minimum alpha of 1/255 in otherwise empty pixels, tinted to the taskbar palette. This is visually transparent, without an opaque panel, while preserving the whole indicator's mouse area. Offscreen artwork retains alpha-zero backgrounds. Regression checks cover the input surface across all styles/themes and context-menu routing in Embedded and Overlay using an isolated host window. See [Microsoft's layered-window hit-testing documentation](https://learn.microsoft.com/en-us/windows/win32/winmsg/window-features#layered-windows).
+Windows passes clicks through alpha-zero pixels in layered windows. The live input surface therefore uses a minimum alpha of 1/255 in otherwise empty pixels, tinted to the taskbar palette. This preserves the whole indicator's mouse area outside the opaque capsule without adding a visible rectangular background. Offscreen artwork retains alpha-zero backgrounds. Regression checks cover the input surface across all styles/themes and context-menu routing in Embedded and Overlay using an isolated host window. See [Microsoft's layered-window hit-testing documentation](https://learn.microsoft.com/en-us/windows/win32/winmsg/window-features#layered-windows).
 
 - Primary horizontal taskbar only.
-- Indicator, Details, settings menu, and connection windows adapt to the taskbar's light/dark palette.
-- Lines, Essential, and Blocks use transparent backgrounds. Pill adds a dark opaque capsule with transparent outer corners, without acrylic effects. Exact blending on the actual taskbar still needs visual confirmation after this change.
+- Indicator, Details, settings menu, and connection windows use a fixed dark palette regardless of the Windows light/dark setting.
+- Pill is the default and first style. All styles share its dark opaque capsule with transparent outer corners, without acrylic effects. Exact blending on the actual taskbar still needs visual confirmation after this change.
 - Does not reserve space or move Windows controls; may hide on a crowded taskbar.
 - Overlay does not yet suppress itself for fullscreen applications.
 - Taskbar class names and accessibility structure can change with Windows updates.

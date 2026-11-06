@@ -10,20 +10,20 @@ Taskcode is a Windows taskbar companion for monitoring Claude and Codex quota wi
 
 ## Current prototype
 
-These previews are rendered by the current application with **sample data**. They show implemented controls and styles, rather than proposed designs. Indicator previews use sample light/dark backgrounds to demonstrate contrast; Lines, Essential, and Blocks have transparent backgrounds; Pill adds an opaque dark capsule.
+These previews are rendered by the current application with **sample data**. They show implemented controls and styles, rather than proposed designs. Indicator previews use sample light/dark taskbar backgrounds to demonstrate contrast. Every style uses the same dark capsule; settings, Details, and account windows share its fixed dark palette.
 
 ### Four indicator styles
 
-![Lines, Essential, Blocks, and Pill in both themes, with weekly readings off and on](docs/images/current-indicators.png)
+![Pill, Lines, Essential, and Blocks over dark and light taskbars, with weekly readings off and on](docs/images/current-indicators.png)
 
 | Style | Indicator | Availability |
 | --- | --- | --- |
-| Lines | Names and thin bars | Default |
-| Essential | Icons and percentages | Configurable |
-| Blocks | Segmented meters | Configurable |
-| Pill | Icons and percentages inside a dark capsule | Configurable |
+| Pill | Compact icons and percentages | Default |
+| Lines | Names and thin bars inside the capsule | Configurable |
+| Essential | Icons and percentages inside the capsule | Configurable |
+| Blocks | Segmented meters inside the capsule | Configurable |
 
-Weekly readings are optional and disabled by default. Enabling them adds labeled `5h` and `7d` rows within the selected style. There are four display styles; placement is a separate technical setting. Pill keeps its dark background and light text even on a light Windows taskbar; high-contrast mode uses the system palette.
+Weekly readings are optional and disabled by default. Enabling them adds labeled `5h` and `7d` rows within the selected style. There are four display styles; placement is a separate technical setting. All styles keep the same dark background and light text even on a light Windows taskbar; high-contrast mode uses the system palette.
 
 Active local turns show a subtle **Ripple** around the provider symbol, in its own accent color. This follows execution signals rather than quota polling. See [activity detection and limitations](docs/ACTIVITY.md).
 
@@ -31,15 +31,15 @@ Active local turns show a subtle **Ripple** around the provider symbol, in its o
 
 ### Quota details
 
-![Current details panel in dark and light mode](docs/images/current-details.png)
+![Current provider details with the fixed dark theme](docs/images/current-details.png)
 
-Each provider has its own panel with five-hour and weekly quota, elapsed-period markers, and recent-consumption projections with animated filled arrows. Hovering or clicking Claude opens Claude's panel; Codex opens its own. Only one panel is visible at a time. The preview above uses simulated values in both themes. Normal startup uses account data, and unavailable or stale quota appears as `--`.
+Each provider has its own panel with five-hour and weekly quota, elapsed-period markers, and recent-consumption projections with animated filled arrows. Hovering or clicking Claude opens Claude's panel; Codex opens its own. Only one panel is visible at a time. The preview above uses simulated values. Normal startup uses account data, and unavailable or stale quota appears as `--`.
 
 Details are compact borderless cards without an app title, close button, legend, or footer. They close automatically when the pointer leaves the card and its indicator, including when opened by click. Source and freshness information are available on hover.
 
 ### Settings
 
-![Taskcode settings sections in dark and light themes](docs/images/current-settings.png)
+![Taskcode settings sections in the fixed dark theme](docs/images/current-settings.png)
 
 Settings open from the tray icon as a compact menu that follows the taskbar theme. **Appearance** contains the indicator style, detail trigger, weekly quota, and previews. **Accounts** contains connections and refresh. **General** contains visibility, Windows startup, and placement. Closing the menu or pressing Escape keeps Taskcode running in the tray; startup remains opt-in.
 

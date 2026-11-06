@@ -17,7 +17,7 @@ Compiler warnings are treated as errors. Seven placement assertions run with `--
 
 The same command also checks transparent background pixels, rendered content, and palette contrast for every style in both light and dark mode. It writes `out/probe/appearance-check.png`, an offscreen renderer comparison, not a screenshot of the Windows taskbar.
 
-The details panel includes separate consumed-quota bars for each provider's five-hour and weekly windows. Normal startup reads account data. `--demo` runs an explicit offline preview with Claude 32% / 19% used and Codex 58% / 37% used. The build writes `out/probe/details-check.png` using sample data for an offscreen layout review in both themes.
+The details panel includes separate consumed-quota bars for each provider's five-hour and weekly windows. Normal startup reads account data. `--demo` runs an explicit offline preview with Claude 32% / 19% used and Codex 58% / 37% used. The build writes `out/probe/details-check.png` using sample data for an offscreen review of the fixed dark layout.
 
 Each detail bar has a downward arrow tracking elapsed time. The arrow moves from the start at reset to the end at renewal, independently of quota consumption. Provider-colored space on the left means consumed quota; muted space on the right means available quota, matching the taskbar. Hover over a bar for the numeric budget-pace comparison; the arrow tracks elapsed time while the fill tracks consumed quota.
 
@@ -27,7 +27,7 @@ The details also show animated, filled consumption-speed arrows and approximate 
 
 ## Controls
 
-1. Keep **Lines (default)** or select **Essential**, **Blocks**, or **Pill**.
+1. Keep **Pill (default)** or select **Lines**, **Essential**, or **Blocks** inside the same dark capsule.
 2. Start with **Embedded (experimental)** and check the status below the preview.
 3. Look just before the primary taskbar's system tray for provider readings. Use the account connection buttons to complete setup. `--` means unavailable or stale; the details show source and age. Offline demo mode is identified explicitly.
 4. Choose **Open details > Hover (default)** to open only the hovered provider's card, or **Click only** to open it only when that provider is clicked. Moving between Claude and Codex switches cards without a deliberate hover delay; only one is shown at a time. Both modes close the card immediately when the pointer leaves the card, its trigger, and the narrow crossing between them. Native pointer events and a 16ms fallback tracker keep transitions responsive without changing account polling. **Details** offers a provider menu, and clicking a provider in the preview opens its card as well. Escape dismisses it.
@@ -37,9 +37,9 @@ The details also show animated, filled consumption-speed arrows and approximate 
 
 **Show weekly quota in the indicator** is an optional setting, unchecked by default. Enabling it shows two compact rows per provider, labeled `5h` and `7d`, with provider symbols and consumed percentages. Lines adds thin meters; Blocks uses segmented meters; Essential shows numbers. Disabling it restores the original five-hour-only layout. The preference is saved, the preview updates immediately, and the detail panel continues to include weekly quota in either mode. The optional layout uses a little more horizontal space while retaining the same height.
 
-The taskbar indicator retains its transparent appearance. The settings menu, previews, details, and connection windows follow the Windows taskbar's light/dark palette, including theme changes while running. A subtle filled preview area makes the indicator readable inside settings; that fill is not applied to the taskbar strip.
+Every indicator style renders inside a dark capsule with transparent outer corners. The settings menu, Details, previews, and account windows share a fixed dark palette. Changing the Windows light/dark setting does not change Taskcode colors.
 
-Placement changes how the indicator is hosted, not its appearance: **Embedded** attaches it as a child of the taskbar window; **Overlay** keeps it as an independent window over the same measured gap. Both modes use the same style, transparent surface, and theme palette.
+Placement changes how the indicator is hosted, not its appearance: **Embedded** attaches it as a child of the taskbar window; **Overlay** keeps it as an independent window over the same measured gap. Both modes use the same capsule, style, and fixed dark palette.
 
 The indicator uses a 117% content scale, in addition to one monitor-DPI transform. Its former demo-label gutter has been removed. Account data and offline demo data are identified in settings and details.
 

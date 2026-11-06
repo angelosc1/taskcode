@@ -58,15 +58,16 @@ namespace Taskcode.Probe
                 }
                 board.Save(Path.Combine(directory, pulse == 0 ? "appearance-check.png" : "speed-check.png"), ImageFormat.Png);
             }
+            foreach (IndicatorStyle style in Enum.GetValues(typeof(IndicatorStyle)))
             foreach (bool weekly in new[] { false, true })
-            using (var dark = new Bitmap(IndicatorView.LogicalWidth(IndicatorStyle.Pill, weekly), IndicatorView.LogicalHeight))
+            using (var dark = new Bitmap(IndicatorView.LogicalWidth(style, weekly), IndicatorView.LogicalHeight))
             using (var light = new Bitmap(dark.Width, dark.Height))
             {
-                using (var g = Graphics.FromImage(dark)) IndicatorView.Draw(g, dark.Size, IndicatorStyle.Pill, TaskbarTheme.Create(true), weekly);
-                using (var g = Graphics.FromImage(light)) IndicatorView.Draw(g, light.Size, IndicatorStyle.Pill, TaskbarTheme.Create(false), weekly);
-                if (light.GetPixel(light.Width / 2, light.Height / 2).A != 255) throw new InvalidOperationException("Pill must paint a solid background.");
+                using (var g = Graphics.FromImage(dark)) IndicatorView.Draw(g, dark.Size, style, TaskbarTheme.Create(true), weekly);
+                using (var g = Graphics.FromImage(light)) IndicatorView.Draw(g, light.Size, style, TaskbarTheme.Create(false), weekly);
+                if (light.GetPixel(light.Width / 2, light.Height / 2).A != 255) throw new InvalidOperationException("Every style must paint a solid pill background.");
                 for (int y = 0; y < light.Height; y++) for (int x = 0; x < light.Width; x++)
-                    if (dark.GetPixel(x, y) != light.GetPixel(x, y)) throw new InvalidOperationException("Pill must retain its dark background and light content on a light taskbar.");
+                    if (dark.GetPixel(x, y) != light.GetPixel(x, y)) throw new InvalidOperationException("Every style must retain its dark background and light content on a light taskbar.");
             }
             var usage = new UsageDemo();
             using (var claude = new DetailWindow(usage, 0))
@@ -76,7 +77,7 @@ namespace Taskcode.Probe
                 // A never-shown form omits its hidden children from that rendering API.
                 var panels = new[] { claude, codex };
                 foreach (var panel in panels) { panel.Location = new Point(-30000, -30000); panel.Show(); }
-                using (var board = new Bitmap(claude.Width * 2, claude.Height + codex.Height))
+                using (var board = new Bitmap(claude.Width, claude.Height + codex.Height))
                 using (var canvas = Graphics.FromImage(board))
                 {
                     for (int provider = 0; provider < 2; provider++)
@@ -96,7 +97,8 @@ namespace Taskcode.Probe
                         using (var surface = new Bitmap(details.Width, details.Height))
                         {
                             details.DrawToBitmap(surface, new Rectangle(Point.Empty, surface.Size));
-                            canvas.DrawImageUnscaled(surface, column * details.Width, provider * claude.Height);
+                            if (details.BackColor != TaskbarTheme.Create(true).PreviewBackground) throw new InvalidOperationException("Details must stay dark on a light taskbar.");
+                            if (column == 0) canvas.DrawImageUnscaled(surface, 0, provider * claude.Height);
                         }
                     }
                     board.Save(Path.Combine(directory, "details-check.png"), ImageFormat.Png);

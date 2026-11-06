@@ -8,7 +8,7 @@ namespace Taskcode.Probe
 
     internal sealed class Settings
     {
-        internal IndicatorStyle Style = IndicatorStyle.Lines;
+        internal IndicatorStyle Style = IndicatorStyle.Pill;
         internal HostMode Mode = HostMode.Embedded;
         internal DetailsTrigger DetailsTrigger = DetailsTrigger.Hover;
         internal bool ShowWeekly;

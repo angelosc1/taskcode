@@ -1,7 +1,6 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
-using Microsoft.Win32;
 
 namespace Taskcode.Probe
 {
@@ -23,17 +22,11 @@ namespace Taskcode.Probe
                 PreviewBackground = dark ? Color.FromArgb(36, 38, 41) : Color.FromArgb(242, 243, 245)
             };
         }
+        internal static TaskbarTheme AppPalette(TaskbarTheme palette)
+        { return palette.HighContrast ? palette : Create(true); }
         internal static TaskbarTheme Read()
         {
-            bool dark = true;
-            try
-            {
-                using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
-                    if (key != null) dark = Convert.ToInt32(key.GetValue("SystemUsesLightTheme", 0)) == 0;
-            }
-            catch (System.Security.SecurityException) { }
-            catch (UnauthorizedAccessException) { }
-            var theme = Create(dark);
+            var theme = Create(true);
             if (SystemInformation.HighContrast)
             {
                 theme.HighContrast = true;

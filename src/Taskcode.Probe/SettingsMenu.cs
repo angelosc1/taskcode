@@ -71,7 +71,7 @@ namespace Taskcode.Probe
             preview.Style = settings.Style; preview.ShowWeekly = settings.ShowWeekly; preview.Usage = usage; preview.Theme = theme;
             preview.AccessibleName = IndicatorView.LiveAccessibleText(usage, settings.ShowWeekly); previewPanel.Controls.Add(preview);
             var result = new MenuControls();
-            result.Style = MenuSelect(appearance, "Style", 128, new[] { "Lines", "Essential", "Blocks", "Pill" }, (int)settings.Style, "Indicator style");
+            result.Style = MenuSelect(appearance, "Style", 128, new[] { "Pill", "Lines", "Essential", "Blocks" }, (int)settings.Style, "Indicator style");
             result.Trigger = MenuSelect(appearance, "Open details", 172, new[] { "On hover", "On click" }, (int)settings.DetailsTrigger, "Open details");
             result.Weekly = new CheckBox { Text = "Weekly quota", Location = new Point(0, 216), Size = new Size(330, 26), Checked = settings.ShowWeekly, AccessibleName = "Show weekly quota in the indicator" }; appearance.Controls.Add(result.Weekly);
             var animation = MenuButton(appearance, "Preview animation", 0, 264, 158, 30, "action"); animation.Click += delegate { PreviewAnimation(); };
@@ -123,6 +123,7 @@ namespace Taskcode.Probe
         { return Color.FromArgb((int)(background.R * (1 - amount) + foreground.R * amount), (int)(background.G * (1 - amount) + foreground.G * amount), (int)(background.B * (1 - amount) + foreground.B * amount)); }
         internal void ApplySettingsTheme(TaskbarTheme palette)
         {
+            palette = TaskbarTheme.AppPalette(palette);
             theme = palette;
             BackColor = palette.PreviewBackground; ForeColor = palette.Text;
             ApplyMenuColors(this, palette);

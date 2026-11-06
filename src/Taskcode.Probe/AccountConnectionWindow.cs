@@ -41,6 +41,7 @@ namespace Taskcode.Probe
         }
         internal void ApplyTheme(TaskbarTheme palette)
         {
+            palette = TaskbarTheme.AppPalette(palette);
             BackColor = palette.PreviewBackground; ForeColor = palette.Text;
             foreach (Control control in Controls)
             {
