@@ -4,7 +4,7 @@ using System.Globalization;
 
 namespace Taskcode.Probe
 {
-    internal enum SpeedState { Calculating, Active, Idle, Stale, Unavailable, Expired }
+    internal enum SpeedState { Calculating, Active, Idle, Stale, Unavailable, Expired, Paused }
 
     internal sealed class SpeedEstimate
     {
@@ -18,6 +18,7 @@ namespace Taskcode.Probe
         {
             get
             {
+                if (State == SpeedState.Paused) return "Idle · not running";
                 if (State == SpeedState.Idle) return PeriodAverage ? "No measured consumption yet" : "Idle · no recent consumption";
                 if (State == SpeedState.Stale) return "Waiting for fresh quota readings";
                 if (State == SpeedState.Expired) return "Period ended · waiting for new readings";

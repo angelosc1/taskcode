@@ -416,7 +416,7 @@ namespace Taskcode.Probe
                 bar.ValueCaption.Text = value < 0 ? "--" : value + "%";
                 bar.AccessibleName = bar.Reading.Provider + ", " + bar.Reading.Window + ", " + (value < 0 ? "quota unavailable" : value + " percent used");
                 bar.Caption.Text = value < 0 ? "Unavailable" : bar.Period.ResetCaptionAt(now);
-                var speed = value < 0 ? new SpeedEstimate { State = SpeedState.Unavailable } : bar.Reading.Speed.DisplayEstimateAt(now);
+                var speed = usage.DetailSpeedAt(ProviderIndex * 2 + (bar.Reading.Window == "Weekly" ? 1 : 0), now);
                 bar.SpeedCaption.Estimate = speed;
                 bar.SpeedCaption.Visible = true;
                 hints.SetToolTip(bar.ValueCaption, "Used quota. " + AccessibleDescription);

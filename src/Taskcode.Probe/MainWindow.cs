@@ -292,7 +292,11 @@ namespace Taskcode.Probe
             int pulse = usage.PulseKey(DateTime.UtcNow, settings.ShowWeekly);
             int activityKey = CurrentActivity;
             animationTimer.Enabled = (pulse != 0 || activityKey != 0) && enabled.Checked && SpeedArrows.IsAnimated;
-            if (preview.ActivityKey != activityKey) { preview.ActivityKey = activityKey; preview.Invalidate(); }
+            if (preview.ActivityKey != activityKey)
+            {
+                preview.ActivityKey = activityKey; preview.Invalidate();
+                foreach (var panel in providerDetails) if (panel.Visible) panel.RefreshUsage();
+            }
             if (preview.PulseKey != pulse) { preview.PulseKey = pulse; preview.Invalidate(); }
             if (DateTime.UtcNow >= nextThemeCheck)
             {

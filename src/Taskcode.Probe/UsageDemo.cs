@@ -69,6 +69,15 @@ namespace Taskcode.Probe
         }
         private static UsageSpeed LiveSpeed(int provider)
         { return new UsageSpeed(TimeSpan.FromSeconds(provider == 0 ? 300 : 10)); }
+        internal SpeedEstimate DetailSpeedAt(int index, DateTime now)
+        {
+            if (DisplayValue(index, now) < 0) return new SpeedEstimate { State = SpeedState.Unavailable };
+            var estimate = Readings[index].Speed.DisplayEstimateAt(now);
+            if ((ActivityAt(now) & (1 << (index / 2))) == 0 &&
+                (estimate.State == SpeedState.Active || estimate.State == SpeedState.Calculating || estimate.State == SpeedState.Idle))
+                return new SpeedEstimate { State = SpeedState.Paused };
+            return estimate;
+        }
         internal int DisplayUsed(int index, DateTime now)
         {
             int remaining = DisplayValue(index, now);

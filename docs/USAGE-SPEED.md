@@ -14,7 +14,7 @@ The estimate is remaining quota divided by the observed consumption rate. The ra
 
 ## Initial estimate
 
-Before enough recent observations arrive, Details can show a forecast labelled **period avg**, with arrow levels computed from the average consumed quota since reset. It uses the timestamp of the actual quota reading, does not add samples to the recent estimator, and automatically yields to the recent estimate. It never replaces stale or unavailable readings. Zero measured consumption shows a waiting status without arrows. Taskbar speed-change hints continue to use recent observations only.
+Before enough recent observations arrive, Details can show a forecast labelled **period avg**, with arrow levels computed from the average consumed quota since reset. It uses the timestamp of the actual quota reading, does not add samples to the recent estimator, and automatically yields to the recent estimate. It never replaces stale or unavailable readings. Zero measured consumption shows a waiting status without arrows. Taskbar speed-change hints continue to use recent observations only. Details forecasts and arrows follow the same per-provider local activity signal as Ripple: when a provider stops, its row shows **Idle ? not running**, without arrows or a time forecast. Resuming restores the estimate without inventing samples or resetting history. Quota freshness warnings remain visible independently of activity.
 
 ## Calculation rules
 

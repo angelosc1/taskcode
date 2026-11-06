@@ -30,6 +30,17 @@ namespace Taskcode.Probe
             Check(usage.DisplayValue(0, now) == -1 && usage.DisplayValue(2, now) == -1, "Live mode must begin with unavailable values, never demo values.");
             usage.Apply(1, snapshot);
             Check(usage.DisplayValue(2, now) == 76 && usage.DisplayValue(0, now) == -1, "Each provider must update independently.");
+            usage.ActivityKey = 2;
+            Check(usage.DetailSpeedAt(2, now).State == SpeedState.Active && usage.DetailSpeedAt(2, now).PeriodAverage,
+                "A running provider may display its initial period-average estimate.");
+            usage.ActivityKey = 0;
+            Check(usage.DetailSpeedAt(2, now).State == SpeedState.Paused && usage.DetailSpeedAt(2, now).Level == 0 && !usage.DetailSpeedAt(2, now).TimeToExhaustion.HasValue,
+                "Stopping a provider must hide forecast arrows and time without waiting for a new quota poll.");
+            usage.ActivityKey = 1;
+            Check(usage.DetailSpeedAt(2, now).State == SpeedState.Paused, "Claude activity must not animate Codex forecasts.");
+            usage.ActivityKey = 2;
+            Check(usage.DetailSpeedAt(2, now).State == SpeedState.Active && usage.Readings[2].Speed.EstimateAt(now).State == SpeedState.Calculating,
+                "Resuming must restore presentation without adding or discarding consumption samples.");
             usage.Apply(1, new AccountSnapshot { Status = "Temporary error", Failed = true });
             Check(usage.DisplayValue(2, now) == 76 && usage.DisplayValue(2, now.AddMinutes(3)) == -1, "Transient errors must preserve recent data, then expire it.");
             usage.Tick(now.AddSeconds(7)); usage.Tick(now.AddSeconds(14));
