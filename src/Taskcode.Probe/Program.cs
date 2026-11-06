@@ -111,6 +111,9 @@ namespace Taskcode.Probe
                         }
                         using (var icon = window.Icon.ToBitmap())
                             icon.Save(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tray-icon-check.png"), System.Drawing.Imaging.ImageFormat.Png);
+                        window.ShowDetails(false, true, 0);
+                        Assert(window.VisibleDetailCount == (Settings.Load().DetailsTrigger == DetailsTrigger.Hover ? 1 : 0),
+                            "Hover must open Details without click activation only when configured.");
                         window.ShowDetails(true, true, 0);
                         Assert(window.VisibleDetailProvider == 0 && window.VisibleDetailCount == 1, "Selecting Claude must open only Claude details.");
                         window.ShowDetails(true, true, 1);

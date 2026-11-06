@@ -26,6 +26,8 @@ namespace Taskcode.Probe
             using (var panel = new DetailWindow(new UsageDemo(), provider) { Location = new Point(-30000, -30000), HoverAnchor = new Rectangle(-30000, -29750, 150, 40) })
             {
                 panel.Show();
+                Check(panel.TopMost && (Native.GetStyle(panel.Handle, -20).ToInt64() & 8L) != 0,
+                    "Hover cards must appear above the foreground app and topmost taskbar without requiring click activation.");
                 Check(panel.FormBorderStyle == FormBorderStyle.None && !panel.ControlBox && !panel.ShowInTaskbar, "Details must be a borderless card without native title/close controls.");
                 Check(panel.ClientSize.Height <= 252, "The compact card must fit the restored budget and speed rows.");
                 foreach (Control control in panel.Controls)

@@ -119,6 +119,11 @@ namespace Taskcode.Probe
                 int provider = IndicatorView.ProviderAt(preview.PointToClient(Cursor.Position), preview.ClientSize, settings.Style, settings.ShowWeekly);
                 ShowDetails(true, true, provider < 0 ? selectedProvider : provider);
             };
+            preview.MouseHover += delegate
+            {
+                int provider = IndicatorView.ProviderAt(preview.PointToClient(Cursor.Position), preview.ClientSize, settings.Style, settings.ShowWeekly);
+                if (provider >= 0) ShowDetails(false, true, provider);
+            };
             exit.Click += delegate { RequestExit(); };
             style.SelectedIndexChanged += delegate
             {
@@ -344,7 +349,7 @@ namespace Taskcode.Probe
             indicator.Show();
             if (!indicator.RenderAlpha())
             { PauseIndicator("Windows rejected the transparent surface. Try the other placement mode."); return; }
-            indicatorBounds = slot;
+            indicatorBounds = indicator.RectangleToScreen(indicator.ClientRectangle);
             SetSettingsStatus((expected == IntPtr.Zero ? "Overlay active" : "Embedded child window active") + " · " + layout.Dpi + " DPI" + (saveError == null ? "" : "\n" + saveError), saveError != null);
             // The alpha surface has real transparent gaps between glyphs. Track the
             // complete indicator rectangle so those gaps do not reset hover dwell.
@@ -379,7 +384,7 @@ namespace Taskcode.Probe
                 selectedProvider = provider;
                 details = providerDetails[provider];
             }
-            Rectangle anchor = fromPreview || indicatorBounds.IsEmpty ? RectangleToScreen(preview.Bounds) : indicatorBounds;
+            Rectangle anchor = fromPreview || indicatorBounds.IsEmpty ? preview.RectangleToScreen(preview.ClientRectangle) : indicatorBounds;
             var providerAnchor = IndicatorView.ProviderBounds(provider, anchor.Size, settings.Style, settings.ShowWeekly);
             anchor = new Rectangle(anchor.X + providerAnchor.X, anchor.Y, providerAnchor.Width, anchor.Height);
             var area = Screen.FromRectangle(anchor).WorkingArea;

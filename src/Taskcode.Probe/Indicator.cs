@@ -333,6 +333,7 @@ namespace Taskcode.Probe
             this.usage = usage ?? new UsageDemo();
             string provider = providerIndex == 0 ? "Claude" : "Codex";
             Text = "Taskcode - " + provider + " details";
+            TopMost = true;
             FormBorderStyle = FormBorderStyle.None;
             ControlBox = false;
             ShowInTaskbar = false;
