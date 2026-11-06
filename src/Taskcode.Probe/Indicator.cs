@@ -65,6 +65,7 @@ namespace Taskcode.Probe
         internal static void Draw(Graphics g, Size size, IndicatorStyle style, TaskbarTheme theme, bool showWeekly = false, int pulseKey = 0, UsageDemo usage = null, int activityKey = 0, double activitySeconds = -1)
         {
             var state = g.Save();
+            bool pill = style == IndicatorStyle.Pill;
             float scale = Math.Min(size.Width / (float)ContentWidth(style, showWeekly), size.Height / 34f);
             g.ScaleTransform(scale, scale);
             // Remove the former demo-label gutter while enlarging the entire content.
@@ -97,9 +98,9 @@ namespace Taskcode.Probe
                 if (showWeekly)
                 {
                     int second = SecondProviderX(style, true);
-                    DrawWeeklyProvider(g, font, bold, text, "Claude", Value(usage, 0), Value(usage, 1), theme.Claude, 36, style, theme);
-                    DrawWeeklyProvider(g, font, bold, text, "Codex", Value(usage, 2), Value(usage, 3), theme.Codex, second, style, theme);
-                    using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 12, 3, second - 12, 31);
+                    DrawWeeklyProvider(g, font, bold, text, "Claude", Value(usage, 0), Value(usage, 1), theme.Claude, 36, style, theme, pill);
+                    DrawWeeklyProvider(g, font, bold, text, "Codex", Value(usage, 2), Value(usage, 3), theme.Codex, second, style, theme, pill);
+                    using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 12, pill ? 6 : 3, second - 12, pill ? 28 : 31);
                     DrawSpeedHint(g, theme.Claude, 36, style, true, pulseKey & 3, (pulseKey >> 2) & 3);
                     DrawSpeedHint(g, theme.Codex, second, style, true, (pulseKey >> 4) & 3, (pulseKey >> 6) & 3);
                 }
@@ -137,7 +138,7 @@ namespace Taskcode.Probe
         {
             SpeedArrows.Draw(g, color, count, new RectangleF(x - 0.5f, y, 17, 6));
         }
-        private static void DrawWeeklyProvider(Graphics g, Font font, Font bold, Brush text, string name, int shortUsed, int weeklyUsed, Color color, int x, IndicatorStyle style, TaskbarTheme theme)
+        private static void DrawWeeklyProvider(Graphics g, Font font, Font bold, Brush text, string name, int shortUsed, int weeklyUsed, Color color, int x, IndicatorStyle style, TaskbarTheme theme, bool compactRows)
         {
             using (var accent = new SolidBrush(color))
             using (var track = new SolidBrush(theme.Track))
@@ -147,7 +148,7 @@ namespace Taskcode.Probe
                 DrawMark(g, font, accent, name, x);
                 for (int row = 0; row < 2; row++)
                 {
-                    int y = row * 18;
+                    int y = compactRows ? 3 + row * 14 : row * 18;
                     int used = row == 0 ? shortUsed : weeklyUsed;
                     g.DrawString(row == 0 ? "5h" : "7d", periodFont, muted, x + 23, y + 2);
                     if (style == IndicatorStyle.Essential)
