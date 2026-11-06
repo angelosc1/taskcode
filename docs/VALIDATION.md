@@ -2,6 +2,10 @@
 
 ## 0.2.0 localization checks
 
+The [official 0.2.0 release workflow](https://github.com/angelosc1/taskcode/actions/runs/42161151608) passed compilation, tests, publication and public asset verification. The [Windows contributor checks](https://github.com/angelosc1/taskcode/actions/runs/42161148015) passed independently.
+
+The installed 0.1.3 updater downloaded and verified the public 0.2.0 installer. The real upgrade preserved provider selections, appearance, interaction and startup preferences; the running 0.2.0 assembly contains both language catalogs and resolves System to `pt-BR` on the test machine. Its update service then reported **You're up to date**.
+
 Windows checks cover embedded source/translation catalogs, matching placeholders, supported culture names, System detection, explicit overrides, English fallback, immediate switching, saved language preference, unchanged style selection and offscreen Portuguese settings/Details rendering. New translation catalogs may be partial; completeness is not a requirement for contributing a language.
 
 English and Brazilian Portuguese installer messages compile from Inno Setup's bundled catalogs. External provider sign-in pages and CLI output retain their own language support. Diagnostic logs and protocol values remain English.
