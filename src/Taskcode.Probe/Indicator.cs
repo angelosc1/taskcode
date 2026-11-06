@@ -13,6 +13,7 @@ namespace Taskcode.Probe
     {
         internal IndicatorStyle Style = IndicatorStyle.Essential;
         internal bool ShowWeekly;
+        internal bool UsageBarColors;
         internal int PulseKey;
         internal int ActivityKey;
         internal UsageDemo Usage;
@@ -61,9 +62,9 @@ namespace Taskcode.Probe
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            Draw(e.Graphics, ClientSize, Style, Theme, ShowWeekly, PulseKey, Usage, ActivityKey);
+            Draw(e.Graphics, ClientSize, Style, Theme, ShowWeekly, PulseKey, Usage, ActivityKey, -1, UsageBarColors);
         }
-        internal static void Draw(Graphics g, Size size, IndicatorStyle style, TaskbarTheme theme, bool showWeekly = false, int pulseKey = 0, UsageDemo usage = null, int activityKey = 0, double activitySeconds = -1)
+        internal static void Draw(Graphics g, Size size, IndicatorStyle style, TaskbarTheme theme, bool showWeekly = false, int pulseKey = 0, UsageDemo usage = null, int activityKey = 0, double activitySeconds = -1, bool usageBarColors = false)
         {
             var state = g.Save();
             float scale = Math.Min(size.Width / (float)ContentWidth(style, showWeekly), size.Height / 34f);
@@ -96,15 +97,15 @@ namespace Taskcode.Probe
                 if (showWeekly)
                 {
                     int second = SecondProviderX(style, true);
-                    DrawWeeklyProvider(g, font, bold, text, "Claude", Value(usage, 0), Value(usage, 1), theme.Claude, 36, style, theme);
-                    DrawWeeklyProvider(g, font, bold, text, "Codex", Value(usage, 2), Value(usage, 3), theme.Codex, second, style, theme);
+                    DrawWeeklyProvider(g, font, bold, text, "Claude", Value(usage, 0), Value(usage, 1), theme.Claude, 36, style, theme, usageBarColors);
+                    DrawWeeklyProvider(g, font, bold, text, "Codex", Value(usage, 2), Value(usage, 3), theme.Codex, second, style, theme, usageBarColors);
                     using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 12, 6, second - 12, 28);
                 }
                 else
                 {
                     int second = SecondProviderX(style, false);
-                    DrawProvider(g, font, bold, text, "Claude", Value(usage, 0), theme.Claude, 36, style, theme);
-                    DrawProvider(g, font, bold, text, "Codex", Value(usage, 2), theme.Codex, second, style, theme);
+                    DrawProvider(g, font, bold, text, "Claude", Value(usage, 0), theme.Claude, 36, style, theme, usageBarColors);
+                    DrawProvider(g, font, bold, text, "Codex", Value(usage, 2), theme.Codex, second, style, theme, usageBarColors);
                     using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 11, 9, second - 11, 25);
                 }
                 if ((activityKey & 1) != 0) ActivityRipple.Draw(g, theme.Claude, MarkCenter(36), activitySeconds);
@@ -119,7 +120,7 @@ namespace Taskcode.Probe
             if (usage == null || !usage.IsLive) return AccessibleText(weekly);
             return "Taskcode: Claude " + Percentage(Value(usage, 0)) + (weekly ? ", weekly " + Percentage(Value(usage, 1)) : "") + "; Codex " + Percentage(Value(usage, 2)) + (weekly ? ", weekly " + Percentage(Value(usage, 3)) : "") + " used. -- means unavailable.";
         }
-        private static void DrawWeeklyProvider(Graphics g, Font font, Font bold, Brush text, string name, int shortUsed, int weeklyUsed, Color color, int x, IndicatorStyle style, TaskbarTheme theme)
+        private static void DrawWeeklyProvider(Graphics g, Font font, Font bold, Brush text, string name, int shortUsed, int weeklyUsed, Color color, int x, IndicatorStyle style, TaskbarTheme theme, bool usageBarColors)
         {
             using (var accent = new SolidBrush(color))
             using (var track = new SolidBrush(theme.Track))
@@ -137,20 +138,22 @@ namespace Taskcode.Probe
                     if (style == IndicatorStyle.Lines)
                     {
                         g.FillRectangle(track, x + 40, y + 6, 44, 3);
-                        if (used >= 0) g.FillRectangle(accent, x + 40, y + 6, 44 * used / 100f, 3);
+                        if (used >= 0) using (var meter = new SolidBrush(UsageBarPalette.Resolve(color, used, usageBarColors, theme.HighContrast))) g.FillRectangle(meter, x + 40, y + 6, 44 * used / 100f, 3);
                     }
                     else
                     {
+                        using (var meter = new SolidBrush(UsageBarPalette.Resolve(color, used, usageBarColors, theme.HighContrast)))
                         for (int block = 0; block < 10; block++)
-                            g.FillRectangle(block < (int)Math.Round(used / 10.0) ? accent : track, x + 40 + block * 4.4f, y + 5, 3.4f, 5);
+                            g.FillRectangle(block < (int)Math.Round(used / 10.0) ? meter : track, x + 40 + block * 4.4f, y + 5, 3.4f, 5);
                     }
                     g.DrawString(Percentage(used), bold, text, x + 91, y);
                 }
             }
         }
-        private static void DrawProvider(Graphics g, Font font, Font bold, Brush text, string name, int used, Color color, int x, IndicatorStyle style, TaskbarTheme theme)
+        private static void DrawProvider(Graphics g, Font font, Font bold, Brush text, string name, int used, Color color, int x, IndicatorStyle style, TaskbarTheme theme, bool usageBarColors)
         {
             using (var accent = new SolidBrush(color))
+            using (var meter = new SolidBrush(UsageBarPalette.Resolve(color, used, usageBarColors, theme.HighContrast)))
             using (var track = new SolidBrush(theme.Track))
             {
                 if (style == IndicatorStyle.Essential)
@@ -165,11 +168,11 @@ namespace Taskcode.Probe
                     g.DrawString(name, font, text, x + 23, 4);
                     g.DrawString(Percentage(used), bold, text, x + 76, 4);
                     g.FillRectangle(track, x + 23, 24, 89, 3);
-                    if (used >= 0) g.FillRectangle(accent, x + 23, 24, 89 * used / 100f, 3);
+                    if (used >= 0) g.FillRectangle(meter, x + 23, 24, 89 * used / 100f, 3);
                     return;
                 }
                 DrawMark(g, font, accent, name, x);
-                for (int i = 0; i < 10; i++) g.FillRectangle(i < (int)Math.Round(used / 10.0) ? accent : track, x + 25 + i * 5, 13, 4, 8);
+                for (int i = 0; i < 10; i++) g.FillRectangle(i < (int)Math.Round(used / 10.0) ? meter : track, x + 25 + i * 5, 13, 4, 8);
                 g.DrawString(Percentage(used), bold, text, x + 78, 10);
             }
         }
@@ -194,7 +197,7 @@ namespace Taskcode.Probe
         private IntPtr renderedHandle;
         private IndicatorStyle renderedStyle;
         private TaskbarTheme renderedTheme;
-        private bool renderedWeekly;
+        private bool renderedWeekly, renderedUsageBarColors;
         private int renderedPulse;
         private int renderedActivity;
         private int renderedFrame;
@@ -202,6 +205,7 @@ namespace Taskcode.Probe
         private string renderedValues;
         internal IndicatorStyle DisplayStyle;
         internal bool ShowWeekly;
+        internal bool UsageBarColors;
         internal int PulseKey;
         internal int ActivityKey;
         internal UsageDemo Usage;
@@ -231,12 +235,12 @@ namespace Taskcode.Probe
             base.WndProc(ref message);
         }
         internal void InvalidateSurface() { renderedHandle = IntPtr.Zero; }
-        internal static void DrawInputSurface(Graphics graphics, Size size, IndicatorStyle style, TaskbarTheme theme, bool weekly, int pulse, UsageDemo usage, int activity)
+        internal static void DrawInputSurface(Graphics graphics, Size size, IndicatorStyle style, TaskbarTheme theme, bool weekly, int pulse, UsageDemo usage, int activity, bool usageBarColors = false)
         {
             // Windows skips alpha-zero pixels during mouse hit testing. Alpha 1/255
             // is visually transparent, but keeps gaps inside this window's input area.
             graphics.Clear(Color.FromArgb(1, theme.PreviewBackground));
-            IndicatorView.Draw(graphics, size, style, theme, weekly, pulse, usage, activity);
+            IndicatorView.Draw(graphics, size, style, theme, weekly, pulse, usage, activity, -1, usageBarColors);
         }
         protected override CreateParams CreateParams
         {
@@ -247,11 +251,11 @@ namespace Taskcode.Probe
             bool motion = ActivityKey != 0 && SpeedArrows.IsAnimated;
             int frame = motion ? SpeedArrows.Frame : 0;
             string values = IndicatorView.LiveAccessibleText(Usage, ShowWeekly);
-            if (renderedHandle == Handle && renderedSize == Size && renderedStyle == DisplayStyle && renderedTheme == Theme && renderedWeekly == ShowWeekly && renderedPulse == PulseKey && renderedActivity == ActivityKey && renderedFrame == frame && renderedMotion == motion && renderedValues == values) return true;
+            if (renderedHandle == Handle && renderedSize == Size && renderedStyle == DisplayStyle && renderedTheme == Theme && renderedWeekly == ShowWeekly && renderedUsageBarColors == UsageBarColors && renderedPulse == PulseKey && renderedActivity == ActivityKey && renderedFrame == frame && renderedMotion == motion && renderedValues == values) return true;
             if (Width <= 0 || Height <= 0) return false;
             using (var bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppPArgb))
             {
-                using (var graphics = Graphics.FromImage(bitmap)) DrawInputSurface(graphics, bitmap.Size, DisplayStyle, Theme, ShowWeekly, PulseKey, Usage, ActivityKey);
+                using (var graphics = Graphics.FromImage(bitmap)) DrawInputSurface(graphics, bitmap.Size, DisplayStyle, Theme, ShowWeekly, PulseKey, Usage, ActivityKey, UsageBarColors);
                 IntPtr screen = Native.GetDC(IntPtr.Zero), memory = Native.CreateCompatibleDC(screen);
                 IntPtr image = bitmap.GetHbitmap(Color.FromArgb(0));
                 IntPtr previous = Native.SelectObject(memory, image);
@@ -261,7 +265,7 @@ namespace Taskcode.Probe
                     var source = new Native.Point();
                     var blend = new Native.Blend { SourceConstantAlpha = 255, AlphaFormat = 1 };
                     if (!Native.UpdateLayeredWindow(Handle, screen, IntPtr.Zero, ref size, memory, ref source, 0, ref blend, 2)) return false;
-                    renderedHandle = Handle; renderedSize = Size; renderedStyle = DisplayStyle; renderedTheme = Theme; renderedWeekly = ShowWeekly; renderedPulse = PulseKey; renderedActivity = ActivityKey; renderedFrame = frame; renderedMotion = motion; renderedValues = values;
+                    renderedHandle = Handle; renderedSize = Size; renderedStyle = DisplayStyle; renderedTheme = Theme; renderedWeekly = ShowWeekly; renderedUsageBarColors = UsageBarColors; renderedPulse = PulseKey; renderedActivity = ActivityKey; renderedFrame = frame; renderedMotion = motion; renderedValues = values;
                     return true;
                 }
                 finally
@@ -283,6 +287,7 @@ namespace Taskcode.Probe
         internal DemoReading Reading;
         internal Label ValueCaption;
         internal Label BudgetCaption;
+        internal bool UsageBarColors;
         internal DateTime RenderTimeUtc = DateTime.UtcNow;
         internal QuotaBar()
         {
@@ -294,7 +299,7 @@ namespace Taskcode.Probe
             base.OnPaint(e);
             if (Reading != null && (!Reading.Available || Period.EndUtc <= RenderTimeUtc || (Reading.ObservedUtc != DateTime.MinValue && RenderTimeUtc - Reading.ObservedUtc > TimeSpan.FromMinutes(Reading.Provider == "Claude" ? 6 : 2)))) return;
             using (var track = new SolidBrush(Theme.Track))
-            using (var fill = new SolidBrush(Provider == "claude" ? Theme.Claude : Theme.Codex))
+            using (var fill = new SolidBrush(UsageBarPalette.Resolve(Provider == "claude" ? Theme.Claude : Theme.Codex, Period.UsedFraction * 100, UsageBarColors, Theme.HighContrast)))
             using (var marker = new SolidBrush(Theme.Text))
             {
                 // Used quota and elapsed time both advance from left to right.
@@ -330,6 +335,20 @@ namespace Taskcode.Probe
         private readonly UsageDemo usage;
         private readonly Label providerLabel;
         internal Rectangle HoverAnchor { get; set; }
+        private bool usageBarColors;
+        internal bool UsageBarColors
+        {
+            get { return usageBarColors; }
+            set
+            {
+                usageBarColors = value;
+                foreach (Control control in Controls)
+                {
+                    var bar = control as QuotaBar;
+                    if (bar != null) { bar.UsageBarColors = value; bar.Invalidate(); }
+                }
+            }
+        }
         internal readonly int ProviderIndex;
         internal DetailWindow(UsageDemo usage = null, int providerIndex = 0)
         {

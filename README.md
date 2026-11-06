@@ -24,6 +24,8 @@ These previews are rendered by the current application with **sample data**. The
 
 Weekly readings are optional and disabled by default. Enabling them adds labeled `5h` and `7d` rows within the selected style. There are three display styles; placement is a separate technical setting. All styles keep the same dark background and light text even on a light Windows taskbar; high-contrast mode uses the system palette.
 
+**Appearance ? Usage-based bar colors** optionally colors quota fills by consumption: green at 0%, yellow at 50%, and red at 100%, with gradual transitions. It applies to Details and the Lines/Blocks meters. It is off by default; provider colors remain the standard.
+
 Active local turns show a subtle **Ripple** around the provider symbol, in its own accent color. This follows execution signals rather than quota polling. See [activity detection and limitations](docs/ACTIVITY.md).
 
 ![Ripple phases around Claude and Codex symbols in all three styles and both themes](docs/images/current-ripple.png)

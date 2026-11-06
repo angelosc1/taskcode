@@ -13,7 +13,7 @@ namespace Taskcode.Probe
         private sealed class MenuControls
         {
             internal ComboBox Style, Placement, Trigger;
-            internal CheckBox Weekly, Startup;
+            internal CheckBox Weekly, UsageColors, Startup;
             internal Button Details, Close, Refresh, Claude, Codex, Disconnect;
         }
         private MenuControls BuildSettingsMenu(bool live)
@@ -62,14 +62,17 @@ namespace Taskcode.Probe
             previewPanel.SizeChanged += delegate { UiSurface.Round(previewPanel, 10); }; UiSurface.Round(previewPanel, 10);
             preview.Location = new Point(12, 12);
             preview.Size = new Size(IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly), IndicatorView.LogicalHeight);
-            preview.Style = settings.Style; preview.ShowWeekly = settings.ShowWeekly; preview.Usage = usage; preview.Theme = theme;
+            preview.Style = settings.Style; preview.ShowWeekly = settings.ShowWeekly; preview.UsageBarColors = settings.UsageBarColors; preview.Usage = usage; preview.Theme = theme;
             preview.AccessibleName = IndicatorView.LiveAccessibleText(usage, settings.ShowWeekly); previewPanel.Controls.Add(preview);
             var result = new MenuControls();
-            result.Style = MenuSelect(appearance, "Style", 128, new[] { "Essential", "Lines", "Blocks" }, (int)settings.Style, "Indicator style");
-            result.Trigger = MenuSelect(appearance, "Open details", 172, new[] { "On hover", "On click" }, (int)settings.DetailsTrigger, "Open details");
-            result.Weekly = new SettingsToggle { Text = "Weekly quota", Location = new Point(12, 216), Size = new Size(316, 26), Checked = settings.ShowWeekly, AccessibleName = "Show weekly quota in the indicator" }; appearance.Controls.Add(result.Weekly);
-            var animation = MenuButton(appearance, "Preview animation", 0, 264, 158, 30, "action"); animation.Click += delegate { PreviewAnimation(); };
-            result.Details = MenuButton(appearance, "Details", 180, 264, 160, 30, "action");
+            result.Style = MenuSelect(appearance, "Style", 120, new[] { "Essential", "Lines", "Blocks" }, (int)settings.Style, "Indicator style");
+            result.Trigger = MenuSelect(appearance, "Open details", 158, new[] { "On hover", "On click" }, (int)settings.DetailsTrigger, "Open details");
+            result.Weekly = new SettingsToggle { Text = "Weekly quota", Location = new Point(12, 196), Size = new Size(316, 26), Checked = settings.ShowWeekly, AccessibleName = "Show weekly quota in the indicator" }; appearance.Controls.Add(result.Weekly);
+            result.UsageColors = new SettingsToggle { Text = "Usage-based bar colors", Location = new Point(12, 226), Size = new Size(316, 26), Checked = settings.UsageBarColors, AccessibleName = "Usage-based bar colors" };
+            appearance.Controls.Add(result.UsageColors);
+            settingsHints.SetToolTip(result.UsageColors, "Green at 0%, yellow at 50%, red at 100% used. Applies to Details, Lines and Blocks.");
+            var animation = MenuButton(appearance, "Preview animation", 0, 276, 158, 30, "action"); animation.Click += delegate { PreviewAnimation(); };
+            result.Details = MenuButton(appearance, "Details", 180, 276, 160, 30, "action");
             var accounts = settingsPages[1];
             for (int provider = 0; provider < 2; provider++)
             {
@@ -156,14 +159,14 @@ namespace Taskcode.Probe
         {
             string page = root.AccessibleName ?? "";
             float top = control.Top * 312f / Math.Max(1, root.Height);
-            return page == "Appearance settings" ? top >= 118 && top < 246 :
+            return page == "Appearance settings" ? top >= 112 && top < 262 :
                 page == "Accounts settings" ? top >= 40 && top < 208 :
                 page == "General settings" && top >= 40 && top < 208;
         }
         private void PaintSettingsCards(Panel page, Graphics graphics)
         {
             var saved = graphics.Save(); graphics.ScaleTransform(page.Width / 352f, page.Height / 312f);
-            RectangleF[] cards = page == settingsPages[0] ? new[] { new RectangleF(0, 118, 340, 128) } :
+            RectangleF[] cards = page == settingsPages[0] ? new[] { new RectangleF(0, 112, 340, 150) } :
                 page == settingsPages[1] ? new[] { new RectangleF(0, 40, 340, 80), new RectangleF(0, 128, 340, 80) } :
                 new[] { new RectangleF(0, 40, 340, 80), new RectangleF(0, 144, 340, 64) };
             foreach (var rect in cards) UiSurface.Draw(graphics, rect, UiSurface.Card(theme), Mix(BackColor, ForeColor, .07), 10);
@@ -187,6 +190,11 @@ namespace Taskcode.Probe
         private void ResizeIndicatorPreview()
         {
             float scale = Math.Max(96, Native.GetDpiForWindow(Handle)) / 96f;
+            if (preview.Parent != null)
+            {
+                scale = Math.Min(scale, Math.Max(1, preview.Parent.ClientSize.Width - preview.Left * 2) / (float)IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly));
+                scale = Math.Min(scale, Math.Max(1, preview.Parent.ClientSize.Height - preview.Top * 2) / (float)IndicatorView.LogicalHeight);
+            }
             preview.Size = new Size((int)Math.Round(IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly) * scale), (int)Math.Round(IndicatorView.LogicalHeight * scale));
         }
         protected override void OnPaint(PaintEventArgs e)

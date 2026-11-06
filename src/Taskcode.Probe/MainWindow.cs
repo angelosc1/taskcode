@@ -54,7 +54,7 @@ namespace Taskcode.Probe
                 if (!settings.ClaudeEnabled) usage.ClearProvider(0, "Disconnected from Taskcode.");
                 if (!settings.CodexEnabled) usage.ClearProvider(1, "Disconnected from Taskcode.");
             }
-            providerDetails = new[] { new DetailWindow(usage, 0), new DetailWindow(usage, 1) };
+            providerDetails = new[] { new DetailWindow(usage, 0) { UsageBarColors = settings.UsageBarColors }, new DetailWindow(usage, 1) { UsageBarColors = settings.UsageBarColors } };
             details = providerDetails[0];
             Text = WindowTitle;
             ShowInTaskbar = false;
@@ -143,6 +143,13 @@ namespace Taskcode.Probe
                 preview.Invalidate();
                 Save();
                 TickLayout();
+            };
+            menu.UsageColors.CheckedChanged += delegate
+            {
+                settings.UsageBarColors = menu.UsageColors.Checked;
+                preview.UsageBarColors = settings.UsageBarColors; preview.Invalidate();
+                foreach (var panel in providerDetails) panel.UsageBarColors = settings.UsageBarColors;
+                Save(); TickLayout();
             };
             mode.SelectedIndexChanged += delegate { settings.Mode = (HostMode)mode.SelectedIndex; RecreateIndicator(); Save(); TickLayout(); };
             trigger.SelectedIndexChanged += delegate
@@ -327,6 +334,7 @@ namespace Taskcode.Probe
             if (indicator == null || indicator.IsDisposed || (attachedParent != IntPtr.Zero && !Native.IsWindow(indicator.Handle))) RecreateIndicator();
             indicator.DisplayStyle = settings.Style;
             indicator.ShowWeekly = settings.ShowWeekly;
+            indicator.UsageBarColors = settings.UsageBarColors;
             indicator.PulseKey = pulse;
             indicator.ActivityKey = activityKey;
             indicator.Usage = usage;

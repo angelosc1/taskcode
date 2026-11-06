@@ -15,11 +15,12 @@ namespace Taskcode.Probe
             Check(window.FormBorderStyle == FormBorderStyle.None && window.Font.SizeInPoints <= 9, "Settings must use the compact borderless menu and smaller body text.");
             string[] pages = { "Appearance", "Accounts", "General" };
             int startups = 0, styles = 0, accounts = 0;
-            CheckBox weeklyToggle = null;
+            CheckBox weeklyToggle = null, usageColors = null;
             foreach (Control control in Descendants(window))
             {
                 var startup = control as CheckBox;
                 if (startup != null && startup.AccessibleName == "Show weekly quota in the indicator") weeklyToggle = startup;
+                if (startup != null && startup.AccessibleName == "Usage-based bar colors") usageColors = startup;
                 if (startup != null && startup.Text == "Start with Windows") { startups++; Check(startup.Checked == startupExpected, "Refactoring settings must preserve Windows startup preference."); }
                 var select = control as ComboBox;
                 if (select != null && select.AccessibleName == "Indicator style") { styles++; Check(select.Items.Count == 3 && (string)select.Items[0] == "Essential" && (string)select.Items[1] == "Lines" && (string)select.Items[2] == "Blocks" && new Settings().Style == IndicatorStyle.Essential, "The three styles must be ordered Essential, Lines, Blocks, with Essential as default."); }
@@ -38,6 +39,24 @@ namespace Taskcode.Probe
                     "Painted switches must retain their native accessible checked state.");
             }
             finally { weeklyToggle.Checked = weeklyBefore; }
+            Check(usageColors != null && usageColors.Checked == Settings.Load().UsageBarColors, "Usage bar colors must reflect the saved preference.");
+            bool colorsBefore = usageColors.Checked;
+            try
+            {
+                Native.SendMessage(usageColors.Handle, 0x00F5, IntPtr.Zero, IntPtr.Zero);
+                Check(usageColors.Checked != colorsBefore && Settings.Load().UsageBarColors == usageColors.Checked,
+                    "Changing usage colors must apply and persist immediately.");
+                foreach (Control control in Descendants(window))
+                {
+                    var preview = control as IndicatorView;
+                    if (preview != null)
+                    {
+                        Check(preview.UsageBarColors == usageColors.Checked, "Preview must update without reopening settings.");
+                        Check(preview.Parent.ClientRectangle.Contains(preview.Bounds), "Every style preview must stay inside its card after option changes.");
+                    }
+                }
+            }
+            finally { usageColors.Checked = colorsBefore; }
             using (var board = new Bitmap(window.Width, window.Height * 3))
             using (var graphics = Graphics.FromImage(board))
             {

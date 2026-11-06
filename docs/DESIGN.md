@@ -22,6 +22,12 @@ Settings use a compact borderless menu with Appearance, Accounts, and General na
 
 Settings group related controls in subtly elevated rounded cards. Selected navigation uses a muted mint fill and a narrow accent marker; action buttons and selectors use rounded edges and soft borders. Appearance and General use switch-shaped controls backed by native CheckBox behavior, including keyboard input and accessible checked states. Details are read-only, non-activating tool windows: showing, switching, dismissing, or clicking their content preserves the foreground app and taskbar focus state. They separate five-hour and weekly quotas into compact rounded cards, with a provider badge, stronger period headings, rounded quota tracks, and muted timing labels. The refresh and hover behavior is unchanged by these visual surfaces.
 
+## Optional usage colors
+
+**Appearance ? Usage-based bar colors** is disabled by default and saved as `usageBarColors`. When enabled, quota fills interpolate from green at 0% consumed through yellow at 50% to red at 100%. The setting applies immediately to Details, Lines, and Blocks, including weekly meters. Empty and unfilled space remains muted, provider logos and percentages retain their colors, and Essential has no taskbar meter to recolor. High-contrast mode keeps the system palette.
+
+![Default and optional quota fill colors](images/usage-colors.png)
+
 ## Data semantics
 
 Percentages represent consumed quota and must be labeled accordingly in the details panel. Claude and Codex use the same convention. Do not mix remaining and consumed percentages.
