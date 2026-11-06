@@ -1,88 +1,69 @@
-<p align="center"><img src="assets/branding/taskcode.png" alt="Taskcode" width="112" height="112"></p>
-
+<p align="center"><img src="assets/branding/taskcode.png" alt="Taskcode" width="96" height="96"></p>
 <h1 align="center">Taskcode</h1>
+<p align="center">Claude and Codex quota, on your Windows taskbar.</p>
 
-<p align="center">Your AI quota, on the Windows taskbar.</p>
+Taskcode puts a compact dark capsule beside the system tray. Check five-hour and weekly consumption, reset times and usage estimates without switching away from your work.
 
-Taskcode is a Windows taskbar companion for monitoring Claude and Codex quota without interrupting your work. Its indicator sits to the left of the taskbar's hidden-icons arrow, with details available on hover or click.
+**[Download the latest release](https://github.com/angelosc1/taskcode/releases/latest)** ? [Installation guide](docs/INSTALL.md) ? [Account setup](docs/ACCOUNTS.md) ? [Report an issue](https://github.com/angelosc1/taskcode/issues)
 
-**Status: experimental Windows prototype.** Account windows provide explicit Claude and ChatGPT sign-in through the official clients, or reuse an existing local CLI account. Codex uses its app-server; Claude reads authenticated subscription quota with a status-line fallback. Taskbar embedding, packaging, and wider Windows compatibility remain experimental. See [account setup and privacy](docs/ACCOUNTS.md).
+## Install
 
-## Current prototype
+1. Open [Releases](https://github.com/angelosc1/taskcode/releases/latest) and download `Taskcode-Setup-<version>-win-x64.exe`.
+2. Run the installer. It installs for your Windows user and adds a Start menu shortcut.
+3. Open **Accounts** and connect Claude and/or Codex. The account windows can install the official CLI if needed.
+4. Choose your style in **Appearance**. **Essential** is the default.
+5. Optionally enable **General > Start with Windows**. It is off by default.
 
-These previews are rendered by the current application with **sample data**. They show implemented controls and styles, rather than proposed designs. Indicator previews use sample light/dark taskbar backgrounds to demonstrate contrast. Every style uses the same dark capsule; settings, Details, and account windows share its fixed dark palette.
+Requires **Windows 11 x64** and **.NET Framework 4.8**, normally included with Windows 11. This is an early release; taskbar integration is still experimental across different Windows configurations. The initial installer is not code-signed. See [installation, portable use, removal and troubleshooting](docs/INSTALL.md).
 
-### Three indicator styles
+## On the taskbar
 
-![Essential, Lines, and Blocks over dark and light taskbars, with weekly readings off and on](docs/images/current-indicators.png)
+![Essential, Lines and Blocks, with optional weekly readings](docs/images/current-indicators.png)
 
-| Style | Indicator | Availability |
-| --- | --- | --- |
-| Essential | Compact icons and percentages | Default |
-| Lines | Names and thin bars inside the capsule | Configurable |
-| Blocks | Segmented meters inside the capsule | Configurable |
+| Style | Display |
+| --- | --- |
+| **Essential ? default** | Provider icons and percentages |
+| **Lines** | Names and thin meters |
+| **Blocks** | Segmented meters |
 
-Weekly readings are optional and disabled by default. Enabling them adds labeled `5h` and `7d` rows within the selected style. There are three display styles; placement is a separate technical setting. All styles keep the same dark background and light text even on a light Windows taskbar; high-contrast mode uses the system palette.
+All styles use the same dark capsule, regardless of the Windows theme. Weekly readings and green?yellow?red usage colors are optional and off by default. Values show **consumed quota**. Provider logos keep their own colors.
 
-**Appearance ? Usage-based bar colors** optionally colors quota fills by consumption: green at 0%, yellow at 50%, and red at 100%, with gradual transitions. It applies to Details and the Lines/Blocks meters. It is off by default; provider colors remain the standard.
+A subtle **Ripple** follows observed local execution. Usage arrows appear only inside Details. Local activity detection covers Claude Code and Codex sessions; it does not observe activity in the Claude website or desktop app. [How activity is detected](docs/ACTIVITY.md).
 
-Active local turns show a subtle **Ripple** around the provider symbol, in its own accent color. This follows execution signals rather than quota polling. See [activity detection and limitations](docs/ACTIVITY.md).
+## Details
 
-![Ripple phases around Claude and Codex symbols in all three styles and both themes](docs/images/current-ripple.png)
+![Separate Claude and Codex Details cards](docs/images/current-details.png)
 
-### Quota details
+Hover opens the relevant provider's card immediately. Click-only opening is also available. Cards show consumption versus elapsed time, reset countdowns, and usage projections. They close when you move away and never take focus from your current app.
 
-![Current provider details with the fixed dark theme](docs/images/current-details.png)
+Forecasts use recent quota observations where available, with a clearly labelled **period avg** while waiting for a measurable change. They pause when local execution stops. They are estimates, not provider guarantees. [How estimates work](docs/USAGE-SPEED.md).
 
-Each provider has its own panel with five-hour and weekly quota, elapsed-period markers, and recent-consumption projections with animated filled arrows. Hovering or clicking Claude opens Claude's panel; Codex opens its own. Only one panel is visible at a time. The preview above uses simulated values. Normal startup uses account data, and unavailable or stale quota appears as `--`.
+## Settings and updates
 
-Details are compact borderless cards without an app title, close button, legend, or footer. They close automatically when the pointer leaves the card and its indicator, including when opened by click. Source and freshness information are available on hover.
+![Appearance, Accounts and General settings](docs/images/current-settings.png)
 
-### Settings
+- **Appearance:** style, hover/click, weekly quota and optional usage colors.
+- **Accounts:** sign in, reuse an existing CLI account, refresh or disconnect.
+- **General:** indicator visibility, Windows startup, placement and updates.
 
-![Taskcode settings sections in the fixed dark theme](docs/images/current-settings.png)
+**General > Check for updates** checks the official GitHub release. Automatic daily checks are enabled by default and can be turned off. When an update is available, choose **Install v?**. Taskcode verifies the download's SHA-256, runs the installer and restarts in the tray. Accounts and preferences stay in your user data directory. Updates are never installed without your click. Portable copies open the release page for a manual update. [Update details](docs/INSTALL.md#updates).
 
-Settings open from the tray icon as a compact menu that follows the taskbar theme. **Appearance** contains the indicator style, detail trigger, weekly quota, and previews. **Accounts** contains connections and refresh. **General** contains visibility, Windows startup, and placement. Closing the menu or pressing Escape keeps Taskcode running in the tray; startup remains opt-in.
+**Close**, the header ? and Escape hide settings. To stop Taskcode completely, right-click its tray icon or taskbar indicator and select **Exit**.
 
-**Connect Claude** and **Connect Codex** open dedicated account windows. Choose **Sign in** to select an account through the official login, or **Use existing CLI account**. New sign-ins use separate Taskcode profiles and preserve your regular CLI login. The windows show progress, errors, account identity when available, cancellation, and an official CLI installer if needed. Read [connection instructions](docs/ACCOUNTS.md).
+## Privacy and limitations
 
-## Planned first version
+There is no Taskcode account, cloud backend or analytics. Official clients own authentication; Taskcode reads only the local credentials required for its documented provider connection. Quota requests go to the provider, and update checks go to GitHub. Prompts, responses and credentials are never included in release files or public preview images. [Privacy](docs/PRIVACY.md) ? [Connection details](docs/ACCOUNTS.md).
 
-- Windows, with initial validation on Windows 11.
-- Claude and Codex.
-- Consumed quota and reset times, when available from the data source.
-- A details panel on hover.
-- Style selection under **Indicator style** in the settings window, with an immediate preview and a saved preference.
-- Indicator style independent of light or dark mode.
-- Optional weekly quota in the taskbar indicator, disabled by default.
-- Recent-consumption projections with one to three animated, filled arrows when sufficiently frequent source observations are available.
-- Transparent taskbar indicator with colors following the Windows taskbar theme.
-- Tray icon for settings and exit, plus optional Windows sign-in startup (off by default).
-- Explicit states for stale data, connection errors, and unavailable quota information.
+Claude quota checks are spaced at least five minutes apart; Codex is normally queried every ten seconds. Internal provider endpoints may change. Missing, stale or disconnected quota shows `--`. Auto-hide, Explorer restarts, multiple monitors, fullscreen and scaling need broader compatibility testing. Overlay is available if embedded placement misbehaves.
+
+*Images are rendered by the actual application with sample quota values, without personal account data.*
 
 ## Development
 
-The initial probe uses C# / Windows Forms and the Windows .NET Framework compiler, without downloading dependencies. The final application stack remains open pending integration validation.
+Taskcode uses C# / Windows Forms and .NET Framework, with no NuGet dependencies. [Build and test](docs/DEVELOPMENT.md) ? [Release process](docs/RELEASING.md) ? [Roadmap](ROADMAP.md) ? [Design decisions](docs/DESIGN.md).
 
-```powershell
-.\scripts\build-probe.cmd --test
-.\out\probe\Taskcode.Probe.exe
-```
+## Credits and license
 
-See [prototype instructions](docs/PROTOTYPE.md) and the [integration investigation](docs/TASKBAR-INTEGRATION.md) for requirements, evidence, and known limitations.
+[Codenotch](https://github.com/vinzdg/codenotch) inspired the quota-monitoring workflow and the MIT-licensed Claude connection approach. Taskcode's UI is its own implementation. [Third-party notices](THIRD-PARTY-NOTICES.md).
 
-See the [roadmap](ROADMAP.md) and [design decisions](docs/DESIGN.md).
-
-## Contributing
-
-Interface suggestions, compatibility reports, and technical discussion are welcome. Do not include tokens, cookies, authentication files, or logs containing personal data in issues or pull requests.
-
-## Inspiration
-
-[Codenotch](https://github.com/vinzdg/codenotch) is a functional reference. The Claude connection adapts its MIT-licensed Windows CLI sign-in and usage-reading approach to C#. Attribution and license text are included in [third-party notices](THIRD-PARTY-NOTICES.md).
-
-## License
-
-Taskcode is licensed under the [MIT License](LICENSE).
-
-Provider artwork is covered separately in [third-party notices](THIRD-PARTY-NOTICES.md).
+[MIT License](LICENSE). Provider artwork is covered separately in the notices.

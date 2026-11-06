@@ -1,4 +1,6 @@
-# Running the positioning prototype
+# Developer prototype reference
+
+For the official app, use the [installation guide](INSTALL.md). This document describes developer-only preview and diagnostic commands; they are not available in the installed release.
 
 The probe tests taskbar placement and display styles and can monitor account quota through Codex CLI and Claude Code. See [account connections](ACCOUNTS.md) for sign-in, privacy, dependencies, and removal.
 

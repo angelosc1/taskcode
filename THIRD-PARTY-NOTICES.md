@@ -36,3 +36,7 @@ SOFTWARE.
 - Asset license: CC0 1.0 Universal. A copy is included in [SIMPLE-ICONS-LICENSE.md](assets/providers/SIMPLE-ICONS-LICENSE.md).
 
 Claude and its symbol are trademarks of Anthropic. Taskcode uses the symbol to identify the monitored provider and is not affiliated with or endorsed by Anthropic. The project's MIT license does not grant rights to third-party trademarks.
+
+## Installer
+
+Windows setup packages are built with [Inno Setup](https://jrsoftware.org/). Copyright (C) 1997-2026 Jordan Russell; portions Copyright (C) 2000-2026 Martijn Laan. The installer retains the engine copyright notices and website addresses. Taskcode does not claim authorship of the installer engine.

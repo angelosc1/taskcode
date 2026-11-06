@@ -46,3 +46,5 @@ Taskcode currently monitors one selected account per provider. You can switch be
 The adapted Codenotch behavior is MIT-licensed and credited in [third-party notices](../THIRD-PARTY-NOTICES.md). Taskcode remains an experimental Windows application; endpoint availability and official client versions determine what can be read.
 
 Connection errors preserve recent readings until their freshness limit, then show `--`; polling retries automatically. Codex cleanup tolerates a broken app-server pipe. Unexpected process errors are recorded in `lifecycle.log` beside the executable using exception types and method names only, without messages, credentials, or service responses. The log also distinguishes requested exits from an unexpected error.
+
+Installed builds use `%LOCALAPPDATA%/Taskcode/settings.xml`; updates preserve it and the separate official-client profiles. Public installers never include settings, credentials, account identities or development diagnostic tools. See [installation and updates](INSTALL.md).

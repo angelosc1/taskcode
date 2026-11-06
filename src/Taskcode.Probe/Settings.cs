@@ -13,16 +13,19 @@ namespace Taskcode.Probe
         internal DetailsTrigger DetailsTrigger = DetailsTrigger.Hover;
         internal bool ShowWeekly;
         internal bool UsageBarColors = false;
+        internal bool AutomaticUpdateChecks = true;
+        internal DateTime LastUpdateCheckUtc;
         internal bool CodexEnabled = true, ClaudeEnabled = true;
         internal bool CodexPrivateProfile, ClaudePrivateProfile;
-        internal static readonly string Path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.xml");
+        internal static readonly string Path = System.IO.Path.Combine(AppInfo.DataDirectory, "settings.xml");
         internal static Settings Load()
         {
             var value = new Settings();
             try
             {
                 var doc = new XmlDocument { XmlResolver = null };
-                using (var reader = XmlReader.Create(Path, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null })) doc.Load(reader);
+                string source = File.Exists(Path) ? Path : System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.xml");
+                using (var reader = XmlReader.Create(source, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null })) doc.Load(reader);
                 IndicatorStyle style;
                 HostMode mode;
                 DetailsTrigger detailsTrigger;
@@ -34,6 +37,9 @@ namespace Taskcode.Probe
                 if (Enum.TryParse(doc.DocumentElement.GetAttribute("detailsTrigger"), out detailsTrigger) && Enum.IsDefined(typeof(DetailsTrigger), detailsTrigger)) value.DetailsTrigger = detailsTrigger;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("showWeekly"), out showWeekly)) value.ShowWeekly = showWeekly;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("usageBarColors"), out showWeekly)) value.UsageBarColors = showWeekly;
+                if (bool.TryParse(doc.DocumentElement.GetAttribute("automaticUpdateChecks"), out showWeekly)) value.AutomaticUpdateChecks = showWeekly;
+                DateTime lastCheck;
+                if (DateTime.TryParse(doc.DocumentElement.GetAttribute("lastUpdateCheckUtc"), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind, out lastCheck)) value.LastUpdateCheckUtc = lastCheck.ToUniversalTime();
                 bool connected;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("codexEnabled"), out connected)) value.CodexEnabled = connected;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("claudeEnabled"), out connected)) value.ClaudeEnabled = connected;
@@ -47,6 +53,7 @@ namespace Taskcode.Probe
         }
         internal void Save()
         {
+            Directory.CreateDirectory(AppInfo.DataDirectory);
             using (var writer = XmlWriter.Create(Path, new XmlWriterSettings { Indent = true }))
             {
                 writer.WriteStartElement("taskcode");
@@ -55,6 +62,8 @@ namespace Taskcode.Probe
                 writer.WriteAttributeString("detailsTrigger", DetailsTrigger.ToString());
                 writer.WriteAttributeString("showWeekly", ShowWeekly.ToString());
                 writer.WriteAttributeString("usageBarColors", UsageBarColors.ToString());
+                writer.WriteAttributeString("automaticUpdateChecks", AutomaticUpdateChecks.ToString());
+                writer.WriteAttributeString("lastUpdateCheckUtc", LastUpdateCheckUtc.ToString("o"));
                 writer.WriteAttributeString("codexEnabled", CodexEnabled.ToString());
                 writer.WriteAttributeString("claudeEnabled", ClaudeEnabled.ToString());
                 writer.WriteAttributeString("codexPrivateProfile", CodexPrivateProfile.ToString());

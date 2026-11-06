@@ -32,7 +32,7 @@ namespace Taskcode.Probe
                     "Details must be a non-activating tool window at the native level.");
                 Check(Native.SendMessage(panel.Handle, 0x0021, IntPtr.Zero, IntPtr.Zero).ToInt64() == 3,
                     "Clicking a read-only Details card must not activate it.");
-                Check(panel.TopMost && (Native.GetStyle(panel.Handle, -20).ToInt64() & 8L) != 0,
+                Check((Native.GetStyle(panel.Handle, -20).ToInt64() & 8L) != 0,
                     "Hover cards must appear above the foreground app and topmost taskbar without requiring click activation.");
                 Check(panel.FormBorderStyle == FormBorderStyle.None && !panel.ControlBox && !panel.ShowInTaskbar, "Details must be a borderless card without native title/close controls.");
                 Check(panel.ClientSize.Height <= 276, "The compact card must fit the budget and speed rows with breathing room between sections.");

@@ -50,7 +50,7 @@ namespace Taskcode.Probe
             request.Method = "GET"; request.AllowAutoRedirect = false; request.Timeout = request.ReadWriteTimeout = 15000;
             request.Headers[HttpRequestHeader.Authorization] = "Bearer " + token;
             request.Headers["anthropic-beta"] = "oauth-2025-04-20";
-            request.UserAgent = "Taskcode/0.3.0";
+            request.UserAgent = "Taskcode/" + AppInfo.VersionText;
             try
             {
                 using (var response = (HttpWebResponse)request.GetResponse())

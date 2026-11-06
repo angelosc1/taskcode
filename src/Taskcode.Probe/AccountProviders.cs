@@ -110,7 +110,7 @@ namespace Taskcode.Probe
             process = Process.Start(info);
             process.ErrorDataReceived += delegate { }; // Drain diagnostics without storing credentials or raw service responses.
             process.BeginErrorReadLine();
-            Request("initialize", new { clientInfo = new { name = "taskcode", title = "Taskcode", version = "0.2.0" } });
+            Request("initialize", new { clientInfo = new { name = "taskcode", title = "Taskcode", version = AppInfo.VersionText } });
             process.StandardInput.WriteLine(AccountJson.Encode(new { method = "initialized" }));
             process.StandardInput.Flush();
         }

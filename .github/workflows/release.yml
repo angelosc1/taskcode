@@ -1,0 +1,35 @@
+name: Windows release
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Validate version
+        shell: powershell
+        run: |
+          $version = (Get-Content VERSION -Raw).Trim()
+          if ($env:GITHUB_REF_TYPE -ne 'tag' -or $env:GITHUB_REF_NAME -ne "v$version") { throw 'Run this workflow on the tag matching VERSION.' }
+          "TASKCODE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Prepare compiler
+        shell: powershell
+        run: .\scripts\prepare-inno.ps1
+      - name: Build and test
+        shell: powershell
+        run: .\scripts\build-release.ps1 -RunChecks
+      - name: Publish verified assets
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = $env:TASKCODE_VERSION
+          $tag = "v$version"
+          gh release create $tag "out/release/$version/Taskcode-Setup-$version-win-x64.exe" "out/release/$version/Taskcode-$version-win-x64.zip" "out/release/$version/SHA256SUMS" --draft --verify-tag --title "Taskcode $version" --notes-file "docs/release-notes/$version.md"
+          if ($LASTEXITCODE -ne 0) { throw 'Release creation failed.' }
+          gh release edit $tag --draft=false --latest
+          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed.' }

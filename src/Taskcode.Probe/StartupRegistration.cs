@@ -37,5 +37,18 @@ namespace Taskcode.Probe
                     if (key != null) key.DeleteValue(ValueName, false);
             }
         }
+        internal static void RepointExisting(string executable)
+        {
+            using (var key = Registry.CurrentUser.OpenSubKey(KeyPath))
+            {
+                string current = key == null ? null : key.GetValue(ValueName) as string;
+                if (current == null) return;
+                var match = System.Text.RegularExpressions.Regex.Match(current, "^\"([^\"]+)\" --tray$");
+                if (!match.Success) return;
+                string name = Path.GetFileName(match.Groups[1].Value);
+                if (!string.Equals(name, "Taskcode.exe", StringComparison.OrdinalIgnoreCase) && !string.Equals(name, "Taskcode.Probe.exe", StringComparison.OrdinalIgnoreCase)) return;
+            }
+            SetEnabled(executable, true);
+        }
     }
 }

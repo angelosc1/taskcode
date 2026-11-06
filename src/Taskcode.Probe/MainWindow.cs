@@ -34,6 +34,10 @@ namespace Taskcode.Probe
         private readonly Icon trayImage;
         private bool startInTray, exiting;
         private readonly AccountConnections connections;
+        private readonly UpdateService updateService = new UpdateService();
+        private Button updateCheckButton;
+        private Label updateStatus;
+        private string notifiedUpdate;
         private readonly Label[] accountLabels = new Label[2];
         private readonly AccountConnectionWindow[] accountWindows = new AccountConnectionWindow[2];
         private DateTime ripplePreviewUntil;
@@ -74,6 +78,18 @@ namespace Taskcode.Probe
             }
 
             bool restoringStartup = false;
+            menu.AutomaticUpdates.CheckedChanged += delegate { settings.AutomaticUpdateChecks = menu.AutomaticUpdates.Checked; Save(); };
+            updateCheckButton.Click += delegate
+            {
+                if (updateService.Available == null) updateService.CheckNow();
+                else if (AppInfo.IsInstalled) updateService.Download();
+                else
+                {
+                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(AppInfo.Repository + "/releases/latest") { UseShellExecute = true }); }
+                    catch (System.ComponentModel.Win32Exception) { updateService.LaunchFailed(); }
+                }
+                RefreshUpdateUi();
+            };
             startup.CheckedChanged += delegate
             {
                 if (restoringStartup) return;
@@ -185,6 +201,7 @@ namespace Taskcode.Probe
                 if (indicator != null && !indicator.IsDisposed) indicator.InvalidateSurface();
             };
             tray = new NotifyIcon { Icon = trayImage, Text = "Taskcode - AI quota monitor", ContextMenuStrip = trayMenu, Visible = true };
+            tray.BalloonTipClicked += delegate { OpenSettings(); ShowSettingsPage(2); };
             tray.MouseClick += delegate(object sender, MouseEventArgs e) { if (e.Button == MouseButtons.Left) OpenSettings(); };
             Resize += delegate { if (WindowState == FormWindowState.Minimized) Hide(); };
             FormClosing += delegate(object sender, FormClosingEventArgs e)
@@ -193,7 +210,7 @@ namespace Taskcode.Probe
             };
             FormClosed += delegate
             {
-                timer.Stop(); timer.Dispose(); hoverTimer.Dispose(); animationTimer.Dispose(); watcher.Dispose();
+                timer.Stop(); timer.Dispose(); updateService.Dispose(); hoverTimer.Dispose(); animationTimer.Dispose(); watcher.Dispose();
                 if (connections != null) connections.Dispose();
                 foreach (var accountWindow in accountWindows) if (accountWindow != null && !accountWindow.IsDisposed) accountWindow.Dispose();
                 disconnectMenu.Dispose();
@@ -283,10 +300,36 @@ namespace Taskcode.Probe
             indicatorBounds = Rectangle.Empty;
             SetSettingsStatus(reason + (saveError == null ? "" : "\n" + saveError), true);
         }
+        private void RefreshUpdateUi()
+        {
+            updateCheckButton.Enabled = !updateService.Busy;
+            var available = updateService.Available;
+            updateCheckButton.Text = available == null ? "Check for updates" : AppInfo.IsInstalled ? "Install v" + available.Version.ToString(3) : "Get update";
+            updateStatus.Text = updateService.Message;
+        }
         private void TickLayout()
         {
             if (connections != null)
             {
+                updateService.Tick(settings.AutomaticUpdateChecks, settings.LastUpdateCheckUtc);
+                RefreshUpdateUi();
+                if (updateService.CheckedUtc > settings.LastUpdateCheckUtc) { settings.LastUpdateCheckUtc = updateService.CheckedUtc; Save(); }
+                var available = updateService.Available;
+                if (available != null && notifiedUpdate != available.Version.ToString(3))
+                {
+                    notifiedUpdate = available.Version.ToString(3);
+                    tray.ShowBalloonTip(5000, "Taskcode update", "Version " + notifiedUpdate + " is available. Open General to install.", ToolTipIcon.Info);
+                }
+                string installer = updateService.TakeInstaller();
+                if (installer != null)
+                {
+                    try
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(installer, "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- /UPDATE=1") { UseShellExecute = true, WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden });
+                        RequestExit(); return;
+                    }
+                    catch (System.ComponentModel.Win32Exception) { updateService.LaunchFailed(); }
+                }
                 connections.Tick(usage);
                 UpdateAccountLabels();
                 preview.AccessibleName = IndicatorView.LiveAccessibleText(usage, settings.ShowWeekly);
@@ -374,6 +417,10 @@ namespace Taskcode.Probe
         }
         internal int VisibleDetailProvider { get { return details.Visible ? details.ProviderIndex : -1; } }
         internal int VisibleDetailCount { get { int count = 0; foreach (var panel in providerDetails) if (panel.Visible) count++; return count; } }
+        internal bool DetailsHaveForeground
+        {
+            get { var foreground = Native.GetForegroundWindow(); foreach (var panel in providerDetails) if (panel.IsHandleCreated && panel.Handle == foreground) return true; return false; }
+        }
         internal void ShowDetails(bool explicitOpen, bool fromPreview, int provider = 0)
         {
             // Native entry and frame-rate pointer tracking share this guard.

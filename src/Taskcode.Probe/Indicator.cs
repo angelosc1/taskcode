@@ -357,7 +357,6 @@ namespace Taskcode.Probe
             this.usage = usage ?? new UsageDemo();
             string provider = providerIndex == 0 ? "Claude" : "Codex";
             Text = "Taskcode - " + provider + " details";
-            TopMost = true;
             FormBorderStyle = FormBorderStyle.None;
             ControlBox = false;
             ShowInTaskbar = false;
@@ -505,7 +504,7 @@ namespace Taskcode.Probe
             get
             {
                 var value = base.CreateParams;
-                value.ExStyle |= 0x08000000 | 0x80; // WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW
+                value.ExStyle |= 0x08000000 | 0x80 | 0x08; // NOACTIVATE | TOOLWINDOW | TOPMOST, without the activating Form.TopMost setter.
                 return value;
             }
         }

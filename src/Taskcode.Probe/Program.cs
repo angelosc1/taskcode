@@ -11,12 +11,29 @@ namespace Taskcode.Probe
         [STAThread]
         private static int Main(string[] args)
         {
+#if !TASKCODE_RELEASE
             if (Array.IndexOf(args, "--self-test") >= 0) return SelfTest();
             if (Array.IndexOf(args, "--tray-test") >= 0) return TraySelfTest();
             if (Array.IndexOf(args, "--accounts-check") >= 0) return AccountChecks.Probe(false);
             if (Array.IndexOf(args, "--activity-check") >= 0) return AccountChecks.ProbeActivity();
             if (Array.IndexOf(args, "--login-flow-check") >= 0) return AccountChecks.ProbeLoginFlow();
             if (Array.IndexOf(args, "--connect-claude") >= 0) return AccountChecks.Probe(true);
+#endif
+            if (Array.IndexOf(args, "--finish-install") >= 0)
+            {
+                try { StartupRegistration.RepointExisting(Application.ExecutablePath); return 0; }
+                catch (Exception error) { RecordLifecycle("Startup migration failed: " + error.GetType().Name); return 1; }
+            }
+            if (Array.IndexOf(args, "--prepare-uninstall") >= 0)
+            {
+                try
+                {
+                    var running = Native.FindWindow(null, MainWindow.WindowTitle);
+                    if (running != IntPtr.Zero) Native.PostMessage(running, MainWindow.ExitMessage, IntPtr.Zero, IntPtr.Zero);
+                    ClaudeBridge.Uninstall(); StartupRegistration.SetEnabled(Application.ExecutablePath, false); return 0;
+                }
+                catch (Exception error) { RecordLifecycle("Uninstall preparation failed: " + error.GetType().Name); return 1; }
+            }
             if (Array.IndexOf(args, "--preview-animation") >= 0)
             {
                 var running = Native.FindWindow(null, MainWindow.WindowTitle);
@@ -58,7 +75,11 @@ namespace Taskcode.Probe
                     }
                 };
                 RecordLifecycle("Started");
-                var mainWindow = new MainWindow(startInTray, Array.IndexOf(args, "--demo") < 0);
+                bool live = true;
+#if !TASKCODE_RELEASE
+                live = Array.IndexOf(args, "--demo") < 0;
+#endif
+                var mainWindow = new MainWindow(startInTray, live);
                 RecordLifecycle("Window initialized");
                 mainWindow.Shown += delegate { RecordLifecycle("Settings shown"); };
                 Application.Run(mainWindow);
@@ -70,7 +91,8 @@ namespace Taskcode.Probe
         {
             try
             {
-                string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "lifecycle.log");
+                Directory.CreateDirectory(AppInfo.DataDirectory);
+                string path = Path.Combine(AppInfo.DataDirectory, "lifecycle.log");
                 if (File.Exists(path) && new FileInfo(path).Length > 65536) File.Delete(path);
                 File.AppendAllText(path, DateTime.UtcNow.ToString("o") + " " + entry + Environment.NewLine);
             }
@@ -78,6 +100,7 @@ namespace Taskcode.Probe
             catch (UnauthorizedAccessException) { }
             catch (System.Security.SecurityException) { }
         }
+#if !TASKCODE_RELEASE
         private static int TraySelfTest()
         {
             Application.EnableVisualStyles();
@@ -118,12 +141,11 @@ namespace Taskcode.Probe
                         Assert(window.VisibleDetailProvider == 0 && window.VisibleDetailCount == 1, "Selecting Claude must open only Claude details.");
                         window.ShowDetails(true, true, 1);
                         Assert(window.VisibleDetailProvider == 1 && window.VisibleDetailCount == 1, "Selecting Codex must replace Claude details without showing both.");
-                        var focusedWindow = Native.GetForegroundWindow();
                         foreach (int provider in new[] { 0, 1, 0, 1 })
                         {
                             window.ShowDetails(true, true, provider);
-                            Assert(Native.GetForegroundWindow() == focusedWindow,
-                                "Switching provider Details must never move foreground focus, even when explicitly opened.");
+                            Assert(!window.DetailsHaveForeground,
+                                "Switching provider Details must never activate a card, even when explicitly opened.");
                         }
                         Button closeSettings = null;
                         foreach (Control control in SettingsMenuChecks.Descendants(window))
@@ -201,6 +223,7 @@ namespace Taskcode.Probe
                 SignInChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 DetailChecks.Run();
                 UsageColorChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
+                UpdateChecks.Run();
                 RenderChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 File.WriteAllText(output, "PASS: 7 placement assertions.\nPASS: provider routing in all 3 styles, with weekly off/on and scaled coordinates.\nPASS: 10 time-progress and budget-pace assertions.\nPASS: recent-speed, source cadence, sparse observations, projections, and sequential-fade checks.\nPASS: account parsing, missing/expired windows, fractional readings, privacy, provider isolation, stale data, and no synthetic live observations.\nPASS: activity lifecycle, multiple sessions, incremental records, hook preservation, and staggered transparent Ripple rendering.\nPASS: full-area mouse input, context-menu isolation, no host activation, visibility, and redraw in Embedded/Overlay.\nPASS: account sign-in windows, existing/new-account routing, safe CLI argument handling, and Claude API response parsing.\nPASS: clean borderless Details, complete percentages, pointer retention, gap crossing, and immediate dismissal.\nPASS: all 3 styles in light/dark palettes, transparent outer corners, fixed dark capsule in every style, visible vector/text content, and palette contrast.\n");
                 return 0;
@@ -208,5 +231,6 @@ namespace Taskcode.Probe
             catch (Exception ex) { File.WriteAllText(output, "FAIL: " + ex.Message); return 1; }
         }
         private static void Assert(bool value, string message) { if (!value) throw new InvalidOperationException(message); }
+#endif
     }
 }

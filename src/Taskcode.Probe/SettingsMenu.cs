@@ -13,7 +13,7 @@ namespace Taskcode.Probe
         private sealed class MenuControls
         {
             internal ComboBox Style, Placement, Trigger;
-            internal CheckBox Weekly, UsageColors, Startup;
+            internal CheckBox Weekly, UsageColors, Startup, AutomaticUpdates;
             internal Button Details, Close, Refresh, Claude, Codex, Disconnect;
         }
         private MenuControls BuildSettingsMenu(bool live)
@@ -35,7 +35,6 @@ namespace Taskcode.Probe
             { if (e.Button == MouseButtons.Left) { Native.ReleaseCapture(); Native.SendMessage(Handle, 0x00A1, new IntPtr(2), IntPtr.Zero); } };
             name.MouseDown += drag; logo.MouseDown += drag;
             MouseDown += delegate(object sender, MouseEventArgs e) { if (e.Y < 64) drag(sender, e); };
-            if (!live) MenuLabel(this, "Demo", 176, 25, 64, 18, "muted");
             var close = MenuButton(this, "", 474, 16, 30, 30, "ghost"); close.AccessibleName = "Close settings"; close.Click += delegate { Hide(); };
             AddDivider(this, 16, 63, 488);
             string[] titles = { "Appearance", "Accounts", "General" };
@@ -92,6 +91,13 @@ namespace Taskcode.Probe
 
             result.Placement = MenuSelect(general, "Placement", 156, new[] { "Embedded (experimental)", "Overlay" }, (int)settings.Mode, "Placement mode");
             settingsHints.SetToolTip(result.Placement, "Embedded attaches to the taskbar. Overlay uses the same position in a separate window.");
+            MenuLabel(general, "Version " + AppInfo.VersionText, 12, 228, 142, 22, "text");
+            updateCheckButton = MenuButton(general, "Check for updates", 176, 226, 152, 28, "action");
+            updateCheckButton.AccessibleName = "Check for Taskcode updates";
+            updateStatus = MenuLabel(general, "Checks GitHub Releases", 12, 254, 316, 18, "muted"); updateStatus.Font = new Font("Segoe UI", 8f);
+            result.AutomaticUpdates = new SettingsToggle { Text = "Check automatically", Location = new Point(12, 276), Size = new Size(316, 26), Checked = settings.AutomaticUpdateChecks, AccessibleName = "Check for updates automatically" };
+            general.Controls.Add(result.AutomaticUpdates);
+            settingsHints.SetToolTip(result.AutomaticUpdates, "Checks GitHub Releases once a day. Installs only when you choose Install.");
             AddDivider(this, 16, 400, 488);
             status.Location = new Point(18, 411); status.Size = new Size(365, 20); status.AutoEllipsis = true; status.Tag = "muted"; status.Font = new Font("Segoe UI", 8f); status.Text = "Starting..."; Controls.Add(status);
             result.Close = MenuButton(this, "Close", 414, 406, 90, 26, "ghost");
@@ -161,14 +167,14 @@ namespace Taskcode.Probe
             float top = control.Top * 312f / Math.Max(1, root.Height);
             return page == "Appearance settings" ? top >= 112 && top < 262 :
                 page == "Accounts settings" ? top >= 40 && top < 208 :
-                page == "General settings" && top >= 40 && top < 208;
+                page == "General settings" && top >= 40 && top < 308;
         }
         private void PaintSettingsCards(Panel page, Graphics graphics)
         {
             var saved = graphics.Save(); graphics.ScaleTransform(page.Width / 352f, page.Height / 312f);
             RectangleF[] cards = page == settingsPages[0] ? new[] { new RectangleF(0, 112, 340, 150) } :
                 page == settingsPages[1] ? new[] { new RectangleF(0, 40, 340, 80), new RectangleF(0, 128, 340, 80) } :
-                new[] { new RectangleF(0, 40, 340, 80), new RectangleF(0, 144, 340, 64) };
+                new[] { new RectangleF(0, 40, 340, 80), new RectangleF(0, 144, 340, 64), new RectangleF(0, 220, 340, 88) };
             foreach (var rect in cards) UiSurface.Draw(graphics, rect, UiSurface.Card(theme), Mix(BackColor, ForeColor, .07), 10);
             using (var accent = new SolidBrush(theme.Codex)) graphics.FillRectangle(accent, 0, 28, 24, 2);
             graphics.Restore(saved);

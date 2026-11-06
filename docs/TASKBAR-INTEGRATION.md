@@ -1,3 +1,5 @@
+> Historical integration investigation and development evidence. For current end-user behavior and setup, see [Installation](INSTALL.md) and the [README](../README.md).
+
 # Taskbar integration investigation
 
 ## Current decision
