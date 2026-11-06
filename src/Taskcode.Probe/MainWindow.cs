@@ -10,7 +10,6 @@ namespace Taskcode.Probe
         internal const string WindowTitle = "Taskcode settings";
         internal static readonly uint OpenSettingsMessage = Native.RegisterWindowMessage("Taskcode.OpenSettings");
         internal static readonly uint ExitMessage = Native.RegisterWindowMessage("Taskcode.Exit");
-        internal static readonly uint PreviewAnimationMessage = Native.RegisterWindowMessage("Taskcode.PreviewAnimation");
         private readonly Settings settings = Settings.Load();
         private readonly TaskbarWatcher watcher = new TaskbarWatcher();
         private readonly Timer timer = new Timer { Interval = 250 };
@@ -40,8 +39,7 @@ namespace Taskcode.Probe
         private string notifiedUpdate;
         private readonly Label[] accountLabels = new Label[2];
         private readonly AccountConnectionWindow[] accountWindows = new AccountConnectionWindow[2];
-        private DateTime ripplePreviewUntil;
-        private int CurrentActivity { get { return DateTime.UtcNow < ripplePreviewUntil ? 3 : usage.ActivityAt(DateTime.UtcNow); } }
+        private int CurrentActivity { get { return usage.ActivityAt(DateTime.UtcNow); } }
 
         internal MainWindow(bool startInTray = false, bool connectAccounts = true)
         {
@@ -193,7 +191,6 @@ namespace Taskcode.Probe
             Icon = trayImage;
             trayMenu = new ContextMenuStrip();
             trayMenu.Items.Add("Open settings", null, delegate { OpenSettings(); });
-            trayMenu.Items.Add("Preview animation (8 seconds)", null, delegate { PreviewAnimation(); });
             trayMenu.Items.Add(new ToolStripSeparator());
             trayMenu.Items.Add("Exit", null, delegate { RequestExit(); });
             trayMenu.Closed += delegate
@@ -233,7 +230,6 @@ namespace Taskcode.Probe
         {
             if (message.Msg == OpenSettingsMessage) { OpenSettings(); return; }
             if (message.Msg == ExitMessage) { RequestExit(); return; }
-            if (message.Msg == PreviewAnimationMessage) { PreviewAnimation(); return; }
             base.WndProc(ref message);
         }
         internal bool TrayVisible { get { return tray.Visible; } }
@@ -255,7 +251,6 @@ namespace Taskcode.Probe
             accountWindows[provider].ApplyTheme(theme);
             accountWindows[provider].Show(this); accountWindows[provider].Activate();
         }
-        internal void PreviewAnimation() { ripplePreviewUntil = DateTime.UtcNow.AddSeconds(8); TickLayout(); }
         internal void OpenSettings()
         {
             startInTray = false;

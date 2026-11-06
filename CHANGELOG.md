@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3 - 2026-11-06
+
+- Show exhausted quotas without consumption-speed arrows, independently of execution activity.
+- Remove animation preview controls from settings, the context menu and the command line.
+- Publish and verify release notes as plain Markdown, avoiding PowerShell object metadata.
+
 ## 0.1.2 — 2026-11-06
 
 - Preserve a fresh zero-use Claude session without a reset as available, waiting for its first request.

@@ -34,12 +34,6 @@ namespace Taskcode.Probe
                 }
                 catch (Exception error) { RecordLifecycle("Uninstall preparation failed: " + error.GetType().Name); return 1; }
             }
-            if (Array.IndexOf(args, "--preview-animation") >= 0)
-            {
-                var running = Native.FindWindow(null, MainWindow.WindowTitle);
-                if (running != IntPtr.Zero) Native.PostMessage(running, MainWindow.PreviewAnimationMessage, IntPtr.Zero, IntPtr.Zero);
-                return 0;
-            }
             if (Array.IndexOf(args, "--exit") >= 0)
             {
                 var running = Native.FindWindow(null, MainWindow.WindowTitle);

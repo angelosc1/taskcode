@@ -80,6 +80,7 @@ namespace Taskcode.Probe
         {
             if (ResetPending(index, now)) return new SpeedEstimate { State = SpeedState.ResetPending };
             if (DisplayValue(index, now) < 0) return new SpeedEstimate { State = SpeedState.Unavailable };
+            if (DisplayValue(index, now) == 0) return new SpeedEstimate { State = SpeedState.Exhausted };
             if (Readings[index].Period.WaitingForFirstRequest) return new SpeedEstimate { State = SpeedState.Waiting };
             bool working = (ActivityAt(now) & (1 << (index / 2))) != 0;
             var estimate = Readings[index].Speed.DisplayEstimateAt(now, working);

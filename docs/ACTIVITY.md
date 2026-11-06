@@ -4,8 +4,7 @@ While a provider has an observed running turn, two soft rings expand and fade ar
 
 The cycle lasts 2.4 seconds, with the two rings half a cycle apart. Each ring expands continuously and uses a smooth sine-squared opacity envelope: fully faded at both ends, brightest in the middle. Animation and frame caching share the same monotonic clock. Both provider symbols use explicit vector bounds, including a centered terminal mark for Codex, so font padding cannot displace the ripple. The ripple appears within the shared dark capsule; outer corners remain transparent. The effect uses the existing 30 FPS timer only while activity or a temporary speed hint needs animation. When Windows disables client-area animations or high contrast is active, a small static activity dot replaces moving rings. Idle or unknown activity has no ripple.
 
-Right-click the indicator or tray icon and choose **Preview animation (8 seconds)** to inspect both colors without changing account readings or real activity state. The preview ends automatically. No incoming Claude activity records means no live Claude ripple; use the preview to distinguish a drawing problem from a missing activity signal.
-
+Animation previews are available only in developer render checks; the installed app follows observed activity.
 Lines now includes the provider symbols alongside the names so the same ripple has a symbol to surround in every style. Essential, Blocks, and the weekly layouts keep their existing arrangement. Existing recent-consumption arrows describe quota velocity and remain separate from execution activity.
 
 ## Claude Code

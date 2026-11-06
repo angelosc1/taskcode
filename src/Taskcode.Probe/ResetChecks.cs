@@ -61,6 +61,15 @@ namespace Taskcode.Probe
             Check(canonical.Periods[0].WaitingForFirstRequest && canonical.Periods[1].Remaining == 50,
                 "Canonical weekly data must retain the idle named session fallback and ignore scoped model limits.");
             Render(directory);
+            usage.Apply(0, Snapshot(now, 100, now.AddHours(1).ToString("o")));
+            foreach (int activity in new[] { 0, 1 })
+            {
+                usage.ActivityKey = activity;
+                var exhausted = usage.DetailSpeedAt(0, now);
+                using (var readout = new SpeedReadout { Estimate = exhausted })
+                    Check(exhausted.State == SpeedState.Exhausted && exhausted.Summary == "Quota exhausted" && !readout.HasArrows,
+                        "Exhausted quotas must show a stable status without forecasting arrows, even while execution is active.");
+            }
         }
         private static void Render(string directory)
         {

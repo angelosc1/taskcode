@@ -4,7 +4,7 @@ using System.Globalization;
 
 namespace Taskcode.Probe
 {
-    internal enum SpeedState { Calculating, Active, Idle, Stale, Unavailable, Expired, Paused, Waiting, ResetPending }
+    internal enum SpeedState { Calculating, Active, Idle, Stale, Unavailable, Expired, Paused, Waiting, ResetPending, Exhausted }
 
     internal sealed class SpeedEstimate
     {
@@ -18,6 +18,7 @@ namespace Taskcode.Probe
         {
             get
             {
+                if (State == SpeedState.Exhausted) return "Quota exhausted";
                 if (State == SpeedState.Waiting) return "Starts with first request";
                 if (State == SpeedState.ResetPending) return "Refreshing quota...";
                 if (State == SpeedState.Paused) return "Idle · not running";

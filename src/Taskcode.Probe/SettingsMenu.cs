@@ -70,7 +70,6 @@ namespace Taskcode.Probe
             result.UsageColors = new SettingsToggle { Text = "Usage-based bar colors", Location = new Point(12, 226), Size = new Size(316, 26), Checked = settings.UsageBarColors, AccessibleName = "Usage-based bar colors" };
             appearance.Controls.Add(result.UsageColors);
             settingsHints.SetToolTip(result.UsageColors, "Green at 0%, yellow at 50%, red at 100% used. Applies to Details, Lines and Blocks.");
-            var animation = MenuButton(appearance, "Preview animation", 0, 276, 158, 30, "action"); animation.Click += delegate { PreviewAnimation(); };
             result.Details = MenuButton(appearance, "Details", 180, 276, 160, 30, "action");
             var accounts = settingsPages[1];
             for (int provider = 0; provider < 2; provider++)
