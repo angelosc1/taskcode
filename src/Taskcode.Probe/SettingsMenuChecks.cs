@@ -23,7 +23,7 @@ namespace Taskcode.Probe
                 if (startup != null && startup.AccessibleName == "Usage-based bar colors") usageColors = startup;
                 if (startup != null && startup.Text == "Start with Windows") { startups++; Check(startup.Checked == startupExpected, "Refactoring settings must preserve Windows startup preference."); }
                 var select = control as ComboBox;
-                if (select != null && select.AccessibleName == "Indicator style") { styles++; Check(select.Items.Count == 3 && (string)select.Items[0] == "Essential" && (string)select.Items[1] == "Lines" && (string)select.Items[2] == "Blocks" && new Settings().Style == IndicatorStyle.Essential, "The three styles must be ordered Essential, Lines, Blocks, with Essential as default."); }
+                if (select != null && select.AccessibleName == "Indicator style") { styles++; Check(select.Items.Count == 3 && select.Items[0].ToString() == "Essential" && select.Items[1].ToString() == "Lines" && select.Items[2].ToString() == "Blocks" && new Settings().Style == IndicatorStyle.Essential, "The three styles must be ordered Essential, Lines, Blocks, with Essential as default."); }
                 if (control is Button && (control.AccessibleName == "Connect Claude" || control.AccessibleName == "Connect Codex")) accounts++;
                 if (control.Parent != null) Check(control.Parent.ClientRectangle.Contains(control.Bounds), "Settings control exceeds its parent: " + control.Text);
             }

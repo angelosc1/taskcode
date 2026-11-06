@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 - 2026-11-06
+
+- Add System, English and Brazilian Portuguese language selection with immediate switching and per-user persistence.
+- Translate settings, details, menus, tooltips, connection/update status and the Windows installer.
+- Embed discoverable JSON language catalogs with English fallback and placeholder checks.
+- Add contributor and translation guides for community submissions.
+
 ## 0.1.3 - 2026-11-06
 
 - Show exhausted quotas without consumption-speed arrows, independently of execution activity.

@@ -14,6 +14,7 @@ namespace Taskcode.Probe
         internal bool ShowWeekly;
         internal bool UsageBarColors = false;
         internal bool AutomaticUpdateChecks = true;
+        internal string Language = "auto";
         internal DateTime LastUpdateCheckUtc;
         internal bool CodexEnabled = true, ClaudeEnabled = true;
         internal bool CodexPrivateProfile, ClaudePrivateProfile;
@@ -31,6 +32,7 @@ namespace Taskcode.Probe
                 DetailsTrigger detailsTrigger;
                 bool showWeekly;
                 string savedStyle = doc.DocumentElement.GetAttribute("style");
+                value.Language = L10n.Normalize(doc.DocumentElement.GetAttribute("language"));
                 if (savedStyle == "Pill") savedStyle = "Essential";
                 if (Enum.TryParse(savedStyle, out style) && Enum.IsDefined(typeof(IndicatorStyle), style)) value.Style = style;
                 if (Enum.TryParse(doc.DocumentElement.GetAttribute("mode"), out mode) && Enum.IsDefined(typeof(HostMode), mode)) value.Mode = mode;
@@ -58,6 +60,7 @@ namespace Taskcode.Probe
             {
                 writer.WriteStartElement("taskcode");
                 writer.WriteAttributeString("style", Style.ToString());
+                writer.WriteAttributeString("language", Language);
                 writer.WriteAttributeString("mode", Mode.ToString());
                 writer.WriteAttributeString("detailsTrigger", DetailsTrigger.ToString());
                 writer.WriteAttributeString("showWeekly", ShowWeekly.ToString());

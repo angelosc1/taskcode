@@ -17,6 +17,7 @@ Current releases are unsigned. Windows may display an unknown-publisher notice. 
 5. In **Accounts**, choose **Connect** for each provider. Use **Sign in** to select an account, or **Use existing CLI account**. Complete the official sign-in flow. [Connection guide](ACCOUNTS.md).
 6. Open **Appearance** to choose **Essential**, **Lines** or **Blocks**, hover/click behavior, weekly quota and optional usage-based bar colors.
 7. In **General**, optionally enable **Start with Windows**. It is disabled by default.
+8. **General > Language** defaults to **System**. You can explicitly choose **English** or **Português (Brasil)**; changes apply immediately. The installer also supports English and Brazilian Portuguese.
 
 The indicator appears immediately to the left of the hidden-icons arrow. Windows may initially put Taskcode's tray icon under that arrow. Left-click the tray icon for settings; right-click it or the quota capsule for the menu.
 

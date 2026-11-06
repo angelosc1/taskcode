@@ -121,6 +121,7 @@ namespace Taskcode.Probe
                                 Assert(startup.Checked == startupBefore, "Startup checkbox must reflect the existing registration without enabling it.");
                         }
                         SettingsMenuChecks.Run(window, AppDomain.CurrentDomain.BaseDirectory, startupBefore);
+                        LocalizationChecks.Run(window, AppDomain.CurrentDomain.BaseDirectory);
                         using (var preview = new Bitmap(window.Width, window.Height))
                         {
                             window.DrawToBitmap(preview, new Rectangle(Point.Empty, preview.Size));

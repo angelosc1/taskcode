@@ -12,7 +12,7 @@ namespace Taskcode.Probe
         private int settingsPage;
         private sealed class MenuControls
         {
-            internal ComboBox Style, Placement, Trigger;
+            internal ComboBox Style, Placement, Trigger, Language;
             internal CheckBox Weekly, UsageColors, Startup, AutomaticUpdates;
             internal Button Details, Close, Refresh, Claude, Codex, Disconnect;
         }
@@ -69,7 +69,7 @@ namespace Taskcode.Probe
             result.Weekly = new SettingsToggle { Text = "Weekly quota", Location = new Point(12, 196), Size = new Size(316, 26), Checked = settings.ShowWeekly, AccessibleName = "Show weekly quota in the indicator" }; appearance.Controls.Add(result.Weekly);
             result.UsageColors = new SettingsToggle { Text = "Usage-based bar colors", Location = new Point(12, 226), Size = new Size(316, 26), Checked = settings.UsageBarColors, AccessibleName = "Usage-based bar colors" };
             appearance.Controls.Add(result.UsageColors);
-            settingsHints.SetToolTip(result.UsageColors, "Green at 0%, yellow at 50%, red at 100% used. Applies to Details, Lines and Blocks.");
+            L10n.Hint(settingsHints, result.UsageColors, "Green at 0%, yellow at 50%, red at 100% used. Applies to Details, Lines and Blocks.");
             result.Details = MenuButton(appearance, "Details", 180, 276, 160, 30, "action");
             var accounts = settingsPages[1];
             for (int provider = 0; provider < 2; provider++)
@@ -88,15 +88,26 @@ namespace Taskcode.Probe
             enabled.Text = "Show indicator"; enabled.Location = new Point(12, 44); enabled.Size = new Size(316, 26); enabled.Checked = true; general.Controls.Add(enabled);
             result.Startup = new SettingsToggle { Text = "Start with Windows", Location = new Point(12, 84), Size = new Size(316, 26) }; general.Controls.Add(result.Startup);
 
-            result.Placement = MenuSelect(general, "Placement", 156, new[] { "Embedded (experimental)", "Overlay" }, (int)settings.Mode, "Placement mode");
-            settingsHints.SetToolTip(result.Placement, "Embedded attaches to the taskbar. Overlay uses the same position in a separate window.");
+            string[] languages = L10n.Languages;
+            string[] languageNames = Array.ConvertAll(languages, code => code == "auto" ? "System" : code == "en" ? "English" : code == "pt-BR" ? "Português (Brasil)" : System.Globalization.CultureInfo.GetCultureInfo(code).NativeName);
+            result.Language = MenuSelect(general, "Language", 124, languageNames, Array.IndexOf(languages, L10n.Normalize(settings.Language)), "Language");
+            result.Language.SelectedIndexChanged += delegate
+            {
+                settings.Language = languages[result.Language.SelectedIndex]; Save();
+                L10n.SetLanguage(settings.Language);
+                tray.Text = L10n.T("Taskcode - AI quota monitor");
+                foreach (var panel in providerDetails) { panel.RefreshUsage(); panel.Invalidate(true); }
+                RefreshUpdateUi(); UpdateAccountLabels();
+            };
+            result.Placement = MenuSelect(general, "Placement", 164, new[] { "Embedded (experimental)", "Overlay" }, (int)settings.Mode, "Placement mode");
+            L10n.Hint(settingsHints, result.Placement, "Embedded attaches to the taskbar. Overlay uses the same position in a separate window.");
             MenuLabel(general, "Version " + AppInfo.VersionText, 12, 228, 142, 22, "text");
             updateCheckButton = MenuButton(general, "Check for updates", 176, 226, 152, 28, "action");
             updateCheckButton.AccessibleName = "Check for Taskcode updates";
             updateStatus = MenuLabel(general, "Checks GitHub Releases", 12, 254, 316, 18, "muted"); updateStatus.Font = new Font("Segoe UI", 8f);
             result.AutomaticUpdates = new SettingsToggle { Text = "Check automatically", Location = new Point(12, 276), Size = new Size(316, 26), Checked = settings.AutomaticUpdateChecks, AccessibleName = "Check for updates automatically" };
             general.Controls.Add(result.AutomaticUpdates);
-            settingsHints.SetToolTip(result.AutomaticUpdates, "Checks GitHub Releases once a day. Installs only when you choose Install.");
+            L10n.Hint(settingsHints, result.AutomaticUpdates, "Checks GitHub Releases once a day. Installs only when you choose Install.");
             AddDivider(this, 16, 400, 488);
             status.Location = new Point(18, 411); status.Size = new Size(365, 20); status.AutoEllipsis = true; status.Tag = "muted"; status.Font = new Font("Segoe UI", 8f); status.Text = "Starting..."; Controls.Add(status);
             result.Close = MenuButton(this, "Close", 414, 406, 90, 26, "ghost");
@@ -114,7 +125,8 @@ namespace Taskcode.Probe
         {
             MenuLabel(parent, label, 12, y + 4, 112, 24, "text");
             var select = new SettingsSelect { Location = new Point(132, y), Width = 196, AccessibleName = accessibleName };
-            select.Items.AddRange(choices); select.SelectedIndex = selected; parent.Controls.Add(select); return select;
+            foreach (string choice in choices) select.Items.Add(new L10n.Choice(choice));
+            select.SelectedIndex = selected; parent.Controls.Add(select); return select;
         }
         internal void ShowSettingsPage(int page)
         {
@@ -173,7 +185,7 @@ namespace Taskcode.Probe
             var saved = graphics.Save(); graphics.ScaleTransform(page.Width / 352f, page.Height / 312f);
             RectangleF[] cards = page == settingsPages[0] ? new[] { new RectangleF(0, 112, 340, 150) } :
                 page == settingsPages[1] ? new[] { new RectangleF(0, 40, 340, 80), new RectangleF(0, 128, 340, 80) } :
-                new[] { new RectangleF(0, 40, 340, 80), new RectangleF(0, 144, 340, 64), new RectangleF(0, 220, 340, 88) };
+                new[] { new RectangleF(0, 40, 340, 72), new RectangleF(0, 120, 340, 88), new RectangleF(0, 220, 340, 88) };
             foreach (var rect in cards) UiSurface.Draw(graphics, rect, UiSurface.Card(theme), Mix(BackColor, ForeColor, .07), 10);
             using (var accent = new SolidBrush(theme.Codex)) graphics.FillRectangle(accent, 0, 28, 24, 2);
             graphics.Restore(saved);
@@ -181,7 +193,7 @@ namespace Taskcode.Probe
         private void SetSettingsStatus(string message, bool problem = false)
         {
             status.Text = saveError ?? (message.StartsWith("Indicator paused", StringComparison.Ordinal) ? "Indicator paused" : problem ? message.Split('\n')[0] : "Indicator active");
-            status.AccessibleDescription = message; settingsHints.SetToolTip(status, message);
+            status.AccessibleDescription = message; L10n.Hint(settingsHints, status, message);
         }
         private void UpdateAccountLabels()
         {
@@ -189,7 +201,7 @@ namespace Taskcode.Probe
             {
                 string text = usage.AccountStatus[provider];
                 accountLabels[provider].Text = text.StartsWith("Connected", StringComparison.Ordinal) ? string.IsNullOrWhiteSpace(usage.AccountIdentity[provider]) ? "Connected" : usage.AccountIdentity[provider] : text;
-                settingsHints.SetToolTip(accountLabels[provider], (string.IsNullOrWhiteSpace(usage.AccountIdentity[provider]) ? "" : usage.AccountIdentity[provider] + "\n") + usage.ProviderStatus(provider, DateTime.UtcNow));
+                L10n.Hint(settingsHints, accountLabels[provider], (string.IsNullOrWhiteSpace(usage.AccountIdentity[provider]) ? "" : usage.AccountIdentity[provider] + "\n") + usage.ProviderStatus(provider, DateTime.UtcNow));
             }
         }
         private void ResizeIndicatorPreview()
@@ -287,7 +299,8 @@ namespace Taskcode.Probe
                 using (var brush = new SolidBrush(UiSurface.Card(TaskbarTheme.Read()))) graphics.FillRectangle(brush, ClientRectangle);
                 UiSurface.Draw(graphics, new RectangleF(.5f, .5f, Width - 1, Height - 1), BackColor, Mix(BackColor, ForeColor, .12), 5);
                 var textBounds = new Rectangle(9, 0, Math.Max(0, Width - 37), Height);
-                TextRenderer.DrawText(graphics, Text, Font, textBounds, ForeColor, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+                string selected = SelectedIndex < 0 ? Text : GetItemText(Items[SelectedIndex]);
+                TextRenderer.DrawText(graphics, selected, Font, textBounds, ForeColor, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
                 graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                 using (var arrow = new Pen(ForeColor, 1.1f)) graphics.DrawLines(arrow, new[] { new PointF(Width - 20, Height / 2f - 2), new PointF(Width - 16, Height / 2f + 2), new PointF(Width - 12, Height / 2f - 2) });
                 if (Focused && ShowFocusCues) ControlPaint.DrawFocusRectangle(graphics, new Rectangle(4, 4, Width - 30, Height - 8), ForeColor, BackColor);

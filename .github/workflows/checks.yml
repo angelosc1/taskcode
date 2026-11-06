@@ -1,0 +1,15 @@
+name: Windows checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Build and check UI, providers and translations
+        shell: powershell
+        run: .\scripts\build-probe.cmd --test

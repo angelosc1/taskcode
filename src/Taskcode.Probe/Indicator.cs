@@ -387,6 +387,7 @@ namespace Taskcode.Probe
             };
             Disposed += delegate { periodTimer.Dispose(); animationTimer.Dispose(); dismissalTimer.Dispose(); hints.Dispose(); };
             ApplyTheme(theme);
+            L10n.Bind(this);
         }
         private Label AddText(string text, int x, int y, float size, FontStyle style, Color color)
         {
@@ -437,7 +438,7 @@ namespace Taskcode.Probe
             var now = DateTime.UtcNow;
             usage.Tick(now);
             AccessibleDescription = usage.ProviderStatus(ProviderIndex, now);
-            hints.SetToolTip(providerLabel, AccessibleDescription);
+            L10n.Hint(hints, providerLabel, AccessibleDescription);
             bool hasArrows = false;
             foreach (Control control in Controls)
             {
@@ -453,18 +454,18 @@ namespace Taskcode.Probe
                 var speed = usage.DetailSpeedAt(ProviderIndex * 2 + (bar.Reading.Window == "Weekly" ? 1 : 0), now);
                 bar.SpeedCaption.Estimate = speed;
                 bar.SpeedCaption.Visible = true;
-                hints.SetToolTip(bar.ValueCaption, "Used quota. " + AccessibleDescription);
+                L10n.Hint(hints, bar.ValueCaption, "Used quota. " + AccessibleDescription);
                 bar.SpeedCaption.AccessibleName = (speed.State == SpeedState.Active ? speed.Level + " speed arrows. " : "") + speed.Summary;
                 bar.SpeedCaption.Invalidate();
                 hasArrows |= bar.SpeedCaption.HasArrows;
-                hints.SetToolTip(bar.SpeedCaption, speed.State == SpeedState.Active ? (speed.PeriodAverage ? "Average since reset, not recent speed. " : "Recent measured speed. ") + speed.PointsPerHour.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " percentage points/hour · " + speed.WindowSeconds.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + "-second observation window. Estimate, not a guarantee." : speed.Summary);
+                L10n.Hint(hints, bar.SpeedCaption, speed.State == SpeedState.Active ? (speed.PeriodAverage ? "Average since reset, not recent speed. " : "Recent measured speed. ") + speed.PointsPerHour.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " percentage points/hour · " + speed.WindowSeconds.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + "-second observation window. Estimate, not a guarantee." : speed.Summary);
                 var elapsed = bar.Period.ElapsedAt(now);
                 bar.BudgetCaption.Text = resetPending ? "Awaiting provider confirmation" : value < 0 ? "-- used / -- time" : value + "% used / " +
                     (elapsed.HasValue ? Math.Round(elapsed.Value * 100) + "% time" : "-- time");
                 string description = Math.Round(bar.Period.UsedFraction * 100) + "% quota used; " +
                     (elapsed.HasValue ? Math.Round(elapsed.Value * 100) + "% time elapsed. " : "") + bar.Period.PaceAt(now) + ".";
                 bar.AccessibleDescription = description;
-                hints.SetToolTip(bar, description);
+                L10n.Hint(hints, bar, description);
                 bar.Invalidate();
             }
             animationTimer.Enabled = Visible && hasArrows && SpeedArrows.IsAnimated;

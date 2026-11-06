@@ -49,6 +49,7 @@ Forecasts use recent quota observations where available, with a clearly labelled
 - **Appearance:** style, hover/click, weekly quota and optional usage colors.
 - **Accounts:** sign in, reuse an existing CLI account, refresh or disconnect.
 - **General:** indicator visibility, Windows startup, placement and updates.
+- **Language:** **System** (default), **English** or **Português (Brasil)** under General. Switching applies immediately; unsupported system languages fall back to English. [Contribute a translation](locales/README.md).
 
 **General > Check for updates** checks the official GitHub release. Automatic daily checks are enabled by default and can be turned off. When an update is available, choose the **Install** button. Taskcode verifies the download's SHA-256, runs the installer and restarts in the tray. Accounts and preferences stay in your user data directory. Updates are never installed without your click. Portable copies open the release page for a manual update. [Update details](docs/INSTALL.md#updates).
 
@@ -65,6 +66,8 @@ Claude quota normally refreshes every five minutes, with targeted reset/session-
 ## Development
 
 Taskcode uses C# / Windows Forms and .NET Framework, with no NuGet dependencies. [Build and test](docs/DEVELOPMENT.md) | [Release process](docs/RELEASING.md) | [Validation results](docs/VALIDATION.md) | [Roadmap](ROADMAP.md) | [Design decisions](docs/DESIGN.md).
+
+Code fixes and community translations are welcome. See [Contributing](CONTRIBUTING.md).
 
 ## Credits and license
 

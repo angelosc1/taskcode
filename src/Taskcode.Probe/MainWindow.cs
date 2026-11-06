@@ -43,6 +43,7 @@ namespace Taskcode.Probe
 
         internal MainWindow(bool startInTray = false, bool connectAccounts = true)
         {
+            if (connectAccounts) L10n.SetLanguage(settings.Language);
             this.startInTray = startInTray;
             if (connectAccounts)
             {
@@ -120,13 +121,15 @@ namespace Taskcode.Probe
             disconnectMenu.Items.Add("Disconnect Claude (restore status line)", null, delegate
             {
                 try { connections.ClaudeAuth.Cancel(); ClaudeBridge.Uninstall(); settings.ClaudeEnabled = connections.ClaudeEnabled = false; usage.ClearProvider(0, "Disconnected from Taskcode."); Save(); }
-                catch (Exception) { MessageBox.Show(this, "Could not restore Claude Code's status line. Settings were left connected.", "Disconnect Claude", MessageBoxButtons.OK, MessageBoxIcon.Information); }
+                catch (Exception) { MessageBox.Show(this, L10n.T("Could not restore Claude Code's status line. Settings were left connected."), L10n.T("Disconnect Claude"), MessageBoxButtons.OK, MessageBoxIcon.Information); }
             });
             disconnectMenu.Items.Add("Disconnect Codex from Taskcode", null, delegate { connections.CancelCodex(); settings.CodexEnabled = connections.CodexEnabled = false; usage.ClearProvider(1, "Disconnected from Taskcode. Your Codex login was preserved."); Save(); });
+            foreach (ToolStripItem item in disconnectMenu.Items) L10n.Bind(item, this);
             disconnect.Click += delegate { disconnectMenu.Show(disconnect, new Point(0, disconnect.Height)); };
             var detailsMenu = new ContextMenuStrip();
             detailsMenu.Items.Add("Claude details", null, delegate { ShowDetails(true, true, 0); });
             detailsMenu.Items.Add("Codex details", null, delegate { ShowDetails(true, true, 1); });
+            foreach (ToolStripItem item in detailsMenu.Items) L10n.Bind(item, this);
             detailsButton.Click += delegate { detailsMenu.Show(detailsButton, new Point(0, detailsButton.Height)); };
             preview.Click += delegate
             {
@@ -193,11 +196,13 @@ namespace Taskcode.Probe
             trayMenu.Items.Add("Open settings", null, delegate { OpenSettings(); });
             trayMenu.Items.Add(new ToolStripSeparator());
             trayMenu.Items.Add("Exit", null, delegate { RequestExit(); });
+            foreach (ToolStripItem item in trayMenu.Items) L10n.Bind(item, this);
             trayMenu.Closed += delegate
             {
                 if (indicator != null && !indicator.IsDisposed) indicator.InvalidateSurface();
             };
-            tray = new NotifyIcon { Icon = trayImage, Text = "Taskcode - AI quota monitor", ContextMenuStrip = trayMenu, Visible = true };
+            tray = new NotifyIcon { Icon = trayImage, Text = L10n.T("Taskcode - AI quota monitor"), ContextMenuStrip = trayMenu, Visible = true };
+            L10n.Bind(this, false);
             tray.BalloonTipClicked += delegate { OpenSettings(); ShowSettingsPage(2); };
             tray.MouseClick += delegate(object sender, MouseEventArgs e) { if (e.Button == MouseButtons.Left) OpenSettings(); };
             Resize += delegate { if (WindowState == FormWindowState.Minimized) Hide(); };
@@ -313,7 +318,7 @@ namespace Taskcode.Probe
                 if (available != null && notifiedUpdate != available.Version.ToString(3))
                 {
                     notifiedUpdate = available.Version.ToString(3);
-                    tray.ShowBalloonTip(5000, "Taskcode update", "Version " + notifiedUpdate + " is available. Open General to install.", ToolTipIcon.Info);
+                    tray.ShowBalloonTip(5000, L10n.T("Taskcode update"), L10n.T("Version " + notifiedUpdate + " is available. Open General to install."), ToolTipIcon.Info);
                 }
                 string installer = updateService.TakeInstaller();
                 if (installer != null)

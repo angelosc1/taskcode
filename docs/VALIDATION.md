@@ -1,5 +1,11 @@
 # Release validation
 
+## 0.2.0 localization checks
+
+Windows checks cover embedded source/translation catalogs, matching placeholders, supported culture names, System detection, explicit overrides, English fallback, immediate switching, saved language preference, unchanged style selection and offscreen Portuguese settings/Details rendering. New translation catalogs may be partial; completeness is not a requirement for contributing a language.
+
+English and Brazilian Portuguese installer messages compile from Inno Setup's bundled catalogs. External provider sign-in pages and CLI output retain their own language support. Diagnostic logs and protocol values remain English.
+
 ## 0.1.3 upgrade validation
 
 - Local and GitHub Windows build/test/package checks passed, including exhausted quota status without arrows for both active and idle execution.

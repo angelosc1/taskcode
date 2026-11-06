@@ -37,7 +37,7 @@ namespace Taskcode.Probe
             cancel.Click += delegate { if (provider == 0 || connections.ClaudeAuth.Busy) connections.ClaudeAuth.Cancel(); else connections.CancelCodex(); RefreshState(); };
             close.Click += delegate { Close(); };
             timer.Tick += delegate { RefreshState(); }; Shown += delegate { timer.Start(); RefreshState(); };
-            FormClosed += delegate { timer.Dispose(); }; ApplyTheme(TaskbarTheme.Read()); RefreshState();
+            FormClosed += delegate { timer.Dispose(); }; ApplyTheme(TaskbarTheme.Read()); RefreshState(); L10n.Bind(this);
         }
         internal void ApplyTheme(TaskbarTheme palette)
         {
@@ -56,7 +56,7 @@ namespace Taskcode.Probe
         private void TryAction(Action action)
         {
             try { action(); }
-            catch (Exception) { MessageBox.Show(this, "Could not start sign-in. Check the CLI installation and try again.", "Taskcode", MessageBoxButtons.OK, MessageBoxIcon.Information); }
+            catch (Exception) { MessageBox.Show(this, L10n.T("Could not start sign-in. Check the CLI installation and try again."), "Taskcode", MessageBoxButtons.OK, MessageBoxIcon.Information); }
         }
         private void RefreshState()
         {

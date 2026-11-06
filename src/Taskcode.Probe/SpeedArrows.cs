@@ -87,7 +87,7 @@ namespace Taskcode.Probe
             float textX = 0;
             if (HasArrows)
             { SpeedArrows.Draw(e.Graphics, ForeColor, Estimate.Level, new RectangleF(0, 5, 39, 11)); textX = 45; }
-            using (var text = new SolidBrush(ForeColor)) e.Graphics.DrawString(Estimate.Summary, Font, text, textX, 0);
+            using (var text = new SolidBrush(ForeColor)) e.Graphics.DrawString(L10n.T(Estimate.Summary), Font, text, textX, 0);
         }
     }
 }

@@ -1,4 +1,4 @@
-#ifndef AppVersion
+﻿#ifndef AppVersion
   #error AppVersion is required
 #endif
 #ifndef SourceDir
@@ -41,9 +41,20 @@ LicenseFile=..\LICENSE
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
+
+[CustomMessages]
+english.DesktopShortcut=Create a desktop shortcut
+brazilianportuguese.DesktopShortcut=Criar um atalho na área de trabalho
+english.CloseTaskcode=Close Taskcode from its tray menu, then try again.
+brazilianportuguese.CloseTaskcode=Feche o Taskcode pelo menu da bandeja e tente novamente.
+english.FrameworkRequired=Taskcode requires .NET Framework 4.8 or later, included with Windows 11.
+brazilianportuguese.FrameworkRequired=O Taskcode requer .NET Framework 4.8 ou posterior, incluído no Windows 11.
+english.RestoreFailed=Taskcode could not restore its Claude Code integration. Disconnect Claude in Taskcode settings, then uninstall again.
+brazilianportuguese.RestoreFailed=O Taskcode não conseguiu restaurar a integração com o Claude Code. Desconecte o Claude nas configurações do Taskcode e tente desinstalar novamente.
 
 [Tasks]
-Name: "desktopicon"; Description: "Create a desktop shortcut"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:DesktopShortcut}"; Flags: unchecked
 
 [Files]
 Source: "{#SourceDir}\Taskcode.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -70,7 +81,7 @@ begin
   Result := '';
   if FileExists(ExpandConstant('{app}\Taskcode.exe')) then begin
     if not Exec(ExpandConstant('{app}\Taskcode.exe'), '--exit', '', SW_HIDE, ewWaitUntilTerminated, ExitCode) then begin
-      Result := 'Close Taskcode from its tray menu, then try again.';
+      Result := CustomMessage('CloseTaskcode');
       Exit;
     end;
     Sleep(1000);
@@ -82,7 +93,7 @@ var
   FrameworkRelease: Cardinal;
 begin
   Result := RegQueryDWordValue(HKLM, 'SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full', 'Release', FrameworkRelease) and (FrameworkRelease >= 528040);
-  if not Result then SuppressibleMsgBox('Taskcode requires .NET Framework 4.8 or later, included with Windows 11.', mbError, MB_OK, IDOK);
+  if not Result then SuppressibleMsgBox(CustomMessage('FrameworkRequired'), mbError, MB_OK, IDOK);
 end;
 
 function ShouldLaunch: Boolean;
@@ -103,7 +114,7 @@ begin
   if FileExists(ExpandConstant('{app}\Taskcode.exe')) then begin
     Result := Exec(ExpandConstant('{app}\Taskcode.exe'), '--prepare-uninstall', '', SW_HIDE, ewWaitUntilTerminated, ExitCode);
     if Result then Result := ExitCode = 0;
-    if not Result then SuppressibleMsgBox('Taskcode could not restore its Claude Code integration. Disconnect Claude in Taskcode settings, then uninstall again.', mbError, MB_OK, IDOK);
+    if not Result then SuppressibleMsgBox(CustomMessage('RestoreFailed'), mbError, MB_OK, IDOK);
     Sleep(1000);
   end;
 end;
