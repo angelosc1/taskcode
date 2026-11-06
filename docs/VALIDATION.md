@@ -1,5 +1,14 @@
 # Release validation
 
+## 0.1.3 upgrade validation
+
+- Local and GitHub Windows build/test/package checks passed, including exhausted quota status without arrows for both active and idle execution.
+- Release publication required completing the draft through the GitHub API; draft lookup and explicit tag publication are corrected in the workflow on `main`.
+- All published release bodies were checked against their Markdown source, with no PowerShell object metadata.
+- The installed 0.1.1 update service downloaded and verified the public 0.1.3 installer. The real installer upgraded the running app to 0.1.3.
+- Settings were byte-for-byte unchanged, the Windows startup choice was preserved, the managed Claude helper matched the installed helper, and the app restarted successfully.
+- The installed 0.1.3 update service then reported **You're up to date**. GUI click-through was not automated.
+
 ## 0.1.2 session reset checks
 
 Deterministic tests cover explicit 0% without a next reset, a retired reset on a fresh zero-use response, indefinite waiting without clock advancement, the first timed response while usage still rounds to zero, independent weekly timing, stale/unknown data, one reset-boundary refresh, retry cooldowns, activity hints, canonical-window aliases and bridge-cache round-tripping.

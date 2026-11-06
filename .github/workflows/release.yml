@@ -34,9 +34,12 @@ jobs:
           $notes = [System.IO.File]::ReadAllText((Join-Path $PWD "docs/release-notes/$version.md"))
           $payload = @{ body = $notes } | ConvertTo-Json -Depth 3
           $headers = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json' }
-          $releaseUrl = "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases/tags/$tag"
-          $release = Invoke-RestMethod -Uri $releaseUrl -Headers $headers
+          $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases?per_page=100" -Headers $headers
+          $release = @($releases | Where-Object { $_.tag_name -ceq $tag -and $_.draft })
+          if ($release.Count -ne 1) { throw 'Expected one release draft matching the version tag.' }
+          $release = $release[0]
           $updated = Invoke-RestMethod -Method Patch -Uri $release.url -Headers $headers -ContentType 'application/json; charset=utf-8' -Body ([System.Text.Encoding]::UTF8.GetBytes($payload))
           if ($updated.body -cne $notes) { throw 'Published release notes do not match the Markdown source.' }
-          gh release edit $tag --draft=false --latest
-          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed.' }
+          $publishPayload = @{ tag_name = $tag; draft = $false; make_latest = 'true' } | ConvertTo-Json
+          $published = Invoke-RestMethod -Method Patch -Uri $release.url -Headers $headers -ContentType 'application/json' -Body $publishPayload
+          if ($published.draft -or $published.tag_name -cne $tag -or $published.body -cne $notes) { throw 'Release publication verification failed.' }
