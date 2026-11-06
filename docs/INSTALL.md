@@ -6,13 +6,13 @@
 - A Claude and/or ChatGPT subscription with quota exposed by the provider.
 - The official Claude Code and/or Codex CLI for account authentication. Account windows offer installation when missing. The npm-based Codex installer requires Node.js/npm.
 
-The first release is unsigned. Windows may display an unknown-publisher notice. Download only from [angelosc1/taskcode Releases](https://github.com/angelosc1/taskcode/releases).
+Current releases are unsigned. Windows may display an unknown-publisher notice. Download only from [angelosc1/taskcode Releases](https://github.com/angelosc1/taskcode/releases).
 
 ## Installer - recommended
 
 1. Open the [latest release](https://github.com/angelosc1/taskcode/releases/latest).
 2. Download `Taskcode-Setup-<version>-win-x64.exe` from **Assets**. Do not download **Source code** to install the app.
-3. Run the setup wizard. It installs to `%LOCALAPPDATA%\Programs\Taskcode` for your user; no administrator account is needed. A desktop shortcut is optional.
+3. Run the setup wizard. If Windows shows **Windows protected your PC**, follow the [SmartScreen steps below](#windows-smartscreen-warning). It installs to `%LOCALAPPDATA%\Programs\Taskcode` for your user; no administrator account is needed. A desktop shortcut is optional.
 4. Open Taskcode from the Start menu if its settings did not open after installation.
 5. In **Accounts**, choose **Connect** for each provider. Use **Sign in** to select an account, or **Use existing CLI account**. Complete the official sign-in flow. [Connection guide](ACCOUNTS.md).
 6. Open **Appearance** to choose **Essential**, **Lines** or **Blocks**, hover/click behavior, weekly quota and optional usage-based bar colors.
@@ -21,6 +21,29 @@ The first release is unsigned. Windows may display an unknown-publisher notice. 
 The indicator appears immediately to the left of the hidden-icons arrow. Windows may initially put Taskcode's tray icon under that arrow. Left-click the tray icon for settings; right-click it or the quota capsule for the menu.
 
 **Close** and the header close button hide settings while the indicator keeps running. **Exit**, available only in the right-click menu, ends the app.
+
+## Windows SmartScreen warning
+
+The current Taskcode installer is not code-signed. Microsoft Defender SmartScreen may display **Windows protected your PC** and say that it prevented an unrecognized app from starting. After expanding the warning, **Publisher: Unknown publisher** is expected for this unsigned release. This warning does not establish whether a file is safe; check its source before continuing.
+
+If you downloaded the installer from the [official Taskcode Releases page](https://github.com/angelosc1/taskcode/releases/latest) and trust it:
+
+1. On **Windows protected your PC**, click the **More info** link below the message.
+2. Check that **App** matches the installer you downloaded: `Taskcode-Setup-<version>-win-x64.exe`.
+3. Click **Run anyway**. This button appears after clicking **More info**.
+4. Continue through the Taskcode setup wizard.
+
+You do not need to turn off Microsoft Defender or SmartScreen. If **Run anyway** is missing on a managed work or school computer, contact your administrator; device policy may prevent running unrecognized apps.
+
+For an optional download-integrity check, download **SHA256SUMS** from the same release and run this in PowerShell from your Downloads folder, replacing `<version>` with the downloaded version:
+
+```powershell
+Get-FileHash -Algorithm SHA256 -LiteralPath '.\Taskcode-Setup-<version>-win-x64.exe'
+```
+
+Compare the hash with the installer's entry in **SHA256SUMS**. A matching hash verifies that the bytes match that release; it does not replace publisher signing or a safety assessment.
+
+See Microsoft's [SmartScreen reputation guidance](https://learn.microsoft.com/windows/apps/package-and-deploy/smartscreen-reputation) for background on these warnings.
 
 ## Updates
 

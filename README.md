@@ -14,6 +14,8 @@ Taskcode puts a compact dark capsule beside the system tray. Check five-hour and
 4. Choose your style in **Appearance**. **Essential** is the default.
 5. Optionally enable **General > Start with Windows**. It is off by default.
 
+> **Windows protected your PC?** The current installer is unsigned, so Microsoft Defender SmartScreen may show an unrecognized-app warning. If you downloaded it from this repository's official Releases page and trust the file, click **More info**, then **Run anyway** to continue. The publisher will appear as **Unknown publisher**. [Step-by-step instructions](docs/INSTALL.md#windows-smartscreen-warning).
+
 Requires **Windows 11 x64** and **.NET Framework 4.8**, normally included with Windows 11. This is an early release; taskbar integration is still experimental across different Windows configurations. The initial installer is not code-signed. See [installation, portable use, removal and troubleshooting](docs/INSTALL.md).
 
 ## On the taskbar
