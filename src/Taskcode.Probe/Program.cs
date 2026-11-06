@@ -118,6 +118,13 @@ namespace Taskcode.Probe
                         Assert(window.VisibleDetailProvider == 0 && window.VisibleDetailCount == 1, "Selecting Claude must open only Claude details.");
                         window.ShowDetails(true, true, 1);
                         Assert(window.VisibleDetailProvider == 1 && window.VisibleDetailCount == 1, "Selecting Codex must replace Claude details without showing both.");
+                        var focusedWindow = Native.GetForegroundWindow();
+                        foreach (int provider in new[] { 0, 1, 0, 1 })
+                        {
+                            window.ShowDetails(true, true, provider);
+                            Assert(Native.GetForegroundWindow() == focusedWindow,
+                                "Switching provider Details must never move foreground focus, even when explicitly opened.");
+                        }
                         Button closeSettings = null;
                         foreach (Control control in SettingsMenuChecks.Descendants(window))
                         {

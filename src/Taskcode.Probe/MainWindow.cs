@@ -366,11 +366,11 @@ namespace Taskcode.Probe
         }
         internal int VisibleDetailProvider { get { return details.Visible ? details.ProviderIndex : -1; } }
         internal int VisibleDetailCount { get { int count = 0; foreach (var panel in providerDetails) if (panel.Visible) count++; return count; } }
-        internal void ShowDetails(bool focus, bool fromPreview, int provider = 0)
+        internal void ShowDetails(bool explicitOpen, bool fromPreview, int provider = 0)
         {
             // Native entry and frame-rate pointer tracking share this guard.
             if (provider < 0 || provider > 1) return;
-            if (!focus && (settings.DetailsTrigger != DetailsTrigger.Hover || (details.Visible && selectedProvider == provider))) return;
+            if (!explicitOpen && (settings.DetailsTrigger != DetailsTrigger.Hover || (details.Visible && selectedProvider == provider))) return;
             if (selectedProvider != provider)
             {
                 details.Hide();
@@ -387,7 +387,6 @@ namespace Taskcode.Probe
             details.Location = new Point(x, y);
             details.HoverAnchor = anchor;
             details.Show();
-            if (focus) details.Activate();
         }
     }
 }

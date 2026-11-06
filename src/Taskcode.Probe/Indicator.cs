@@ -481,6 +481,21 @@ namespace Taskcode.Probe
             else using (var brush = new SolidBrush(theme.Codex)) BrandMarks.DrawCodex(e.Graphics, brush, new RectangleF(16, 16, 16, 16));
             using (var border = new Pen(theme.Divider, 1)) e.Graphics.DrawRectangle(border, 0, 0, Width - 1, Height - 1);
         }
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                var value = base.CreateParams;
+                value.ExStyle |= 0x08000000 | 0x80; // WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW
+                return value;
+            }
+        }
+        protected override void WndProc(ref Message message)
+        {
+            if (message.Msg == 0x0021) // WM_MOUSEACTIVATE: read-only card never takes focus.
+            { message.Result = new IntPtr(3); return; } // MA_NOACTIVATE, keep mouse input.
+            base.WndProc(ref message);
+        }
         protected override bool ShowWithoutActivation { get { return true; } }
     }
 }
