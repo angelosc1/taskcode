@@ -157,14 +157,14 @@ namespace Taskcode.Probe
             preview.MouseMove += delegate { UpdateHover(); };
             animationTimer.Tick += delegate
             {
-                int key = usage.PulseKey(DateTime.UtcNow, settings.ShowWeekly);
+                int key = 0;
                 int activity = CurrentActivity;
                 preview.PulseKey = key;
                 preview.ActivityKey = activity;
                 preview.Invalidate();
                 if (indicator != null && !indicator.IsDisposed && indicator.Visible)
                 { indicator.PulseKey = key; indicator.ActivityKey = activity; indicator.RenderAlpha(); }
-                if (key == 0 && activity == 0) animationTimer.Stop();
+                if (activity == 0) animationTimer.Stop();
             };
             trayImage = TrayArtwork.Create();
             Icon = trayImage;
@@ -286,9 +286,9 @@ namespace Taskcode.Probe
                 preview.Invalidate();
             }
             usage.Tick(DateTime.UtcNow);
-            int pulse = usage.PulseKey(DateTime.UtcNow, settings.ShowWeekly);
+            int pulse = 0;
             int activityKey = CurrentActivity;
-            animationTimer.Enabled = (pulse != 0 || activityKey != 0) && enabled.Checked && SpeedArrows.IsAnimated;
+            animationTimer.Enabled = activityKey != 0 && enabled.Checked && SpeedArrows.IsAnimated;
             if (preview.ActivityKey != activityKey)
             {
                 preview.ActivityKey = activityKey; preview.Invalidate();

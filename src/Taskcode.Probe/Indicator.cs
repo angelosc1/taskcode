@@ -99,8 +99,6 @@ namespace Taskcode.Probe
                     DrawWeeklyProvider(g, font, bold, text, "Claude", Value(usage, 0), Value(usage, 1), theme.Claude, 36, style, theme);
                     DrawWeeklyProvider(g, font, bold, text, "Codex", Value(usage, 2), Value(usage, 3), theme.Codex, second, style, theme);
                     using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 12, 6, second - 12, 28);
-                    DrawSpeedHint(g, theme.Claude, 36, style, true, pulseKey & 3, (pulseKey >> 2) & 3);
-                    DrawSpeedHint(g, theme.Codex, second, style, true, (pulseKey >> 4) & 3, (pulseKey >> 6) & 3);
                 }
                 else
                 {
@@ -108,8 +106,6 @@ namespace Taskcode.Probe
                     DrawProvider(g, font, bold, text, "Claude", Value(usage, 0), theme.Claude, 36, style, theme);
                     DrawProvider(g, font, bold, text, "Codex", Value(usage, 2), theme.Codex, second, style, theme);
                     using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 11, 9, second - 11, 25);
-                    DrawSpeedHint(g, theme.Claude, 36, style, false, pulseKey & 3, 0);
-                    DrawSpeedHint(g, theme.Codex, second, style, false, (pulseKey >> 4) & 3, 0);
                 }
                 if ((activityKey & 1) != 0) ActivityRipple.Draw(g, theme.Claude, MarkCenter(36), activitySeconds);
                 if ((activityKey & 2) != 0) ActivityRipple.Draw(g, theme.Codex, MarkCenter(SecondProviderX(style, showWeekly)), activitySeconds);
@@ -122,19 +118,6 @@ namespace Taskcode.Probe
         {
             if (usage == null || !usage.IsLive) return AccessibleText(weekly);
             return "Taskcode: Claude " + Percentage(Value(usage, 0)) + (weekly ? ", weekly " + Percentage(Value(usage, 1)) : "") + "; Codex " + Percentage(Value(usage, 2)) + (weekly ? ", weekly " + Percentage(Value(usage, 3)) : "") + " used. -- means unavailable.";
-        }
-        private static void DrawSpeedHint(Graphics g, Color color, int x, IndicatorStyle style, bool weekly, int shortLevel, int weeklyLevel)
-        {
-            if (!weekly && style == IndicatorStyle.Lines) DrawFilledArrows(g, color, shortLevel, x + 94, 18);
-            else
-            {
-                DrawFilledArrows(g, color, shortLevel, x, 1);
-                if (weekly) DrawFilledArrows(g, color, weeklyLevel, x, 28);
-            }
-        }
-        private static void DrawFilledArrows(Graphics g, Color color, int count, float x, float y)
-        {
-            SpeedArrows.Draw(g, color, count, new RectangleF(x - 0.5f, y, 17, 6));
         }
         private static void DrawWeeklyProvider(Graphics g, Font font, Font bold, Brush text, string name, int shortUsed, int weeklyUsed, Color color, int x, IndicatorStyle style, TaskbarTheme theme)
         {
@@ -261,7 +244,7 @@ namespace Taskcode.Probe
         }
         internal bool RenderAlpha()
         {
-            bool motion = (PulseKey != 0 || ActivityKey != 0) && SpeedArrows.IsAnimated;
+            bool motion = ActivityKey != 0 && SpeedArrows.IsAnimated;
             int frame = motion ? SpeedArrows.Frame : 0;
             string values = IndicatorView.LiveAccessibleText(Usage, ShowWeekly);
             if (renderedHandle == Handle && renderedSize == Size && renderedStyle == DisplayStyle && renderedTheme == Theme && renderedWeekly == ShowWeekly && renderedPulse == PulseKey && renderedActivity == ActivityKey && renderedFrame == frame && renderedMotion == motion && renderedValues == values) return true;

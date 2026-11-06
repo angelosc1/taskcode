@@ -64,10 +64,10 @@ namespace Taskcode.Probe
             using (var light = new Bitmap(dark.Width, dark.Height))
             {
                 using (var g = Graphics.FromImage(dark)) IndicatorView.Draw(g, dark.Size, style, TaskbarTheme.Create(true), weekly);
-                using (var g = Graphics.FromImage(light)) IndicatorView.Draw(g, light.Size, style, TaskbarTheme.Create(false), weekly);
+                using (var g = Graphics.FromImage(light)) IndicatorView.Draw(g, light.Size, style, TaskbarTheme.Create(false), weekly, 255);
                 if (light.GetPixel(light.Width / 2, light.Height / 2).A != 255) throw new InvalidOperationException("Every style must paint a solid pill background.");
                 for (int y = 0; y < light.Height; y++) for (int x = 0; x < light.Width; x++)
-                    if (dark.GetPixel(x, y) != light.GetPixel(x, y)) throw new InvalidOperationException("Every style must retain its dark background and light content on a light taskbar.");
+                    if (dark.GetPixel(x, y) != light.GetPixel(x, y)) throw new InvalidOperationException("Every style must retain its dark palette and ignore former taskbar speed-arrow hints.");
             }
             var usage = new UsageDemo();
             using (var claude = new DetailWindow(usage, 0))
