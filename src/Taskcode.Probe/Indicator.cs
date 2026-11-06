@@ -31,10 +31,11 @@ namespace Taskcode.Probe
         private const float IndicatorScale = 1.17f;
         private const int PillLeftPadding = 8;
         private static bool Compact(IndicatorStyle style) { return style == IndicatorStyle.Essential || style == IndicatorStyle.Pill; }
+        private static int ProviderGapReduction(IndicatorStyle style, bool weekly) { return Compact(style) ? (weekly ? 4 : 8) : 0; }
         private static int ContentWidth(IndicatorStyle style, bool showWeekly)
         {
             int width = showWeekly ? (Compact(style) ? 184 : 268) : Compact(style) ? 156 : style == IndicatorStyle.Blocks ? 246 : 262;
-            return width + PillLeftPadding;
+            return width + PillLeftPadding - ProviderGapReduction(style, showWeekly);
         }
         internal static int LogicalWidth(IndicatorStyle style, bool showWeekly = false) { return (int)Math.Ceiling(ContentWidth(style, showWeekly) * IndicatorScale); }
         internal static string AccessibleText(bool weekly)
@@ -44,7 +45,7 @@ namespace Taskcode.Probe
         }
         internal static int LogicalHeight { get { return (int)Math.Ceiling(34 * IndicatorScale); } }
         private static int SecondProviderX(IndicatorStyle style, bool weekly)
-        { return (weekly ? (Compact(style) ? 132 : 172) : Compact(style) ? 120 : style == IndicatorStyle.Blocks ? 162 : 172); }
+        { return (weekly ? (Compact(style) ? 132 : 172) : Compact(style) ? 120 : style == IndicatorStyle.Blocks ? 162 : 172) - ProviderGapReduction(style, weekly); }
         internal static Rectangle ProviderBounds(int provider, Size size, IndicatorStyle style, bool weekly)
         {
             if (provider < 0 || provider > 1 || size.Width <= 0 || size.Height <= 0) return Rectangle.Empty;
