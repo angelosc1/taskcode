@@ -65,7 +65,7 @@ namespace Taskcode.Probe
             preview.Style = settings.Style; preview.ShowWeekly = settings.ShowWeekly; preview.Usage = usage; preview.Theme = theme;
             preview.AccessibleName = IndicatorView.LiveAccessibleText(usage, settings.ShowWeekly); previewPanel.Controls.Add(preview);
             var result = new MenuControls();
-            result.Style = MenuSelect(appearance, "Style", 128, new[] { "Pill", "Lines", "Essential", "Blocks" }, (int)settings.Style, "Indicator style");
+            result.Style = MenuSelect(appearance, "Style", 128, new[] { "Essential", "Lines", "Blocks" }, (int)settings.Style, "Indicator style");
             result.Trigger = MenuSelect(appearance, "Open details", 172, new[] { "On hover", "On click" }, (int)settings.DetailsTrigger, "Open details");
             result.Weekly = new SettingsToggle { Text = "Weekly quota", Location = new Point(12, 216), Size = new Size(316, 26), Checked = settings.ShowWeekly, AccessibleName = "Show weekly quota in the indicator" }; appearance.Controls.Add(result.Weekly);
             var animation = MenuButton(appearance, "Preview animation", 0, 264, 158, 30, "action"); animation.Click += delegate { PreviewAnimation(); };

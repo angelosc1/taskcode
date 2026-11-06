@@ -8,7 +8,7 @@ namespace Taskcode.Probe
 
     internal sealed class Settings
     {
-        internal IndicatorStyle Style = IndicatorStyle.Pill;
+        internal IndicatorStyle Style = IndicatorStyle.Essential;
         internal HostMode Mode = HostMode.Embedded;
         internal DetailsTrigger DetailsTrigger = DetailsTrigger.Hover;
         internal bool ShowWeekly;
@@ -26,7 +26,9 @@ namespace Taskcode.Probe
                 HostMode mode;
                 DetailsTrigger detailsTrigger;
                 bool showWeekly;
-                if (Enum.TryParse(doc.DocumentElement.GetAttribute("style"), out style) && Enum.IsDefined(typeof(IndicatorStyle), style)) value.Style = style;
+                string savedStyle = doc.DocumentElement.GetAttribute("style");
+                if (savedStyle == "Pill") savedStyle = "Essential";
+                if (Enum.TryParse(savedStyle, out style) && Enum.IsDefined(typeof(IndicatorStyle), style)) value.Style = style;
                 if (Enum.TryParse(doc.DocumentElement.GetAttribute("mode"), out mode) && Enum.IsDefined(typeof(HostMode), mode)) value.Mode = mode;
                 if (Enum.TryParse(doc.DocumentElement.GetAttribute("detailsTrigger"), out detailsTrigger) && Enum.IsDefined(typeof(DetailsTrigger), detailsTrigger)) value.DetailsTrigger = detailsTrigger;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("showWeekly"), out showWeekly)) value.ShowWeekly = showWeekly;

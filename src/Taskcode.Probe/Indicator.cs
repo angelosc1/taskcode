@@ -6,12 +6,12 @@ using System.Windows.Forms;
 
 namespace Taskcode.Probe
 {
-    internal enum IndicatorStyle { Pill, Lines, Essential, Blocks }
+    internal enum IndicatorStyle { Essential, Lines, Blocks }
     internal enum HostMode { Embedded, Overlay }
 
     internal sealed class IndicatorView : Control
     {
-        internal IndicatorStyle Style = IndicatorStyle.Pill;
+        internal IndicatorStyle Style = IndicatorStyle.Essential;
         internal bool ShowWeekly;
         internal int PulseKey;
         internal int ActivityKey;
@@ -30,7 +30,7 @@ namespace Taskcode.Probe
         }
         private const float IndicatorScale = 1.17f;
         private const int PillLeftPadding = 8;
-        private static bool Compact(IndicatorStyle style) { return style == IndicatorStyle.Essential || style == IndicatorStyle.Pill; }
+        private static bool Compact(IndicatorStyle style) { return style == IndicatorStyle.Essential; }
         private static int ProviderGapReduction(IndicatorStyle style, bool weekly) { return Compact(style) ? (weekly ? 4 : 8) : 0; }
         private static int ContentWidth(IndicatorStyle style, bool showWeekly)
         {
@@ -85,7 +85,6 @@ namespace Taskcode.Probe
                     g.DrawPath(edge, shape);
                 }
                 g.TranslateTransform(PillLeftPadding, 0);
-                if (style == IndicatorStyle.Pill) style = IndicatorStyle.Essential;
             }
             // Pixel units avoid applying the monitor's DPI twice when scaling.
             // Grayscale antialiasing works on an alpha surface without colored fringes.

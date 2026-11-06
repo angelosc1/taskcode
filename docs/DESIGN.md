@@ -4,20 +4,19 @@
 
 Preferred: inside the taskbar, to the left of the hidden-icons arrow. Fallback: an overlay in that same area. Avoid covering the clock, system tray, or other applications' buttons.
 
-Integration and overlay are technical approaches to validate, independent of the four display styles.
+Integration and overlay are technical approaches to validate, independent of the three display styles.
 
 ## Approved styles
 
-1. **Pill (default):** compact symbols and percentages.
+1. **Essential (default):** compact symbols and percentages.
 2. **Lines:** names and thin horizontal bars.
-3. **Essential:** compact symbols and percentages.
-4. **Blocks:** horizontal segmented meters.
+3. **Blocks:** horizontal segmented meters.
 
-All four styles render inside the same dark rounded capsule with a subtle border.
+All three styles render inside the same dark rounded capsule with a subtle border.
 
 Weekly readings are opt-in through **Show weekly quota in the indicator**, disabled by default. When enabled, each provider is identified by its symbol and receives two rows labeled `5h` and `7d`, using the selected style. The height stays constant; the width expands to keep both readings legible. The detail panel always retains both periods.
 
-The **Indicator style** setting provides an immediate preview and saves the selection. Pill appears first and is the default for new preferences. The indicator, settings, Details, and account windows use a fixed dark palette regardless of the Windows taskbar light/dark setting. The capsule retains transparent outer corners. Windows high-contrast accessibility settings remain respected.
+The **Indicator style** setting provides an immediate preview and saves the selection. Essential appears first and is the default for new preferences. Saved legacy Pill preferences load as Essential. The indicator, settings, Details, and account windows use a fixed dark palette regardless of the Windows taskbar light/dark setting. The capsule retains transparent outer corners. Windows high-contrast accessibility settings remain respected.
 
 Settings use a compact borderless menu with Appearance, Accounts, and General navigation. Body text uses Segoe UI 9pt; the application heading is 14pt. Settings, selectors, previews, and account windows share the fixed dark Taskcode palette. Verbose instructions and placement diagnostics are kept out of the primary layout; necessary context remains available in tooltips. The close control hides settings, and Exit ends the tray application.
 

@@ -27,7 +27,7 @@ The details also show animated, filled consumption-speed arrows and approximate 
 
 ## Controls
 
-1. Keep **Pill (default)** or select **Lines**, **Essential**, or **Blocks** inside the same dark capsule.
+1. Keep **Essential (default)** or select **Lines** or **Blocks** inside the same dark capsule.
 2. Start with **Embedded (experimental)** and check the status below the preview.
 3. Look just before the primary taskbar's system tray for provider readings. Use the account connection buttons to complete setup. `--` means unavailable or stale; the details show source and age. Offline demo mode is identified explicitly.
 4. Choose **Open details > Hover (default)** to open only the hovered provider's card, or **Click only** to open it only when that provider is clicked. Moving between Claude and Codex switches cards without a deliberate hover delay; only one is shown at a time. Both modes close the card immediately when the pointer leaves the card, its trigger, and the narrow crossing between them. Native pointer events and a 16ms fallback tracker keep transitions responsive without changing account polling. **Details** offers a provider menu, and clicking a provider in the preview opens its card as well. Escape dismisses it.

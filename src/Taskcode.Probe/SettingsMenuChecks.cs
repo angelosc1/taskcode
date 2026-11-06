@@ -22,7 +22,7 @@ namespace Taskcode.Probe
                 if (startup != null && startup.AccessibleName == "Show weekly quota in the indicator") weeklyToggle = startup;
                 if (startup != null && startup.Text == "Start with Windows") { startups++; Check(startup.Checked == startupExpected, "Refactoring settings must preserve Windows startup preference."); }
                 var select = control as ComboBox;
-                if (select != null && select.AccessibleName == "Indicator style") { styles++; Check(select.Items.Count == 4 && (string)select.Items[0] == "Pill" && new Settings().Style == IndicatorStyle.Pill, "All four indicator styles must remain available."); }
+                if (select != null && select.AccessibleName == "Indicator style") { styles++; Check(select.Items.Count == 3 && (string)select.Items[0] == "Essential" && (string)select.Items[1] == "Lines" && (string)select.Items[2] == "Blocks" && new Settings().Style == IndicatorStyle.Essential, "The three styles must be ordered Essential, Lines, Blocks, with Essential as default."); }
                 if (control is Button && (control.AccessibleName == "Connect Claude" || control.AccessibleName == "Connect Codex")) accounts++;
                 if (control.Parent != null) Check(control.Parent.ClientRectangle.Contains(control.Bounds), "Settings control exceeds its parent: " + control.Text);
             }
