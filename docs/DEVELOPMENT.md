@@ -13,4 +13,4 @@ The development executable retains explicit `--demo`, `--self-test`, `--tray-tes
 
 The build checks placement/routing, account parsing, freshness, speed estimates, usage colors, activity/Ripple, native mouse routing, non-activating Details, theme/layout bounds, switch accessibility, tray lifecycle and preferences. Reports and render artifacts are written under `out/probe` and excluded from Git. GUI fixtures stay outside the visible desktop.
 
-[Release packaging](RELEASING.md) ? [Architecture and historical taskbar investigation](TASKBAR-INTEGRATION.md).
+[Release packaging](RELEASING.md) | [Architecture and historical taskbar investigation](TASKBAR-INTEGRATION.md).

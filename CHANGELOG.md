@@ -5,7 +5,7 @@
 - Refresh the managed Claude Code hook helper during installation and updates, including migrations from a development build.
 - Keep the installed application and its active integration helper on the same version.
 
-## 0.1.0 ? 2026-11-05
+## 0.1.0 - 2026-11-05
 
 First public Windows test release.
 

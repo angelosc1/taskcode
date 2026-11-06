@@ -24,7 +24,7 @@ Settings group related controls in subtly elevated rounded cards. Selected navig
 
 ## Optional usage colors
 
-**Appearance ? Usage-based bar colors** is disabled by default and saved as `usageBarColors`. When enabled, quota fills interpolate from green at 0% consumed through yellow at 50% to red at 100%. The setting applies immediately to Details, Lines, and Blocks, including weekly meters. Empty and unfilled space remains muted, provider logos and percentages retain their colors, and Essential has no taskbar meter to recolor. High-contrast mode keeps the system palette.
+**Appearance > Usage-based bar colors** is disabled by default and saved as `usageBarColors`. When enabled, quota fills interpolate from green at 0% consumed through yellow at 50% to red at 100%. The setting applies immediately to Details, Lines, and Blocks, including weekly meters. Empty and unfilled space remains muted, provider logos and percentages retain their colors, and Essential has no taskbar meter to recolor. High-contrast mode keeps the system palette.
 
 ![Default and optional quota fill colors](images/usage-colors.png)
 

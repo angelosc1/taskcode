@@ -8,10 +8,10 @@
 
 The first release is unsigned. Windows may display an unknown-publisher notice. Download only from [angelosc1/taskcode Releases](https://github.com/angelosc1/taskcode/releases).
 
-## Installer ? recommended
+## Installer - recommended
 
 1. Open the [latest release](https://github.com/angelosc1/taskcode/releases/latest).
-2. Download `Taskcode-Setup-<version>-win-x64.exe` from **Assets**. Do not download ?Source code? to install the app.
+2. Download `Taskcode-Setup-<version>-win-x64.exe` from **Assets**. Do not download **Source code** to install the app.
 3. Run the setup wizard. It installs to `%LOCALAPPDATA%\Programs\Taskcode` for your user; no administrator account is needed. A desktop shortcut is optional.
 4. Open Taskcode from the Start menu if its settings did not open after installation.
 5. In **Accounts**, choose **Connect** for each provider. Use **Sign in** to select an account, or **Use existing CLI account**. Complete the official sign-in flow. [Connection guide](ACCOUNTS.md).
@@ -20,7 +20,7 @@ The first release is unsigned. Windows may display an unknown-publisher notice. 
 
 The indicator appears immediately to the left of the hidden-icons arrow. Windows may initially put Taskcode's tray icon under that arrow. Left-click the tray icon for settings; right-click it or the quota capsule for the menu.
 
-**Close** and the header ? hide settings while the indicator keeps running. **Exit**, available only in the right-click menu, ends the app.
+**Close** and the header close button hide settings while the indicator keeps running. **Exit**, available only in the right-click menu, ends the app.
 
 ## Updates
 

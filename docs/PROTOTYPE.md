@@ -71,4 +71,4 @@ The `out/` directory is ignored by Git. Do not commit local executable files or 
 
 See the [integration investigation](TASKBAR-INTEGRATION.md) for evidence and known limitations. This is not a production release.
 
-**Appearance ? Usage-based bar colors** is optional and off by default. Turning it on applies a green?yellow?red color to each bar based on its consumed percentage (0%, 50%, 100%). The change is saved and applies immediately to Details and Lines/Blocks meters; Essential keeps its compact symbols and numbers. `out/probe/usage-colors-check.png` compares the fill colors using sample values.
+**Appearance > Usage-based bar colors** is optional and off by default. Turning it on applies a green-yellow-red color to each bar based on its consumed percentage (0%, 50%, 100%). The change is saved and applies immediately to Details and Lines/Blocks meters; Essential keeps its compact symbols and numbers. `out/probe/usage-colors-check.png` compares the fill colors using sample values.

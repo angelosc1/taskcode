@@ -4,7 +4,7 @@
 
 Taskcode puts a compact dark capsule beside the system tray. Check five-hour and weekly consumption, reset times and usage estimates without switching away from your work.
 
-**[Download the latest release](https://github.com/angelosc1/taskcode/releases/latest)** ? [Installation guide](docs/INSTALL.md) ? [Account setup](docs/ACCOUNTS.md) ? [Report an issue](https://github.com/angelosc1/taskcode/issues)
+**[Download the latest release](https://github.com/angelosc1/taskcode/releases/latest)** | [Installation guide](docs/INSTALL.md) | [Account setup](docs/ACCOUNTS.md) | [Report an issue](https://github.com/angelosc1/taskcode/issues)
 
 ## Install
 
@@ -22,11 +22,11 @@ Requires **Windows 11 x64** and **.NET Framework 4.8**, normally included with W
 
 | Style | Display |
 | --- | --- |
-| **Essential ? default** | Provider icons and percentages |
+| **Essential (default)** | Provider icons and percentages |
 | **Lines** | Names and thin meters |
 | **Blocks** | Segmented meters |
 
-All styles use the same dark capsule, regardless of the Windows theme. Weekly readings and green?yellow?red usage colors are optional and off by default. Values show **consumed quota**. Provider logos keep their own colors.
+All styles use the same dark capsule, regardless of the Windows theme. Weekly readings and green-yellow-red usage colors are optional and off by default. Values show **consumed quota**. Provider logos keep their own colors.
 
 A subtle **Ripple** follows observed local execution. Usage arrows appear only inside Details. Local activity detection covers Claude Code and Codex sessions; it does not observe activity in the Claude website or desktop app. [How activity is detected](docs/ACTIVITY.md).
 
@@ -46,13 +46,13 @@ Forecasts use recent quota observations where available, with a clearly labelled
 - **Accounts:** sign in, reuse an existing CLI account, refresh or disconnect.
 - **General:** indicator visibility, Windows startup, placement and updates.
 
-**General > Check for updates** checks the official GitHub release. Automatic daily checks are enabled by default and can be turned off. When an update is available, choose **Install v?**. Taskcode verifies the download's SHA-256, runs the installer and restarts in the tray. Accounts and preferences stay in your user data directory. Updates are never installed without your click. Portable copies open the release page for a manual update. [Update details](docs/INSTALL.md#updates).
+**General > Check for updates** checks the official GitHub release. Automatic daily checks are enabled by default and can be turned off. When an update is available, choose the **Install** button. Taskcode verifies the download's SHA-256, runs the installer and restarts in the tray. Accounts and preferences stay in your user data directory. Updates are never installed without your click. Portable copies open the release page for a manual update. [Update details](docs/INSTALL.md#updates).
 
-**Close**, the header ? and Escape hide settings. To stop Taskcode completely, right-click its tray icon or taskbar indicator and select **Exit**.
+**Close**, the header close button and Escape hide settings. To stop Taskcode completely, right-click its tray icon or taskbar indicator and select **Exit**.
 
 ## Privacy and limitations
 
-There is no Taskcode account, cloud backend or analytics. Official clients own authentication; Taskcode reads only the local credentials required for its documented provider connection. Quota requests go to the provider, and update checks go to GitHub. Prompts, responses and credentials are never included in release files or public preview images. [Privacy](docs/PRIVACY.md) ? [Connection details](docs/ACCOUNTS.md).
+There is no Taskcode account, cloud backend or analytics. Official clients own authentication; Taskcode reads only the local credentials required for its documented provider connection. Quota requests go to the provider, and update checks go to GitHub. Prompts, responses and credentials are never included in release files or public preview images. [Privacy](docs/PRIVACY.md) | [Connection details](docs/ACCOUNTS.md).
 
 Claude quota checks are spaced at least five minutes apart; Codex is normally queried every ten seconds. Internal provider endpoints may change. Missing, stale or disconnected quota shows `--`. Auto-hide, Explorer restarts, multiple monitors, fullscreen and scaling need broader compatibility testing. Overlay is available if embedded placement misbehaves.
 
@@ -60,7 +60,7 @@ Claude quota checks are spaced at least five minutes apart; Codex is normally qu
 
 ## Development
 
-Taskcode uses C# / Windows Forms and .NET Framework, with no NuGet dependencies. [Build and test](docs/DEVELOPMENT.md) ? [Release process](docs/RELEASING.md) ? [Roadmap](ROADMAP.md) ? [Design decisions](docs/DESIGN.md).
+Taskcode uses C# / Windows Forms and .NET Framework, with no NuGet dependencies. [Build and test](docs/DEVELOPMENT.md) | [Release process](docs/RELEASING.md) | [Validation results](docs/VALIDATION.md) | [Roadmap](ROADMAP.md) | [Design decisions](docs/DESIGN.md).
 
 ## Credits and license
 
