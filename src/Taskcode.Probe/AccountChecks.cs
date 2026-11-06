@@ -41,6 +41,21 @@ namespace Taskcode.Probe
             usage.ActivityKey = 2;
             Check(usage.DetailSpeedAt(2, now).State == SpeedState.Active && usage.Readings[2].Speed.EstimateAt(now).State == SpeedState.Calculating,
                 "Resuming must restore presentation without adding or discarding consumption samples.");
+            var weeklyUsage = new UsageDemo(); weeklyUsage.BeginLive(); weeklyUsage.ActivityKey = 2;
+            for (int sample = 0; sample < 3; sample++)
+                weeklyUsage.Apply(1, AccountSnapshot.Codex(AccountJson.Parse(AccountJson.Encode(new { rateLimits = new {
+                    primary = new { usedPercent = 23 + sample, windowDurationMins = 300, resetsAt = reset },
+                    secondary = new { usedPercent = 71, windowDurationMins = 10080, resetsAt = reset }
+                } })), now.AddSeconds(sample * 10)));
+            var sampledAt = now.AddSeconds(20);
+            Check(weeklyUsage.DetailSpeedAt(2, sampledAt).State == SpeedState.Active && !weeklyUsage.DetailSpeedAt(2, sampledAt).PeriodAverage,
+                "The five-hour window must retain its measured recent rate.");
+            Check(weeklyUsage.DetailSpeedAt(3, sampledAt).State == SpeedState.Active && weeklyUsage.DetailSpeedAt(3, sampledAt).PeriodAverage &&
+                weeklyUsage.Readings[3].Speed.EstimateAt(sampledAt).State == SpeedState.Idle,
+                "A running provider with unchanged weekly readings must show its own labelled weekly average without inventing recent consumption.");
+            weeklyUsage.ActivityKey = 0;
+            Check(weeklyUsage.DetailSpeedAt(2, sampledAt).State == SpeedState.Paused && weeklyUsage.DetailSpeedAt(3, sampledAt).State == SpeedState.Paused,
+                "Stopping execution must pause both period forecasts together.");
             usage.Apply(1, new AccountSnapshot { Status = "Temporary error", Failed = true });
             Check(usage.DisplayValue(2, now) == 76 && usage.DisplayValue(2, now.AddMinutes(3)) == -1, "Transient errors must preserve recent data, then expire it.");
             usage.Tick(now.AddSeconds(7)); usage.Tick(now.AddSeconds(14));

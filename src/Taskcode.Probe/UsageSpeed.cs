@@ -86,13 +86,14 @@ namespace Taskcode.Probe
             }
             return result;
         }
-        internal SpeedEstimate DisplayEstimateAt(DateTime now)
+        internal SpeedEstimate DisplayEstimateAt(DateTime now, bool useAverageWhileUnchanged = false)
         {
             var recent = EstimateAt(now);
-            if (recent.State != SpeedState.Calculating || samples.Count == 0) return recent;
+            if ((recent.State != SpeedState.Calculating && !(useAverageWhileUnchanged && recent.State == SpeedState.Idle)) || samples.Count == 0) return recent;
             var last = samples[samples.Count - 1];
             // A real quota observation can provide a labelled period average while
-            // the recent estimator warms up. Never insert synthetic observations.
+            // the recent estimator warms up or a running session's rounded quota
+            // has not advanced. Never insert synthetic observations.
             double elapsed = (last.At - periodStart).TotalHours;
             if (elapsed < 5.0 / 3600) return recent;
             double used = 100 - last.Remaining;
