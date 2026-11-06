@@ -2,7 +2,7 @@
 
 ## Codenotch connection approach
 
-The C# Claude connection adapts the Windows CLI discovery/sign-in and usage-reading behavior from [Codenotch](https://github.com/vinzdg/codenotch), reviewed at commit `183fc2f835dbe46855cf1bf0f7c03e05d5f811c8`. Reference files: `windows/codenotch/src/claude_auth.rs`, `usage.rs`, and `claude_accounts.rs`. Taskcode implements its own C# UI and adapter; no Codenotch branding or application artwork is included.
+The C# provider connections adapt Windows discovery, authentication and usage-reading behavior from [Codenotch](https://github.com/vinzdg/codenotch), reviewed at commit `183fc2f835dbe46855cf1bf0f7c03e05d5f811c8`. Reference files under `windows/codenotch/src`: `claude_auth.rs`, `usage.rs`, `claude_accounts.rs`, `cursor.rs`, `antigravity.rs`, `glm.rs`, `grok.rs`, `copilot.rs`, `opencode.rs`, `commandcode.rs`, `qoder.rs` and `deepseek_harness.rs`, plus `windows/codenotch/qoder-usage.cjs`. Taskcode implements its own C# UI, adapters and helper scripts; no Codenotch branding or application artwork is included.
 
 MIT License
 

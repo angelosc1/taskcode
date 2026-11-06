@@ -10,6 +10,7 @@ namespace Taskcode.Probe
         internal DateTime PulseUntil;
         internal bool Available = true;
         internal DateTime ObservedUtc;
+        internal readonly QuotaTrend Trend = new QuotaTrend();
     }
 
     internal sealed class UsageDemo
@@ -20,6 +21,12 @@ namespace Taskcode.Probe
         internal bool IsLive;
         internal int Revision;
         internal int ActivityKey;
+        internal OptionalProvider[] OptionalProviders = new OptionalProvider[0];
+        internal readonly bool[] CoreEnabled = { true, true };
+        internal bool ProviderEnabled(int provider)
+        { return provider >= 0 && (provider < 2 ? CoreEnabled[provider] : provider - 2 < OptionalProviders.Length && OptionalProviders[provider - 2].Enabled); }
+        internal int VisibleProviderCount
+        { get { int count = (CoreEnabled[0] ? 1 : 0) + (CoreEnabled[1] ? 1 : 0); foreach (var provider in OptionalProviders) if (provider.Enabled) count++; return count; } }
         private DateTime demoActivityUntil = DateTime.UtcNow.AddSeconds(15);
         internal int ActivityAt(DateTime now) { return IsLive ? ActivityKey : now < demoActivityUntil && scenario < 4 ? 3 : 0; }
         internal readonly string[] AccountStatus = { "Demo data", "Demo data" };
@@ -39,6 +46,7 @@ namespace Taskcode.Probe
                 Readings[i].Available = false; Readings[i].ObservedUtc = DateTime.MinValue;
                 Readings[i].Period.WaitingForFirstRequest = false; Readings[i].Period.Remaining = -1; Readings[i].Period.StartUtc = Readings[i].Period.EndUtc = DateTime.MinValue;
                 Readings[i].Speed = LiveSpeed(provider); Readings[i].PulseUntil = DateTime.MinValue;
+                Readings[i].Trend.Clear();
             }
             Revision++;
         }
@@ -46,15 +54,16 @@ namespace Taskcode.Probe
         {
             AccountStatus[provider] = snapshot.Status;
             if (!snapshot.Failed) AccountIdentity[provider] = snapshot.Identity ?? "";
-            if (snapshot.Failed) { Revision++; return; }
+            if (snapshot.Failed) { for (int index = provider * 2; index < provider * 2 + 2; index++) Readings[index].Trend.Clear(); Revision++; return; }
             for (int index = 0; index < 2; index++)
             {
                 var reading = Readings[provider * 2 + index];
                 var period = snapshot.Periods[index];
-                if (period == null) { reading.Available = false; reading.Period.WaitingForFirstRequest = false; reading.Period.Remaining = -1; reading.Speed = LiveSpeed(provider); reading.PulseUntil = DateTime.MinValue; continue; }
+                if (period == null) { reading.Available = false; reading.Period.WaitingForFirstRequest = false; reading.Period.Remaining = -1; reading.Speed = LiveSpeed(provider); reading.PulseUntil = DateTime.MinValue; reading.Trend.Clear(); continue; }
                 if (snapshot.ObservedUtc == reading.ObservedUtc && reading.Available && period.Remaining == reading.Period.Remaining && period.WaitingForFirstRequest == reading.Period.WaitingForFirstRequest && period.StartUtc == reading.Period.StartUtc && period.EndUtc == reading.Period.EndUtc) continue;
                 int previous = reading.Speed.EstimateAt(snapshot.ObservedUtc).Level;
                 reading.Available = true; reading.ObservedUtc = snapshot.ObservedUtc;
+                reading.Trend.Observe(snapshot.ObservedUtc, 100 - snapshot.Remaining[index].Value, QuotaTrend.PeriodKey(period.StartUtc, period.EndUtc));
                 reading.Period.WaitingForFirstRequest = period.WaitingForFirstRequest; reading.Period.Remaining = period.Remaining; reading.Period.StartUtc = period.StartUtc; reading.Period.EndUtc = period.EndUtc;
                 if (period.WaitingForFirstRequest) { reading.Speed = LiveSpeed(provider); reading.PulseUntil = DateTime.MinValue; }
                 else reading.Speed.Observe(snapshot.ObservedUtc, snapshot.Remaining[index].Value, period.StartUtc, period.EndUtc);
@@ -125,11 +134,15 @@ namespace Taskcode.Probe
                 var reading = Readings[index];
                 int previous = reading.Speed == null ? 0 : reading.Speed.EstimateAt(now).Level;
                 reading.Speed = new UsageSpeed();
+                reading.Trend.Clear();
                 int kind = scenario == 0 ? new[] { 1, 2, 3, 1 }[index] : scenario;
                 double ratio = kind == 1 ? 1.8 : kind == 2 ? 1.0 : 0.45;
                 double rate = kind >= 4 ? 0 : reading.Period.Remaining / Math.Max(0.01, (reading.Period.EndUtc - now).TotalHours * ratio);
                 for (int second = kind == 5 ? 0 : 15; second >= 0; second--)
                     reading.Speed.Observe(now.AddSeconds(-second), Math.Min(100, reading.Period.Remaining + rate * second / 3600.0), reading.Period.StartUtc, reading.Period.EndUtc);
+                // The offline demo has its own labelled fixture history; live mode clears it.
+                for (int point = kind == 5 ? 0 : 8; point >= 0; point--)
+                    reading.Trend.Observe(now.AddMinutes(-point * 2), Math.Max(0, 100 - reading.Period.Remaining - point * (index % 2 == 0 ? .6 : .3)), QuotaTrend.PeriodKey(reading.Period.StartUtc, reading.Period.EndUtc));
                 int current = reading.Speed.EstimateAt(now).Level;
                 reading.PulseUntil = announce && previous != current && current > 0 ? now.AddSeconds(8) : DateTime.MinValue;
             }
@@ -144,6 +157,7 @@ namespace Taskcode.Probe
             {
                 int previous = reading.Speed.EstimateAt(now).Level;
                 reading.Speed.Observe(now, reading.Period.Remaining, reading.Period.StartUtc, reading.Period.EndUtc);
+                reading.Trend.Observe(now, 100 - reading.Period.Remaining, QuotaTrend.PeriodKey(reading.Period.StartUtc, reading.Period.EndUtc));
                 int current = reading.Speed.EstimateAt(now).Level;
                 if (previous != current && current > 0) reading.PulseUntil = now.AddSeconds(8);
             }

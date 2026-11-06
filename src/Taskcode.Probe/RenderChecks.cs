@@ -10,6 +10,9 @@ namespace Taskcode.Probe
         internal static void Run(string directory)
         {
             int styleCount = Enum.GetValues(typeof(IndicatorStyle)).Length;
+            int columnWidth = 480;
+            foreach (IndicatorStyle style in Enum.GetValues(typeof(IndicatorStyle)))
+            foreach (bool weekly in new[] { false, true }) columnWidth = Math.Max(columnWidth, (int)Math.Round(IndicatorView.LogicalWidth(style, weekly) * 1.25) + 40);
             int appearanceHeight = 72 + styleCount * 2 * 94;
             using (var animation = new Bitmap(720, 320))
             using (var canvas = Graphics.FromImage(animation))
@@ -27,15 +30,15 @@ namespace Taskcode.Probe
                 animation.Save(Path.Combine(directory, "animation-check.png"), ImageFormat.Png);
             }
             foreach (int pulse in new[] { 0, 121 })
-            using (var board = new Bitmap(960, appearanceHeight))
+            using (var board = new Bitmap(columnWidth * 2, appearanceHeight))
             using (var canvas = Graphics.FromImage(board))
             using (var label = new Font("Segoe UI", 11f, FontStyle.Regular, GraphicsUnit.Pixel))
             {
                 for (int column = 0; column < 2; column++)
                 {
                     var theme = TaskbarTheme.Create(column == 0);
-                    using (var background = new SolidBrush(theme.PreviewBackground)) canvas.FillRectangle(background, column * 480, 0, 480, appearanceHeight);
-                    using (var text = new SolidBrush(theme.Text)) canvas.DrawString(theme.Dark ? "Dark taskbar / 125%" : "Light taskbar / 125%", label, text, column * 480 + 20, 14);
+                    using (var background = new SolidBrush(theme.PreviewBackground)) canvas.FillRectangle(background, column * columnWidth, 0, columnWidth, appearanceHeight);
+                    using (var text = new SolidBrush(theme.Text)) canvas.DrawString(theme.Dark ? "Dark taskbar / 125%" : "Light taskbar / 125%", label, text, column * columnWidth + 20, 14);
                     if (Contrast(theme.Text, theme.PreviewBackground) < 4.5 || Contrast(theme.Claude, theme.PreviewBackground) < 3 || Contrast(theme.Codex, theme.PreviewBackground) < 3)
                         throw new InvalidOperationException("Taskbar palette contrast is insufficient.");
                     foreach (bool weekly in new[] { false, true })
@@ -51,8 +54,8 @@ namespace Taskcode.Probe
                             for (int y = 0; y < surface.Height; y++) for (int x = 0; x < surface.Width; x++) if (surface.GetPixel(x, y).A > 0) painted++;
                             if (painted < 100) throw new InvalidOperationException("Indicator content failed to render.");
                             int top = 52 + ((int)style + (weekly ? styleCount : 0)) * 94;
-                            using (var text = new SolidBrush(theme.Muted)) canvas.DrawString(style + (weekly ? " / 5h + 7d" : " / 5h only"), label, text, column * 480 + 20, top);
-                            canvas.DrawImageUnscaled(surface, column * 480 + 20, top + 17);
+                            using (var text = new SolidBrush(theme.Muted)) canvas.DrawString(style + (weekly ? " / 5h + 7d" : " / 5h only"), label, text, column * columnWidth + 20, top);
+                            canvas.DrawImageUnscaled(surface, column * columnWidth + 20, top + 17);
                         }
                     }
                 }

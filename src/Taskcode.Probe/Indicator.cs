@@ -6,10 +6,10 @@ using System.Windows.Forms;
 
 namespace Taskcode.Probe
 {
-    internal enum IndicatorStyle { Essential, Lines, Blocks }
+    internal enum IndicatorStyle { Essential, Lines, Blocks, Donuts, Sparkline, DotMatrix, ColorStrip }
     internal enum HostMode { Embedded, Overlay }
 
-    internal sealed class IndicatorView : Control
+    internal sealed partial class IndicatorView : Control
     {
         internal IndicatorStyle Style = IndicatorStyle.Essential;
         internal bool ShowWeekly;
@@ -33,12 +33,27 @@ namespace Taskcode.Probe
         private const int PillLeftPadding = 8;
         private static bool Compact(IndicatorStyle style) { return style == IndicatorStyle.Essential; }
         private static int ProviderGapReduction(IndicatorStyle style, bool weekly) { return Compact(style) ? (weekly ? 4 : 8) : 0; }
-        private static int ContentWidth(IndicatorStyle style, bool showWeekly)
+        private static int OptionalCellWidth(IndicatorStyle style) { return Compact(style) ? 90 : 136; }
+        private static bool Filtered(UsageDemo usage) { return usage != null && (!usage.CoreEnabled[0] || !usage.CoreEnabled[1]); }
+        private static int FilteredCellWidth(IndicatorStyle style, bool weekly) { return weekly ? (Compact(style) ? 100 : 140) : OptionalCellWidth(style); }
+        private static System.Collections.Generic.List<int> VisibleProviders(UsageDemo usage)
         {
-            int width = showWeekly ? (Compact(style) ? 184 : 268) : Compact(style) ? 156 : style == IndicatorStyle.Blocks ? 246 : 262;
-            return width + PillLeftPadding - ProviderGapReduction(style, showWeekly);
+            var result = new System.Collections.Generic.List<int>();
+            for (int provider = 0; provider < 2 + usage.OptionalProviders.Length; provider++) if (usage.ProviderEnabled(provider)) result.Add(provider);
+            return result;
         }
-        internal static int LogicalWidth(IndicatorStyle style, bool showWeekly = false) { return (int)Math.Ceiling(ContentWidth(style, showWeekly) * IndicatorScale); }
+        private static int OptionalCount(UsageDemo usage)
+        { int count = 0; if (usage != null) foreach (var provider in usage.OptionalProviders) if (provider.Enabled) count++; return count; }
+        private static int ContentWidth(IndicatorStyle style, bool showWeekly, UsageDemo usage = null)
+        {
+            if (style == IndicatorStyle.DotMatrix || style == IndicatorStyle.ColorStrip) { int count = DonutProviders(usage).Count; return count == 0 ? 0 : count * CompactMeterCellWidth(style, showWeekly) + 16; }
+            if (style == IndicatorStyle.Sparkline) { int count = DonutProviders(usage).Count; return count == 0 ? 0 : count * SparklineCellWidth + 16; }
+            if (style == IndicatorStyle.Donuts) { int count = DonutProviders(usage).Count; return count == 0 ? 0 : count * DonutCellWidth(showWeekly) + 16; }
+            if (Filtered(usage)) return usage.VisibleProviderCount == 0 ? 0 : usage.VisibleProviderCount * FilteredCellWidth(style, showWeekly) + 16;
+            int width = showWeekly ? (Compact(style) ? 184 : 268) : Compact(style) ? 156 : style == IndicatorStyle.Blocks ? 246 : 262;
+            return width + PillLeftPadding - ProviderGapReduction(style, showWeekly) + OptionalCount(usage) * OptionalCellWidth(style);
+        }
+        internal static int LogicalWidth(IndicatorStyle style, bool showWeekly = false, UsageDemo usage = null) { return (int)Math.Ceiling(ContentWidth(style, showWeekly, usage) * IndicatorScale); }
         internal static string AccessibleText(bool weekly)
         {
             return weekly ? "Taskcode demo: Claude 5 hours 32 percent used, weekly 19 percent used; Codex 5 hours 58 percent used, weekly 37 percent used" :
@@ -47,16 +62,60 @@ namespace Taskcode.Probe
         internal static int LogicalHeight { get { return (int)Math.Ceiling(34 * IndicatorScale); } }
         private static int SecondProviderX(IndicatorStyle style, bool weekly)
         { return (weekly ? (Compact(style) ? 132 : 172) : Compact(style) ? 120 : style == IndicatorStyle.Blocks ? 162 : 172) - ProviderGapReduction(style, weekly); }
-        internal static Rectangle ProviderBounds(int provider, Size size, IndicatorStyle style, bool weekly)
+        internal static Rectangle ProviderBounds(int provider, Size size, IndicatorStyle style, bool weekly, UsageDemo usage = null)
         {
+            if (style == IndicatorStyle.DotMatrix || style == IndicatorStyle.ColorStrip) return CompactMeterProviderBounds(provider, size, style, weekly, usage);
+            if (style == IndicatorStyle.Sparkline) return SparklineProviderBounds(provider, size, usage);
+            if (style == IndicatorStyle.Donuts) return DonutProviderBounds(provider, size, weekly, usage);
+            if (Filtered(usage))
+            {
+                var visible = VisibleProviders(usage); int slot = visible.IndexOf(provider);
+                if (slot < 0 || size.Width <= 0 || size.Height <= 0) return Rectangle.Empty;
+                float factor = Math.Min(size.Width / (float)ContentWidth(style, weekly, usage), size.Height / 34f);
+                int left = slot == 0 ? 0 : (int)Math.Round((8 + slot * FilteredCellWidth(style, weekly)) * factor);
+                int right = slot == visible.Count - 1 ? size.Width : (int)Math.Round((8 + (slot + 1) * FilteredCellWidth(style, weekly)) * factor);
+                return new Rectangle(left, 0, right - left, size.Height);
+            }
+            if (OptionalCount(usage) > 0)
+            {
+                float dynamicScale = Math.Min(size.Width / (float)ContentWidth(style, weekly, usage), size.Height / 34f);
+                int baseWidth = (int)Math.Round(ContentWidth(style, weekly) * dynamicScale);
+                if (provider < 2) return ProviderBounds(provider, new Size(baseWidth, size.Height), style, weekly);
+                int slot = 0;
+                foreach (var optional in usage.OptionalProviders)
+                {
+                    if (!optional.Enabled) continue;
+                    if (provider == optional.Index + 2)
+                    {
+                        int left = (int)Math.Round((ContentWidth(style, weekly) + slot * OptionalCellWidth(style)) * dynamicScale);
+                        int right = (int)Math.Round((ContentWidth(style, weekly) + (slot + 1) * OptionalCellWidth(style)) * dynamicScale);
+                        return new Rectangle(left, 0, right - left, size.Height);
+                    }
+                    slot++;
+                }
+                return Rectangle.Empty;
+            }
             if (provider < 0 || provider > 1 || size.Width <= 0 || size.Height <= 0) return Rectangle.Empty;
             float scale = Math.Min(size.Width / (float)ContentWidth(style, weekly), size.Height / 34f);
             int split = (int)Math.Round((SecondProviderX(style, weekly) - (weekly ? 12 : 11) - 32 + PillLeftPadding) * scale);
             return provider == 0 ? new Rectangle(0, 0, split, size.Height) : new Rectangle(split, 0, size.Width - split, size.Height);
         }
-        internal static int ProviderAt(Point point, Size size, IndicatorStyle style, bool weekly)
+        internal static int ProviderAt(Point point, Size size, IndicatorStyle style, bool weekly, UsageDemo usage = null)
         {
             if (!new Rectangle(Point.Empty, size).Contains(point)) return -1;
+            if (style == IndicatorStyle.DotMatrix || style == IndicatorStyle.ColorStrip)
+            { foreach (int provider in DonutProviders(usage)) if (CompactMeterProviderBounds(provider, size, style, weekly, usage).Contains(point)) return provider; return -1; }
+            if (style == IndicatorStyle.Sparkline)
+            { foreach (int provider in DonutProviders(usage)) if (SparklineProviderBounds(provider, size, usage).Contains(point)) return provider; return -1; }
+            if (style == IndicatorStyle.Donuts)
+            { foreach (int provider in DonutProviders(usage)) if (DonutProviderBounds(provider, size, weekly, usage).Contains(point)) return provider; return -1; }
+            if (Filtered(usage))
+            { foreach (int provider in VisibleProviders(usage)) if (ProviderBounds(provider, size, style, weekly, usage).Contains(point)) return provider; return -1; }
+            if (OptionalCount(usage) > 0)
+            {
+                for (int provider = 0; provider < 2 + ProviderCatalog.Count; provider++) if (ProviderBounds(provider, size, style, weekly, usage).Contains(point)) return provider;
+                return -1;
+            }
             return ProviderBounds(0, size, style, weekly).Contains(point) ? 0 : 1;
         }
         protected override void OnPaint(PaintEventArgs e)
@@ -66,15 +125,19 @@ namespace Taskcode.Probe
         }
         internal static void Draw(Graphics g, Size size, IndicatorStyle style, TaskbarTheme theme, bool showWeekly = false, int pulseKey = 0, UsageDemo usage = null, int activityKey = 0, double activitySeconds = -1, bool usageBarColors = false)
         {
+            if (ContentWidth(style, showWeekly, usage) <= 0 || size.Width <= 0 || size.Height <= 0) return;
+            if (style == IndicatorStyle.DotMatrix || style == IndicatorStyle.ColorStrip) { DrawCompactMeters(g, size, style, theme, showWeekly, usage, activityKey, activitySeconds, usageBarColors); return; }
+            if (style == IndicatorStyle.Sparkline) { DrawSparklines(g, size, theme, showWeekly, usage, activityKey, activitySeconds, usageBarColors); return; }
+            if (style == IndicatorStyle.Donuts) { DrawDonuts(g, size, theme, showWeekly, usage, activityKey, activitySeconds, usageBarColors); return; }
             var state = g.Save();
-            float scale = Math.Min(size.Width / (float)ContentWidth(style, showWeekly), size.Height / 34f);
+            float scale = Math.Min(size.Width / (float)ContentWidth(style, showWeekly, usage), size.Height / 34f);
             g.ScaleTransform(scale, scale);
             // Remove the former demo-label gutter while enlarging the entire content.
             g.TranslateTransform(-32, 0);
             g.SmoothingMode = SmoothingMode.AntiAlias;
             {
                 theme = TaskbarTheme.AppPalette(theme);
-                float left = 33, top = 1, width = ContentWidth(style, showWeekly) - 2, height = 32;
+                float left = 33, top = 1, width = ContentWidth(style, showWeekly, usage) - 2, height = 32;
                 using (var shape = new GraphicsPath())
                 using (var background = new SolidBrush(theme.PreviewBackground))
                 using (var edge = new Pen(theme.HighContrast ? theme.Text : Color.FromArgb(68, 73, 80), 0.65f))
@@ -94,6 +157,28 @@ namespace Taskcode.Probe
             using (var bold = new Font("Segoe UI", 11f, FontStyle.Bold, GraphicsUnit.Pixel))
             using (var text = new SolidBrush(theme.Text))
             {
+                if (Filtered(usage))
+                {
+                    int slot = 0;
+                    foreach (int provider in VisibleProviders(usage))
+                    {
+                        int x = 36 + slot++ * FilteredCellWidth(style, showWeekly);
+                        if (slot > 1) using (var pen = new Pen(theme.Divider, .6f)) g.DrawLine(pen, x - 10, 8, x - 10, 26);
+                        if (provider < 2)
+                        {
+                            string name = provider == 0 ? "Claude" : "Codex"; Color accent = provider == 0 ? theme.Claude : theme.Codex;
+                            if (showWeekly) DrawWeeklyProvider(g, font, bold, text, name, Value(usage, provider * 2), Value(usage, provider * 2 + 1), accent, x, style, theme, usageBarColors);
+                            else DrawProvider(g, font, bold, text, name, Value(usage, provider * 2), accent, x, style, theme, usageBarColors);
+                            if ((activityKey & (1 << provider)) != 0) ActivityRipple.Draw(g, accent, MarkCenter(x), activitySeconds);
+                        }
+                        else
+                        {
+                            var optional = usage.OptionalProviders[provider - 2];
+                            DrawProvider(g, font, bold, text, optional.Name, optional.DisplayUsed(DateTime.UtcNow), optional.Color, x, style, theme, usageBarColors, optional.DisplayText(DateTime.UtcNow));
+                        }
+                    }
+                    g.Restore(state); return;
+                }
                 if (showWeekly)
                 {
                     int second = SecondProviderX(style, true);
@@ -110,6 +195,17 @@ namespace Taskcode.Probe
                 }
                 if ((activityKey & 1) != 0) ActivityRipple.Draw(g, theme.Claude, MarkCenter(36), activitySeconds);
                 if ((activityKey & 2) != 0) ActivityRipple.Draw(g, theme.Codex, MarkCenter(SecondProviderX(style, showWeekly)), activitySeconds);
+                if (usage != null)
+                {
+                    int slot = 0;
+                    foreach (var provider in usage.OptionalProviders)
+                    {
+                        if (!provider.Enabled) continue;
+                        int x = ContentWidth(style, showWeekly) + 32 + slot++ * OptionalCellWidth(style);
+                        using (var pen = new Pen(theme.Divider, .6f)) g.DrawLine(pen, x - 10, 9, x - 10, 25);
+                        DrawProvider(g, font, bold, text, provider.Name, provider.DisplayUsed(DateTime.UtcNow), provider.Color, x, style, theme, usageBarColors, provider.DisplayText(DateTime.UtcNow));
+                    }
+                }
             }
             g.Restore(state);
         }
@@ -118,7 +214,17 @@ namespace Taskcode.Probe
         internal static string LiveAccessibleText(UsageDemo usage, bool weekly)
         {
             if (usage == null || !usage.IsLive) return AccessibleText(weekly);
-            return "Taskcode: Claude " + Percentage(Value(usage, 0)) + (weekly ? ", weekly " + Percentage(Value(usage, 1)) : "") + "; Codex " + Percentage(Value(usage, 2)) + (weekly ? ", weekly " + Percentage(Value(usage, 3)) : "") + " used. -- means unavailable.";
+            if (Filtered(usage))
+            {
+                var parts = new System.Collections.Generic.List<string>();
+                foreach (int provider in VisibleProviders(usage))
+                    if (provider < 2) parts.Add((provider == 0 ? "Claude " : "Codex ") + Percentage(Value(usage, provider * 2)) + (weekly ? ", weekly " + Percentage(Value(usage, provider * 2 + 1)) : ""));
+                    else { var optional = usage.OptionalProviders[provider - 2]; parts.Add(optional.Name + " " + optional.DisplayText(DateTime.UtcNow)); }
+                return parts.Count == 0 ? "Taskcode: No providers enabled." : "Taskcode: " + string.Join("; ", parts) + " used. -- means unavailable.";
+            }
+            string optionalText = "";
+            foreach (var provider in usage.OptionalProviders) if (provider.Enabled) optionalText += "; " + provider.Name + " " + provider.DisplayText(DateTime.UtcNow);
+            return "Taskcode: Claude " + Percentage(Value(usage, 0)) + (weekly ? ", weekly " + Percentage(Value(usage, 1)) : "") + "; Codex " + Percentage(Value(usage, 2)) + (weekly ? ", weekly " + Percentage(Value(usage, 3)) : "") + optionalText + " used. -- means unavailable.";
         }
         private static void DrawWeeklyProvider(Graphics g, Font font, Font bold, Brush text, string name, int shortUsed, int weeklyUsed, Color color, int x, IndicatorStyle style, TaskbarTheme theme, bool usageBarColors)
         {
@@ -150,8 +256,11 @@ namespace Taskcode.Probe
                 }
             }
         }
-        private static void DrawProvider(Graphics g, Font font, Font bold, Brush text, string name, int used, Color color, int x, IndicatorStyle style, TaskbarTheme theme, bool usageBarColors)
+        private static void DrawProvider(Graphics g, Font font, Font bold, Brush text, string name, int used, Color color, int x, IndicatorStyle style, TaskbarTheme theme, bool usageBarColors, string valueText = null)
         {
+            string percentage = valueText ?? Percentage(used);
+            int optionalIndex = Array.IndexOf(ProviderCatalog.Names, name);
+            string displayName = optionalIndex < 0 ? name : ProviderCatalog.ShortNames[optionalIndex];
             using (var accent = new SolidBrush(color))
             using (var meter = new SolidBrush(UsageBarPalette.Resolve(color, used, usageBarColors, theme.HighContrast)))
             using (var track = new SolidBrush(theme.Track))
@@ -159,28 +268,30 @@ namespace Taskcode.Probe
                 if (style == IndicatorStyle.Essential)
                 {
                     DrawMark(g, font, accent, name, x);
-                    g.DrawString(Percentage(used), bold, text, x + 26, 10);
+                    g.DrawString(percentage, bold, text, x + 26, 10);
                     return;
                 }
                 if (style == IndicatorStyle.Lines)
                 {
                     DrawMark(g, font, accent, name, x);
-                    g.DrawString(name, font, text, x + 23, 4);
-                    g.DrawString(Percentage(used), bold, text, x + 76, 4);
+                    g.DrawString(displayName, font, text, x + 23, 4);
+                    if (optionalIndex < 0) g.DrawString(percentage, bold, text, x + 76, 4);
+                    else using (var alignment = new StringFormat { Alignment = StringAlignment.Far }) g.DrawString(percentage, bold, text, new RectangleF(x + 77, 4, 38, 16), alignment);
                     g.FillRectangle(track, x + 23, 24, 89, 3);
                     if (used >= 0) g.FillRectangle(meter, x + 23, 24, 89 * used / 100f, 3);
                     return;
                 }
                 DrawMark(g, font, accent, name, x);
                 for (int i = 0; i < 10; i++) g.FillRectangle(i < (int)Math.Round(used / 10.0) ? meter : track, x + 25 + i * 5, 13, 4, 8);
-                g.DrawString(Percentage(used), bold, text, x + 78, 10);
+                g.DrawString(percentage, bold, text, x + 78, 10);
             }
         }
         private static void DrawMark(Graphics g, Font font, Brush accent, string name, int x)
         {
             var bounds = MarkBounds(x);
             if (name == "Claude") BrandMarks.DrawClaude(g, accent, bounds);
-            else BrandMarks.DrawCodex(g, accent, bounds);
+            else if (name == "Codex") BrandMarks.DrawCodex(g, accent, bounds);
+            else { int index = Array.IndexOf(ProviderCatalog.Names, name); g.DrawString(index < 0 ? "?" : ProviderCatalog.Marks[index], font, accent, bounds.X, bounds.Y + 1); }
         }
         internal static RectangleF MarkBounds(int x) { return new RectangleF(x, 9, 16, 16); }
         internal static PointF MarkCenter(int x) { var bounds = MarkBounds(x); return new PointF(bounds.X + bounds.Width / 2, bounds.Y + bounds.Height / 2); }
@@ -251,6 +362,8 @@ namespace Taskcode.Probe
             bool motion = ActivityKey != 0 && SpeedArrows.IsAnimated;
             int frame = motion ? SpeedArrows.Frame : 0;
             string values = IndicatorView.LiveAccessibleText(Usage, ShowWeekly);
+            if ((DisplayStyle == IndicatorStyle.Donuts || DisplayStyle == IndicatorStyle.DotMatrix || DisplayStyle == IndicatorStyle.ColorStrip) && Usage != null) values += IndicatorView.DonutDataKey(Usage, DateTime.UtcNow);
+            if (DisplayStyle == IndicatorStyle.Sparkline && Usage != null) values += IndicatorView.SparklineDataKey(Usage, DateTime.UtcNow);
             if (renderedHandle == Handle && renderedSize == Size && renderedStyle == DisplayStyle && renderedTheme == Theme && renderedWeekly == ShowWeekly && renderedUsageBarColors == UsageBarColors && renderedPulse == PulseKey && renderedActivity == ActivityKey && renderedFrame == frame && renderedMotion == motion && renderedValues == values) return true;
             if (Width <= 0 || Height <= 0) return false;
             using (var bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppPArgb))
@@ -334,6 +447,12 @@ namespace Taskcode.Probe
         private readonly ToolTip hints = new ToolTip();
         private readonly UsageDemo usage;
         private readonly Label providerLabel;
+        private readonly DetailInteraction interaction = new DetailInteraction();
+        private readonly Button closeDetails;
+        internal bool Pinned { get { return interaction.Pinned; } }
+        internal bool RequiresIndicator;
+        internal void SetInteraction(bool pinned)
+        { interaction.Reset(pinned, (Native.GetAsyncKeyState(1) & 0x8000) != 0); closeDetails.Visible = pinned; }
         internal Rectangle HoverAnchor { get; set; }
         private bool usageBarColors;
         internal bool UsageBarColors
@@ -369,6 +488,8 @@ namespace Taskcode.Probe
             var providerColor = providerIndex == 0 ? IndicatorView.Claude : IndicatorView.Codex;
             providerLabel = AddText(provider, 44, 11, 10, FontStyle.Bold, providerColor);
             providerLabel.AutoSize = false; providerLabel.Size = new Size(230, 26); providerLabel.TextAlign = ContentAlignment.MiddleLeft;
+            closeDetails = new Button { Text = "×", AccessibleName = "Close details", Location = new Point(275, 10), Size = new Size(19, 23), FlatStyle = FlatStyle.Flat, TabStop = false, Visible = false, Tag = "muted", Font = new Font("Segoe UI", 10f) };
+            closeDetails.FlatAppearance.BorderSize = 0; closeDetails.Click += delegate { Hide(); }; Controls.Add(closeDetails);
             AddQuota(this.usage.Readings[providerIndex * 2], 50);
             AddQuota(this.usage.Readings[providerIndex * 2 + 1], 162);
             KeyDown += delegate(object sender, KeyEventArgs e) { if (e.KeyCode == Keys.Escape) Hide(); };
@@ -422,16 +543,7 @@ namespace Taskcode.Probe
         internal void TrackPointer(Point pointer, DateTime now)
         {
             if (!Visible) return;
-            if (Bounds.Contains(pointer) || HoverAnchor.Contains(pointer)) return;
-            // Keep only the short physical crossing between trigger and card open.
-            int left = Math.Max(Left, HoverAnchor.Left), right = Math.Min(Right, HoverAnchor.Right);
-            if (right > left)
-            {
-                var bridge = Bottom <= HoverAnchor.Top ? Rectangle.FromLTRB(left, Bottom, right, HoverAnchor.Top) :
-                    HoverAnchor.Bottom <= Top ? Rectangle.FromLTRB(left, HoverAnchor.Bottom, right, Top) : Rectangle.Empty;
-                if (bridge.Contains(pointer)) return;
-            }
-            Hide();
+            if (interaction.ShouldDismiss(Bounds, HoverAnchor, pointer, (Native.GetAsyncKeyState(1) & 0x8000) != 0)) Hide();
         }
         private void RefreshPeriods()
         {

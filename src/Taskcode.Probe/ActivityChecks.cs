@@ -66,23 +66,25 @@ namespace Taskcode.Probe
             }
             finally { Environment.SetEnvironmentVariable("CODEX_HOME", originalHome); }
             int rippleHeight = Enum.GetValues(typeof(IndicatorStyle)).Length * 115 + 15;
-            using (var board = new Bitmap(960, rippleHeight))
+            int rippleColumnWidth = 480;
+            foreach (IndicatorStyle style in Enum.GetValues(typeof(IndicatorStyle))) rippleColumnWidth = Math.Max(rippleColumnWidth, IndicatorView.LogicalWidth(style) + 125);
+            using (var board = new Bitmap(rippleColumnWidth * 2, rippleHeight))
             using (var graphics = Graphics.FromImage(board))
             using (var font = new Font("Segoe UI", 10f, FontStyle.Regular, GraphicsUnit.Pixel))
             {
                 for (int palette = 0; palette < 2; palette++)
                 {
                     var theme = TaskbarTheme.Create(palette == 0);
-                    using (var background = new SolidBrush(theme.PreviewBackground)) graphics.FillRectangle(background, palette * 480, 0, 480, rippleHeight);
+                    using (var background = new SolidBrush(theme.PreviewBackground)) graphics.FillRectangle(background, palette * rippleColumnWidth, 0, rippleColumnWidth, rippleHeight);
                     foreach (IndicatorStyle style in Enum.GetValues(typeof(IndicatorStyle)))
                     for (int frame = 0; frame < 3; frame++)
                     {
                         int y = 12 + (int)style * 115 + frame * 33;
-                        if (frame == 0) using (var brush = new SolidBrush(theme.Text)) graphics.DrawString(style.ToString(), font, brush, palette * 480 + 12, y);
+                        if (frame == 0) using (var brush = new SolidBrush(theme.Text)) graphics.DrawString(style.ToString(), font, brush, palette * rippleColumnWidth + 12, y);
                         using (var surface = new Bitmap(IndicatorView.LogicalWidth(style), IndicatorView.LogicalHeight))
                         {
                             using (var canvas = Graphics.FromImage(surface)) IndicatorView.Draw(canvas, surface.Size, style, theme, false, 0, null, 3, frame * 0.55);
-                            graphics.DrawImageUnscaled(surface, palette * 480 + 110, y - 3);
+                            graphics.DrawImageUnscaled(surface, palette * rippleColumnWidth + 110, y - 3);
                             Check(surface.GetPixel(0, 0).A == 0, "Ripple must preserve transparent background corners.");
                         }
                     }

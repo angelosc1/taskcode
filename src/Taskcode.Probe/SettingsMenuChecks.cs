@@ -23,7 +23,7 @@ namespace Taskcode.Probe
                 if (startup != null && startup.AccessibleName == "Usage-based bar colors") usageColors = startup;
                 if (startup != null && startup.Text == "Start with Windows") { startups++; Check(startup.Checked == startupExpected, "Refactoring settings must preserve Windows startup preference."); }
                 var select = control as ComboBox;
-                if (select != null && select.AccessibleName == "Indicator style") { styles++; Check(select.Items.Count == 3 && select.Items[0].ToString() == "Essential" && select.Items[1].ToString() == "Lines" && select.Items[2].ToString() == "Blocks" && new Settings().Style == IndicatorStyle.Essential, "The three styles must be ordered Essential, Lines, Blocks, with Essential as default."); }
+                if (select != null && select.AccessibleName == "Indicator style") { styles++; Check(select.Items.Count == 7 && select.Items[0].ToString() == "Essential" && select.Items[1].ToString() == "Lines" && select.Items[2].ToString() == "Blocks" && select.Items[3].ToString() == "Donuts" && select.Items[4].ToString() == "Sparkline" && select.Items[5].ToString() == "Dot Matrix" && select.Items[6].ToString() == "Color Strip" && new Settings().Style == IndicatorStyle.Essential, "All seven styles must remain selectable with stable enum ordering and Essential as default."); }
                 if (control is Button && (control.AccessibleName == "Connect Claude" || control.AccessibleName == "Connect Codex")) accounts++;
                 if (control.Parent != null) Check(control.Parent.ClientRectangle.Contains(control.Bounds), "Settings control exceeds its parent: " + control.Text);
             }

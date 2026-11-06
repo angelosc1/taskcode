@@ -33,8 +33,12 @@ namespace Taskcode.Probe
         private readonly Icon trayImage;
         private bool startInTray, exiting;
         private readonly AccountConnections connections;
+        private readonly OptionalProviderConnections optionalConnections = new OptionalProviderConnections();
+        private OptionalProvidersWindow optionalAccounts;
+        private readonly OptionalProviderDetails[] optionalDetails = new OptionalProviderDetails[ProviderCatalog.Count];
         private readonly UpdateService updateService = new UpdateService();
         private Button updateCheckButton;
+        private Button providerDetailsButton;
         private Label updateStatus;
         private string notifiedUpdate;
         private readonly Label[] accountLabels = new Label[2];
@@ -44,6 +48,11 @@ namespace Taskcode.Probe
         internal MainWindow(bool startInTray = false, bool connectAccounts = true)
         {
             if (connectAccounts) L10n.SetLanguage(settings.Language);
+            usage.OptionalProviders = optionalConnections.Providers;
+            if (connectAccounts)
+            {
+                for (int index = 0; index < ProviderCatalog.Count; index++) optionalConnections.SetEnabled(index, settings.OptionalProvidersEnabled[index]);
+            }
             this.startInTray = startInTray;
             if (connectAccounts)
             {
@@ -56,6 +65,7 @@ namespace Taskcode.Probe
                 };
                 if (!settings.ClaudeEnabled) usage.ClearProvider(0, "Disconnected from Taskcode.");
                 if (!settings.CodexEnabled) usage.ClearProvider(1, "Disconnected from Taskcode.");
+                usage.CoreEnabled[0] = settings.ClaudeEnabled; usage.CoreEnabled[1] = settings.CodexEnabled;
             }
             providerDetails = new[] { new DetailWindow(usage, 0) { UsageBarColors = settings.UsageBarColors }, new DetailWindow(usage, 1) { UsageBarColors = settings.UsageBarColors } };
             details = providerDetails[0];
@@ -67,6 +77,7 @@ namespace Taskcode.Probe
             var style = menu.Style; var mode = menu.Placement; var trigger = menu.Trigger;
             var weekly = menu.Weekly; var startup = menu.Startup;
             var detailsButton = menu.Details; var closeSettings = menu.Close; var simulate = menu.Refresh;
+            providerDetailsButton = detailsButton;
             var claudeConnect = menu.Claude; var codexConnect = menu.Codex; var disconnect = menu.Disconnect;
             try { startup.Checked = StartupRegistration.IsEnabled(Application.ExecutablePath); }
             catch (Exception ex)
@@ -120,25 +131,25 @@ namespace Taskcode.Probe
             var disconnectMenu = new ContextMenuStrip();
             disconnectMenu.Items.Add("Disconnect Claude (restore status line)", null, delegate
             {
-                try { connections.ClaudeAuth.Cancel(); ClaudeBridge.Uninstall(); settings.ClaudeEnabled = connections.ClaudeEnabled = false; usage.ClearProvider(0, "Disconnected from Taskcode."); Save(); }
+                try { ClaudeBridge.Uninstall(); SetCoreMonitoring(0, false); }
                 catch (Exception) { MessageBox.Show(this, L10n.T("Could not restore Claude Code's status line. Settings were left connected."), L10n.T("Disconnect Claude"), MessageBoxButtons.OK, MessageBoxIcon.Information); }
             });
-            disconnectMenu.Items.Add("Disconnect Codex from Taskcode", null, delegate { connections.CancelCodex(); settings.CodexEnabled = connections.CodexEnabled = false; usage.ClearProvider(1, "Disconnected from Taskcode. Your Codex login was preserved."); Save(); });
+            disconnectMenu.Items.Add("Disconnect Codex from Taskcode", null, delegate { SetCoreMonitoring(1, false); });
             foreach (ToolStripItem item in disconnectMenu.Items) L10n.Bind(item, this);
             disconnect.Click += delegate { disconnectMenu.Show(disconnect, new Point(0, disconnect.Height)); };
             var detailsMenu = new ContextMenuStrip();
-            detailsMenu.Items.Add("Claude details", null, delegate { ShowDetails(true, true, 0); });
-            detailsMenu.Items.Add("Codex details", null, delegate { ShowDetails(true, true, 1); });
+            detailsMenu.Items.Add("Claude details", null, delegate { OpenDetailsFromSettings(0); });
+            detailsMenu.Items.Add("Codex details", null, delegate { OpenDetailsFromSettings(1); });
             foreach (ToolStripItem item in detailsMenu.Items) L10n.Bind(item, this);
             detailsButton.Click += delegate { detailsMenu.Show(detailsButton, new Point(0, detailsButton.Height)); };
             preview.Click += delegate
             {
-                int provider = IndicatorView.ProviderAt(preview.PointToClient(Cursor.Position), preview.ClientSize, settings.Style, settings.ShowWeekly);
+                int provider = IndicatorView.ProviderAt(preview.PointToClient(Cursor.Position), preview.ClientSize, settings.Style, settings.ShowWeekly, usage);
                 ShowDetails(true, true, provider < 0 ? selectedProvider : provider);
             };
             preview.MouseEnter += delegate
             {
-                int provider = IndicatorView.ProviderAt(preview.PointToClient(Cursor.Position), preview.ClientSize, settings.Style, settings.ShowWeekly);
+                int provider = IndicatorView.ProviderAt(preview.PointToClient(Cursor.Position), preview.ClientSize, settings.Style, settings.ShowWeekly, usage);
                 if (provider >= 0) ShowDetails(false, true, provider);
             };
             closeSettings.Click += delegate { Hide(); };
@@ -166,6 +177,7 @@ namespace Taskcode.Probe
                 settings.UsageBarColors = menu.UsageColors.Checked;
                 preview.UsageBarColors = settings.UsageBarColors; preview.Invalidate();
                 foreach (var panel in providerDetails) panel.UsageBarColors = settings.UsageBarColors;
+                foreach (var panel in optionalDetails) if (panel != null) panel.UsageBarColors = settings.UsageBarColors;
                 Save(); TickLayout();
             };
             mode.SelectedIndexChanged += delegate { settings.Mode = (HostMode)mode.SelectedIndex; RecreateIndicator(); Save(); TickLayout(); };
@@ -214,6 +226,9 @@ namespace Taskcode.Probe
             {
                 timer.Stop(); timer.Dispose(); updateService.Dispose(); hoverTimer.Dispose(); animationTimer.Dispose(); watcher.Dispose();
                 if (connections != null) connections.Dispose();
+                optionalConnections.Dispose();
+                if (optionalAccounts != null) optionalAccounts.Dispose();
+                foreach (var panel in optionalDetails) if (panel != null) panel.Dispose();
                 foreach (var accountWindow in accountWindows) if (accountWindow != null && !accountWindow.IsDisposed) accountWindow.Dispose();
                 disconnectMenu.Dispose();
                 if (indicator != null && !indicator.IsDisposed) indicator.Dispose();
@@ -223,6 +238,7 @@ namespace Taskcode.Probe
             };
             // Keep the host alive even when startup suppresses the settings window.
             CreateHandle();
+            ResizeIndicatorPreview();
             RecreateIndicator();
             timer.Start(); hoverTimer.Start();
         }
@@ -251,7 +267,8 @@ namespace Taskcode.Probe
                         connections.ConnectClaude(signIn);
                     }
                     else { settings.CodexEnabled = true; settings.CodexPrivateProfile = signIn; connections.ConnectCodex(signIn); }
-                    Save();
+                    usage.CoreEnabled[provider] = true;
+                    Save(); ResizeIndicatorPreview(); TickLayout();
                 });
             accountWindows[provider].ApplyTheme(theme);
             accountWindows[provider].Show(this); accountWindows[provider].Activate();
@@ -284,19 +301,20 @@ namespace Taskcode.Probe
             indicator.MouseClick += delegate(object sender, MouseEventArgs e)
             {
                 if (e.Button != MouseButtons.Left) return;
-                int provider = IndicatorView.ProviderAt(e.Location, indicator.ClientSize, settings.Style, settings.ShowWeekly);
+                int provider = IndicatorView.ProviderAt(e.Location, indicator.ClientSize, settings.Style, settings.ShowWeekly, usage);
                 if (provider >= 0) ShowDetails(true, false, provider);
             };
             indicator.MouseEnter += delegate
             {
-                int provider = IndicatorView.ProviderAt(indicator.PointToClient(Cursor.Position), indicator.ClientSize, settings.Style, settings.ShowWeekly);
+                int provider = IndicatorView.ProviderAt(indicator.PointToClient(Cursor.Position), indicator.ClientSize, settings.Style, settings.ShowWeekly, usage);
                 if (provider >= 0) ShowDetails(false, false, provider);
             };
         }
         private void PauseIndicator(string reason)
         {
             if (indicator != null && !indicator.IsDisposed) indicator.Hide();
-            details.Hide();
+            foreach (var panel in optionalDetails) if (panel != null && panel.RequiresIndicator && !panel.Pinned) panel.Hide();
+            if (details.RequiresIndicator && !details.Pinned) details.Hide();
             indicatorBounds = Rectangle.Empty;
             SetSettingsStatus(reason + (saveError == null ? "" : "\n" + saveError), true);
         }
@@ -331,6 +349,7 @@ namespace Taskcode.Probe
                     catch (System.ComponentModel.Win32Exception) { updateService.LaunchFailed(); }
                 }
                 connections.Tick(usage);
+                optionalConnections.Tick();
                 UpdateAccountLabels();
                 preview.AccessibleName = IndicatorView.LiveAccessibleText(usage, settings.ShowWeekly);
                 preview.Invalidate();
@@ -355,6 +374,7 @@ namespace Taskcode.Probe
                 foreach (var panel in providerDetails) panel.ApplyTheme(theme);
             }
             if (!enabled.Checked) { PauseIndicator("Indicator paused. The preview is still available."); return; }
+            if (usage.VisibleProviderCount == 0) { PauseIndicator("No providers enabled."); return; }
             var layout = watcher.Latest;
             if (layout == null) { PauseIndicator("Measuring available taskbar space..."); return; }
             if (DateTime.UtcNow - layout.MeasuredAt > TimeSpan.FromSeconds(4)) { PauseIndicator("Waiting for a fresh taskbar measurement."); return; }
@@ -369,7 +389,7 @@ namespace Taskcode.Probe
             if (Rectangle.Intersect(screen.Bounds, layout.Bar).Height < layout.Bar.Height / 2)
             { PauseIndicator("Taskbar is hidden."); return; }
             float scale = Math.Max(96, layout.Dpi) / 96f;
-            int width = (int)Math.Round(IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly) * scale);
+            int width = (int)Math.Round(IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly, usage) * scale);
             int height = (int)Math.Round(IndicatorView.LogicalHeight * scale);
             Rectangle slot;
             if (!Placement.TrySlot(layout.Bar, layout.Tray, layout.OccupiedRight, width, height, (int)Math.Round(8 * scale), out slot))
@@ -412,17 +432,30 @@ namespace Taskcode.Probe
             bool fromPreview = Visible && preview.Visible && preview.RectangleToScreen(preview.ClientRectangle).Contains(pointer);
             var bounds = fromPreview ? preview.RectangleToScreen(preview.ClientRectangle) : indicatorBounds;
             if (!fromPreview && (indicator == null || !indicator.Visible)) return;
-            int provider = IndicatorView.ProviderAt(new Point(pointer.X - bounds.X, pointer.Y - bounds.Y), bounds.Size, settings.Style, settings.ShowWeekly);
+            int provider = IndicatorView.ProviderAt(new Point(pointer.X - bounds.X, pointer.Y - bounds.Y), bounds.Size, settings.Style, settings.ShowWeekly, usage);
             if (provider >= 0) ShowDetails(false, fromPreview, provider);
         }
-        internal int VisibleDetailProvider { get { return details.Visible ? details.ProviderIndex : -1; } }
-        internal int VisibleDetailCount { get { int count = 0; foreach (var panel in providerDetails) if (panel.Visible) count++; return count; } }
+        internal void OpenDetailsFromSettings(int provider)
+        { ShowDetails(true, true, provider, providerDetailsButton.RectangleToScreen(providerDetailsButton.ClientRectangle)); }
+        internal int VisibleDetailProvider
+        { get { if (details.Visible) return details.ProviderIndex; for (int index = 0; index < optionalDetails.Length; index++) if (optionalDetails[index] != null && optionalDetails[index].Visible) return index + 2; return -1; } }
+        internal int VisibleDetailCount
+        { get { int count = 0; foreach (var panel in providerDetails) if (panel.Visible) count++; foreach (var panel in optionalDetails) if (panel != null && panel.Visible) count++; return count; } }
         internal bool DetailsHaveForeground
         {
-            get { var foreground = Native.GetForegroundWindow(); foreach (var panel in providerDetails) if (panel.IsHandleCreated && panel.Handle == foreground) return true; return false; }
+            get { var foreground = Native.GetForegroundWindow(); foreach (var panel in providerDetails) if (panel.IsHandleCreated && panel.Handle == foreground) return true; foreach (var panel in optionalDetails) if (panel != null && panel.IsHandleCreated && panel.Handle == foreground) return true; return false; }
         }
-        internal void ShowDetails(bool explicitOpen, bool fromPreview, int provider = 0)
+        internal void ShowDetails(bool explicitOpen, bool fromPreview, int provider = 0, Rectangle? sourceAnchor = null)
         {
+            if (!usage.ProviderEnabled(provider)) return;
+            if (!explicitOpen && settings.DetailsTrigger != DetailsTrigger.Hover) return;
+            if (!explicitOpen)
+            {
+                if (details.Visible && details.Pinned) return;
+                foreach (var panel in optionalDetails) if (panel != null && panel.Visible && panel.Pinned) return;
+            }
+            if (provider >= 2) { ShowOptionalDetails(provider - 2, fromPreview, sourceAnchor, explicitOpen); return; }
+            foreach (var panel in optionalDetails) if (panel != null) panel.Hide();
             // Native entry and frame-rate pointer tracking share this guard.
             if (provider < 0 || provider > 1) return;
             if (!explicitOpen && (settings.DetailsTrigger != DetailsTrigger.Hover || (details.Visible && selectedProvider == provider))) return;
@@ -432,15 +465,20 @@ namespace Taskcode.Probe
                 selectedProvider = provider;
                 details = providerDetails[provider];
             }
-            Rectangle anchor = fromPreview || indicatorBounds.IsEmpty ? preview.RectangleToScreen(preview.ClientRectangle) : indicatorBounds;
-            var providerAnchor = IndicatorView.ProviderBounds(provider, anchor.Size, settings.Style, settings.ShowWeekly);
-            anchor = new Rectangle(anchor.X + providerAnchor.X, anchor.Y, providerAnchor.Width, anchor.Height);
+            Rectangle anchor = sourceAnchor ?? (fromPreview || indicatorBounds.IsEmpty ? preview.RectangleToScreen(preview.ClientRectangle) : indicatorBounds);
+            if (!sourceAnchor.HasValue)
+            {
+                var providerAnchor = IndicatorView.ProviderBounds(provider, anchor.Size, settings.Style, settings.ShowWeekly, usage);
+                anchor = new Rectangle(anchor.X + providerAnchor.X, anchor.Y, providerAnchor.Width, anchor.Height);
+            }
             var area = Screen.FromRectangle(anchor).WorkingArea;
             int x = Math.Max(area.Left, Math.Min(anchor.Right - details.Width, area.Right - details.Width));
             int y = anchor.Top - details.Height - 8;
             if (y < area.Top) y = Math.Min(area.Bottom - details.Height, anchor.Bottom + 8);
             details.Location = new Point(x, y);
             details.HoverAnchor = anchor;
+            details.RequiresIndicator = !sourceAnchor.HasValue && !fromPreview && !indicatorBounds.IsEmpty;
+            details.SetInteraction(explicitOpen);
             details.Show();
         }
     }

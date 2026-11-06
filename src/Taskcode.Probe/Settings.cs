@@ -18,6 +18,9 @@ namespace Taskcode.Probe
         internal DateTime LastUpdateCheckUtc;
         internal bool CodexEnabled = true, ClaudeEnabled = true;
         internal bool CodexPrivateProfile, ClaudePrivateProfile;
+        internal readonly bool[] OptionalProvidersEnabled = new bool[ProviderCatalog.Count];
+        internal bool CursorEnabled { get { return OptionalProvidersEnabled[0]; } set { OptionalProvidersEnabled[0] = value; } }
+        internal bool AntigravityEnabled { get { return OptionalProvidersEnabled[1]; } set { OptionalProvidersEnabled[1] = value; } }
         internal static readonly string Path = System.IO.Path.Combine(AppInfo.DataDirectory, "settings.xml");
         internal static Settings Load()
         {
@@ -47,6 +50,10 @@ namespace Taskcode.Probe
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("claudeEnabled"), out connected)) value.ClaudeEnabled = connected;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("codexPrivateProfile"), out connected)) value.CodexPrivateProfile = connected;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("claudePrivateProfile"), out connected)) value.ClaudePrivateProfile = connected;
+                if (bool.TryParse(doc.DocumentElement.GetAttribute("cursorEnabled"), out connected)) value.CursorEnabled = connected;
+                if (bool.TryParse(doc.DocumentElement.GetAttribute("antigravityEnabled"), out connected)) value.AntigravityEnabled = connected;
+                for (int index = 2; index < ProviderCatalog.Count; index++)
+                    if (bool.TryParse(doc.DocumentElement.GetAttribute(ProviderCatalog.Ids[index] + "Enabled"), out connected)) value.OptionalProvidersEnabled[index] = connected;
             }
             catch (IOException) { }
             catch (XmlException) { }
@@ -71,6 +78,9 @@ namespace Taskcode.Probe
                 writer.WriteAttributeString("claudeEnabled", ClaudeEnabled.ToString());
                 writer.WriteAttributeString("codexPrivateProfile", CodexPrivateProfile.ToString());
                 writer.WriteAttributeString("claudePrivateProfile", ClaudePrivateProfile.ToString());
+                writer.WriteAttributeString("cursorEnabled", CursorEnabled.ToString());
+                writer.WriteAttributeString("antigravityEnabled", AntigravityEnabled.ToString());
+                for (int index = 2; index < ProviderCatalog.Count; index++) writer.WriteAttributeString(ProviderCatalog.Ids[index] + "Enabled", OptionalProvidersEnabled[index].ToString());
                 writer.WriteEndElement();
             }
         }

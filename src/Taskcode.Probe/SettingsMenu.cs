@@ -60,16 +60,17 @@ namespace Taskcode.Probe
             };
             previewPanel.SizeChanged += delegate { UiSurface.Round(previewPanel, 10); }; UiSurface.Round(previewPanel, 10);
             preview.Location = new Point(12, 12);
-            preview.Size = new Size(IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly), IndicatorView.LogicalHeight);
+            preview.Size = new Size(IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly, usage), IndicatorView.LogicalHeight);
             preview.Style = settings.Style; preview.ShowWeekly = settings.ShowWeekly; preview.UsageBarColors = settings.UsageBarColors; preview.Usage = usage; preview.Theme = theme;
             preview.AccessibleName = IndicatorView.LiveAccessibleText(usage, settings.ShowWeekly); previewPanel.Controls.Add(preview);
             var result = new MenuControls();
-            result.Style = MenuSelect(appearance, "Style", 120, new[] { "Essential", "Lines", "Blocks" }, (int)settings.Style, "Indicator style");
+            result.Style = MenuSelect(appearance, "Style", 120, new[] { "Essential", "Lines", "Blocks", "Donuts", "Sparkline", "Dot Matrix", "Color Strip" }, (int)settings.Style, "Indicator style");
+            L10n.Hint(settingsHints, result.Style, "Sparkline shows measured quota history and change in percentage points over the visible samples (up to 30 minutes). The vertical scale adjusts; history starts after fresh readings arrive.");
             result.Trigger = MenuSelect(appearance, "Open details", 158, new[] { "On hover", "On click" }, (int)settings.DetailsTrigger, "Open details");
             result.Weekly = new SettingsToggle { Text = "Weekly quota", Location = new Point(12, 196), Size = new Size(316, 26), Checked = settings.ShowWeekly, AccessibleName = "Show weekly quota in the indicator" }; appearance.Controls.Add(result.Weekly);
             result.UsageColors = new SettingsToggle { Text = "Usage-based bar colors", Location = new Point(12, 226), Size = new Size(316, 26), Checked = settings.UsageBarColors, AccessibleName = "Usage-based bar colors" };
             appearance.Controls.Add(result.UsageColors);
-            L10n.Hint(settingsHints, result.UsageColors, "Green at 0%, yellow at 50%, red at 100% used. Applies to Details, Lines and Blocks.");
+            L10n.Hint(settingsHints, result.UsageColors, "Green at 0%, yellow at 50%, red at 100% used. Applies to all meters and charts; provider logos keep their colors.");
             result.Details = MenuButton(appearance, "Details", 180, 276, 160, 30, "action");
             var accounts = settingsPages[1];
             for (int provider = 0; provider < 2; provider++)
@@ -84,6 +85,9 @@ namespace Taskcode.Probe
             }
             result.Refresh = MenuButton(accounts, live ? "Refresh" : "Simulate speed", 0, 244, 132, 30, "action");
             result.Disconnect = MenuButton(accounts, "Disconnect", 148, 244, 120, 30, "action"); result.Disconnect.Enabled = live;
+            var moreProviders = MenuButton(accounts, "Manage providers", 0, 282, 340, 30, "action");
+            moreProviders.Enabled = live; moreProviders.AccessibleName = "Connect optional providers";
+            moreProviders.Click += delegate { OpenOptionalProviders(); };
             var general = settingsPages[2];
             enabled.Text = "Show indicator"; enabled.Location = new Point(12, 44); enabled.Size = new Size(316, 26); enabled.Checked = true; general.Controls.Add(enabled);
             result.Startup = new SettingsToggle { Text = "Start with Windows", Location = new Point(12, 84), Size = new Size(316, 26) }; general.Controls.Add(result.Startup);
@@ -209,10 +213,10 @@ namespace Taskcode.Probe
             float scale = Math.Max(96, Native.GetDpiForWindow(Handle)) / 96f;
             if (preview.Parent != null)
             {
-                scale = Math.Min(scale, Math.Max(1, preview.Parent.ClientSize.Width - preview.Left * 2) / (float)IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly));
+                scale = Math.Min(scale, Math.Max(1, preview.Parent.ClientSize.Width - preview.Left * 2) / (float)IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly, usage));
                 scale = Math.Min(scale, Math.Max(1, preview.Parent.ClientSize.Height - preview.Top * 2) / (float)IndicatorView.LogicalHeight);
             }
-            preview.Size = new Size((int)Math.Round(IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly) * scale), (int)Math.Round(IndicatorView.LogicalHeight * scale));
+            preview.Size = new Size((int)Math.Round(IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly, usage) * scale), (int)Math.Round(IndicatorView.LogicalHeight * scale));
         }
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -257,7 +261,7 @@ namespace Taskcode.Probe
                 if (Focused && ShowFocusCues) ControlPaint.DrawFocusRectangle(e.Graphics, new Rectangle(3, 3, Width - 6, Height - 6), ink, fill);
             }
         }
-        private sealed class SettingsToggle : CheckBox
+        internal sealed class SettingsToggle : CheckBox
         {
             internal SettingsToggle() { SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true); }
             protected override void OnCheckedChanged(EventArgs e) { base.OnCheckedChanged(e); Invalidate(); }

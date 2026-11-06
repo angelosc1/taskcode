@@ -15,7 +15,7 @@ Current releases are unsigned. Windows may display an unknown-publisher notice. 
 3. Run the setup wizard. If Windows shows **Windows protected your PC**, follow the [SmartScreen steps below](#windows-smartscreen-warning). It installs to `%LOCALAPPDATA%\Programs\Taskcode` for your user; no administrator account is needed. A desktop shortcut is optional.
 4. Open Taskcode from the Start menu if its settings did not open after installation.
 5. In **Accounts**, choose **Connect** for each provider. Use **Sign in** to select an account, or **Use existing CLI account**. Complete the official sign-in flow. [Connection guide](ACCOUNTS.md).
-6. Open **Appearance** to choose **Essential**, **Lines** or **Blocks**, hover/click behavior, weekly quota and optional usage-based bar colors.
+6. Open **Appearance** to choose **Essential**, **Lines**, **Blocks**, **Donuts**, **Sparkline**, **Dot Matrix** or **Color Strip**, hover/click behavior, weekly quota and optional usage-based bar colors.
 7. In **General**, optionally enable **Start with Windows**. It is disabled by default.
 8. **General > Language** defaults to **System**. You can explicitly choose **English** or **Português (Brasil)**; changes apply immediately. The installer also supports English and Brazilian Portuguese.
 

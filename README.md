@@ -27,6 +27,24 @@ Requires **Windows 11 x64** and **.NET Framework 4.8**, normally included with W
 | **Essential (default)** | Provider icons and percentages |
 | **Lines** | Names and thin meters |
 | **Blocks** | Segmented meters |
+| **Donuts** | Mini rings beside provider icons, with percentages and `5h` / `7d` labels |
+| **Sparkline** | Current consumption, change in percentage points and a compact measured-history chart |
+| **Dot Matrix** | Ten small dots fill progressively with consumed quota |
+| **Color Strip** | A compact vertical strip fills from bottom to top beside the percentage |
+
+Donuts supports one five-hour ring or both five-hour and weekly rings through the existing weekly switch. Usage colors apply to each ring independently; provider icon colors stay fixed.
+
+![Donuts with five-hour and weekly rings, provider colors, usage colors and hidden-provider handling](docs/images/donuts-preview.png)
+
+Sparkline uses actual quota observations collected while Taskcode is open. Its variation is the change across visible samples, up to 30 minutes; each chart adjusts its vertical scale with a minimum ten-point range. The weekly switch adds a second row. History starts empty in live mode, restarts after rollover or a source interruption, and clears on disconnect. It is a consumption trend, not a forecast or financial gain/loss.
+
+![Sparkline with measured variation, both quota windows, usage colors and history forming](docs/images/sparkline-preview.png)
+
+Dot Matrix and Color Strip support five-hour-only or combined five-hour/weekly readings with independent usage colors. Their meters remain empty when quota is unavailable.
+
+![Dot Matrix with both periods and usage colors](docs/images/dot-matrix-preview.png)
+
+![Color Strip with both periods and usage colors](docs/images/color-strip-preview.png)
 
 All styles use the same dark capsule, regardless of the Windows theme. Weekly readings and green-yellow-red usage colors are optional and off by default. Values show **consumed quota**. Provider logos keep their own colors.
 
@@ -36,13 +54,17 @@ A subtle **Ripple** follows observed local execution. Usage arrows appear only i
 
 ![Separate Claude and Codex Details cards](docs/images/current-details.png)
 
-Hover opens the relevant provider's card immediately. Click-only opening is also available. Cards show consumption versus elapsed time, reset countdowns, and usage projections. They close when you move away and never take focus from your current app.
+Hover opens the relevant provider's card immediately; those cards close when you move away. Click-only opening is also available. Explicit clicks and the settings Details action keep the card open until you choose its close button or click outside it. Cards show consumption versus elapsed time, reset countdowns, and usage projections without taking focus from your current app. Details opened from settings remain usable when the taskbar indicator is paused or the appearance preview is hidden.
 
 After a Claude session resets, a fresh zero-use reading without a new reset shows all five hours available. Time starts only from the next provider-confirmed session, not a local timer.
 
 Forecasts use recent quota observations where available, with a clearly labelled **period avg** while waiting for a measurable change. They pause when local execution stops. They are estimates, not provider guarantees. [How estimates work](docs/USAGE-SPEED.md).
 
 ## Settings and updates
+
+**Accounts > Manage providers** adds Cursor, Antigravity, GLM Coding Plan, Grok, GitHub Copilot, OpenCode Go, Command Code, Qoder and DeepSeek Harness. All nine are disabled by default, including after upgrades. Connect each provider explicitly; disabled providers perform no credential reads or polling and take no taskbar space. The connection screen offers the appropriate official app/CLI login, optional encrypted key entry and connector setup. [Provider connections and requirements](docs/OPTIONAL-PROVIDERS.md).
+
+Additional provider cards show the quota windows that provider actually publishes. DeepSeek Harness shows local daily token/session counts, without a quota percentage or cost estimate. Execution Ripple and consumption-speed forecasts remain available for Claude/Codex.
 
 ![Appearance, Accounts and General settings](docs/images/current-settings.png)
 

@@ -14,6 +14,8 @@ See the [translation guide](locales/README.md). You can edit JSON files directly
 
 Read [Development](docs/DEVELOPMENT.md), keep changes focused and run `scripts\build-probe.cmd --test` on Windows. Include the relevant validation results in your pull request. UI changes should include images rendered with sample data, without personal account information.
 
+The full checks require Node.js 24+ for the Qoder/DeepSeek helper fixtures. These tests use mock account SDK calls and synthetic compressed sessions; they do not sign in or initiate inference.
+
 Keep English source messages in `locales/en.json` and route new UI text through the localization layer. Preserve provider protocol values, settings IDs, command names, paths and security checks. Do not translate diagnostics or program identifiers.
 
 Contributions are provided under the project's [MIT license](LICENSE). Provider artwork has separate notices in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

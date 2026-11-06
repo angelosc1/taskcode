@@ -1,5 +1,7 @@
 # Account connections
 
+Cursor, Antigravity, GLM, Grok, GitHub Copilot, OpenCode Go, Command Code, Qoder and DeepSeek Harness are available under **Accounts > Manage providers**. All are opt-in. See [connection controls, requirements and endpoints](OPTIONAL-PROVIDERS.md).
+
 Click **Connect Claude** or **Connect Codex** in settings. Each button opens a connection window with two explicit choices:
 
 - **Sign in with Claude / ChatGPT** opens the official sign-in flow so you can choose your account. These logins use a separate Taskcode profile; they do not replace your normal CLI account.

@@ -20,6 +20,20 @@ namespace Taskcode.Probe
         internal string CodexAuthMessage = "Choose how to connect your ChatGPT account.";
         internal string CodexAuthUrl;
         internal Action<string> OpenLogin;
+        internal void SetMonitoring(int provider, bool enabled)
+        {
+            if (provider == 0)
+            {
+                ClaudeEnabled = enabled; Interlocked.Increment(ref claudeGeneration);
+                if (!enabled) ClaudeAuth.Cancel(); else Interlocked.Exchange(ref claudeRefresh, 1);
+            }
+            else
+            {
+                CodexEnabled = enabled; Interlocked.Increment(ref codexGeneration);
+                if (!enabled) CancelCodex(); else nextCodex = DateTime.MinValue;
+            }
+            nextPoll = DateTime.MinValue;
+        }
         internal void ConnectCodex(bool signIn = false)
         {
             CodexEnabled = true; CodexPrivateProfile = signIn; Interlocked.Increment(ref codexGeneration);

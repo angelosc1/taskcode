@@ -4,17 +4,23 @@
 
 Preferred: inside the taskbar, to the left of the hidden-icons arrow. Fallback: an overlay in that same area. Avoid covering the clock, system tray, or other applications' buttons.
 
-Integration and overlay are technical approaches to validate, independent of the three display styles.
+Integration and overlay are technical approaches to validate, independent of the seven display styles.
 
 ## Approved styles
 
 1. **Essential (default):** compact symbols and percentages.
 2. **Lines:** names and thin horizontal bars.
 3. **Blocks:** horizontal segmented meters.
+4. **Donuts:** small consumption rings beside provider marks, with percentages outside and period labels inside. One ring shows `5h`; the weekly option adds a `7d` ring. Each ring independently follows the optional usage palette.
+5. **Sparkline:** consumption percentage, measured change in percentage points, and a time-spaced mini trend. Weekly mode adds a second row. Colors describe consumed quota, without assigning profit/loss semantics to the variation.
+6. **Dot Matrix:** ten dots display consumed quota; the last dot fills partially for fractional steps. Weekly mode adds a second labeled row.
+7. **Color Strip:** a rounded vertical meter fills from bottom to top with consumed quota. Weekly mode adds a second labeled strip and percentage beside the first.
 
-All three styles render inside the same dark rounded capsule with a subtle border.
+All seven styles render inside the same dark rounded capsule with a subtle border. Donuts centers each provider's actual content within its cell and places separators on the shared cell boundaries, keeping the exterior padding and separator spacing balanced. Its smaller rings retain clearance from the capsule edges. Sparkline uses tighter value/chart spacing and compact weekly rows.
 
-Weekly readings are opt-in through **Show weekly quota in the indicator**, disabled by default. When enabled, each provider is identified by its symbol and receives two rows labeled `5h` and `7d`, using the selected style. The height stays constant; the width expands to keep both readings legible. The detail panel always retains both periods.
+Sparkline keeps up to 120 real observations per window, bounded to 30 minutes, in memory. Cached readings and rendering never create observations. Period changes, decreases from rollover/corrections, account switches, source errors and long gaps restart the series. A single point shows a forming history rather than an invented line. Horizontal spacing uses observation timestamps; vertical scaling has a minimum ten-percentage-point range. Its delta is measured over the visible observations, not an extrapolated rate.
+
+Weekly readings are opt-in through **Show weekly quota in the indicator**, disabled by default. Each provider has readings labeled `5h` and `7d`: two rows for Essential, Lines and Blocks, or two side-by-side rings for Donuts. The height stays constant; the width expands to keep both readings legible. The detail panel always retains both periods.
 
 The **Indicator style** setting provides an immediate preview and saves the selection. Essential appears first and is the default for new preferences. Saved legacy Pill preferences load as Essential. The indicator, settings, Details, and account windows use a fixed dark palette regardless of the Windows taskbar light/dark setting. The capsule retains transparent outer corners. Windows high-contrast accessibility settings remain respected.
 

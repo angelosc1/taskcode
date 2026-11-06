@@ -21,9 +21,10 @@ $taskcodeVersionFile = Join-Path $taskcodeOutput 'Version.cs'
 & (Join-Path $PSScriptRoot 'write-version.ps1') -Version $Version -Output $taskcodeVersionFile
 $taskcodeSource = Join-Path $taskcodeRoot 'src/Taskcode.Probe'
 $taskcodeFiles = @(Get-ChildItem -LiteralPath $taskcodeSource -Filter '*.cs' | Where-Object { $_.Name -notmatch '(Checks|SelfTest)\.cs$' } | ForEach-Object FullName)
-$taskcodeReferences = @('System.dll','System.Core.dll','System.Web.Extensions.dll','System.Drawing.dll','System.Windows.Forms.dll','System.Xml.dll','WPF/UIAutomationClient.dll','WPF/UIAutomationTypes.dll','WPF/WindowsBase.dll','WPF/PresentationCore.dll') | ForEach-Object { '/reference:' + (Join-Path $taskcodeFramework $_) }
+$taskcodeReferences = @('System.dll','System.Core.dll','System.Web.Extensions.dll','System.Drawing.dll','System.Management.dll','System.Security.dll','System.Windows.Forms.dll','System.Xml.dll','WPF/UIAutomationClient.dll','WPF/UIAutomationTypes.dll','WPF/WindowsBase.dll','WPF/PresentationCore.dll') | ForEach-Object { '/reference:' + (Join-Path $taskcodeFramework $_) }
 $taskcodeArguments = @('/nologo','/target:winexe','/main:Taskcode.Probe.Program','/platform:x64','/optimize+','/warnaserror+','/define:TASKCODE_RELEASE',('/out:' + (Join-Path $taskcodeApp 'Taskcode.exe')),('/win32icon:' + (Join-Path $taskcodeRoot 'assets/branding/taskcode.ico')),('/win32manifest:' + (Join-Path $taskcodeSource 'app.manifest')),('/resource:' + (Join-Path $taskcodeRoot 'assets/branding/taskcode.ico') + ',Taskcode.AppIcon.ico'),('/resource:' + (Join-Path $taskcodeRoot 'assets/providers/claude.svg') + ',Taskcode.Claude.svg'))
 $taskcodeArguments += Get-ChildItem -LiteralPath (Join-Path $taskcodeRoot 'locales') -Filter '*.json' | ForEach-Object { '/resource:' + $_.FullName + ',Taskcode.Locales.' + $_.Name }
+$taskcodeArguments += Get-ChildItem -LiteralPath (Join-Path $taskcodeSource 'Sidecars') -Filter '*.cjs' | ForEach-Object { '/resource:' + $_.FullName + ',Taskcode.' + $_.Name }
 & $taskcodeCompiler @taskcodeArguments @taskcodeReferences @taskcodeFiles $taskcodeVersionFile
 if ($LASTEXITCODE -ne 0) { throw 'Release compilation failed.' }
 $taskcodeBridgeFiles = @('AccountProviders.cs','AccountSignIn.cs','ClaudeBridge.cs','QuotaPeriod.cs','AppInfo.cs') | ForEach-Object { Join-Path $taskcodeSource $_ }

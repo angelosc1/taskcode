@@ -10,6 +10,7 @@ namespace Taskcode.Probe
         internal const long Child = 0x40000000L, Popup = 0x80000000L;
         internal static readonly IntPtr Top = IntPtr.Zero, TopMost = new IntPtr(-1);
         internal const uint NoActivate = 0x10, FrameChanged = 0x20;
+        [DllImport("user32.dll")] internal static extern short GetAsyncKeyState(int key);
         [DllImport("user32.dll")] internal static extern bool DestroyIcon(IntPtr icon);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] internal static extern uint RegisterWindowMessage(string message);
         [DllImport("user32.dll")] internal static extern bool PostMessage(IntPtr hwnd, uint message, IntPtr wParam, IntPtr lParam);
