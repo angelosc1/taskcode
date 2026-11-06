@@ -29,11 +29,12 @@ namespace Taskcode.Probe
             TabStop = true;
         }
         private const float IndicatorScale = 1.17f;
+        private const int PillLeftPadding = 8;
         private static bool Compact(IndicatorStyle style) { return style == IndicatorStyle.Essential || style == IndicatorStyle.Pill; }
         private static int ContentWidth(IndicatorStyle style, bool showWeekly)
         {
-            if (showWeekly) return Compact(style) ? 184 : 268;
-            return Compact(style) ? 156 : style == IndicatorStyle.Blocks ? 246 : 262;
+            int width = showWeekly ? (Compact(style) ? 184 : 268) : Compact(style) ? 156 : style == IndicatorStyle.Blocks ? 246 : 262;
+            return width + (style == IndicatorStyle.Pill ? PillLeftPadding : 0);
         }
         internal static int LogicalWidth(IndicatorStyle style, bool showWeekly = false) { return (int)Math.Ceiling(ContentWidth(style, showWeekly) * IndicatorScale); }
         internal static string AccessibleText(bool weekly)
@@ -43,7 +44,7 @@ namespace Taskcode.Probe
         }
         internal static int LogicalHeight { get { return (int)Math.Ceiling(34 * IndicatorScale); } }
         private static int SecondProviderX(IndicatorStyle style, bool weekly)
-        { return weekly ? (Compact(style) ? 132 : 172) : Compact(style) ? 120 : style == IndicatorStyle.Blocks ? 162 : 172; }
+        { return (weekly ? (Compact(style) ? 132 : 172) : Compact(style) ? 120 : style == IndicatorStyle.Blocks ? 162 : 172) + (style == IndicatorStyle.Pill ? PillLeftPadding : 0); }
         internal static Rectangle ProviderBounds(int provider, Size size, IndicatorStyle style, bool weekly)
         {
             if (provider < 0 || provider > 1 || size.Width <= 0 || size.Height <= 0) return Rectangle.Empty;
@@ -83,6 +84,7 @@ namespace Taskcode.Probe
                     g.FillPath(background, shape);
                     g.DrawPath(edge, shape);
                 }
+                g.TranslateTransform(PillLeftPadding, 0);
                 style = IndicatorStyle.Essential;
             }
             // Pixel units avoid applying the monitor's DPI twice when scaling.
