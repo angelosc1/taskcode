@@ -15,9 +15,11 @@ namespace Taskcode.Probe
             Check(window.FormBorderStyle == FormBorderStyle.None && window.Font.SizeInPoints <= 9, "Settings must use the compact borderless menu and smaller body text.");
             string[] pages = { "Appearance", "Accounts", "General" };
             int startups = 0, styles = 0, accounts = 0;
+            CheckBox weeklyToggle = null;
             foreach (Control control in Descendants(window))
             {
                 var startup = control as CheckBox;
+                if (startup != null && startup.AccessibleName == "Show weekly quota in the indicator") weeklyToggle = startup;
                 if (startup != null && startup.Text == "Start with Windows") { startups++; Check(startup.Checked == startupExpected, "Refactoring settings must preserve Windows startup preference."); }
                 var select = control as ComboBox;
                 if (select != null && select.AccessibleName == "Indicator style") { styles++; Check(select.Items.Count == 4 && (string)select.Items[0] == "Pill" && new Settings().Style == IndicatorStyle.Pill, "All four indicator styles must remain available."); }
@@ -25,6 +27,17 @@ namespace Taskcode.Probe
                 if (control.Parent != null) Check(control.Parent.ClientRectangle.Contains(control.Bounds), "Settings control exceeds its parent: " + control.Text);
             }
             Check(startups == 1 && styles == 1 && accounts == 2, "Navigation must retain the original functional settings and both account connections.");
+            Check(weeklyToggle != null, "The weekly switch must remain available.");
+            bool weeklyBefore = weeklyToggle.Checked;
+            try
+            {
+                Native.SendMessage(weeklyToggle.Handle, 0x00F5, IntPtr.Zero, IntPtr.Zero);
+                Check(weeklyToggle.Checked != weeklyBefore, "A native click must toggle the custom-painted switch.");
+                Check(weeklyToggle.AccessibilityObject.Role == AccessibleRole.CheckButton &&
+                    ((weeklyToggle.AccessibilityObject.State & AccessibleStates.Checked) != 0) == weeklyToggle.Checked,
+                    "Painted switches must retain their native accessible checked state.");
+            }
+            finally { weeklyToggle.Checked = weeklyBefore; }
             using (var board = new Bitmap(window.Width, window.Height * 3))
             using (var graphics = Graphics.FromImage(board))
             {

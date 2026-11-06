@@ -320,8 +320,13 @@ namespace Taskcode.Probe
                 const float inset = 6;
                 float width = Math.Max(0, Width - 2 * inset);
                 float used = (float)Period.UsedFraction * width;
-                e.Graphics.FillRectangle(track, inset, 9, width, 6);
-                e.Graphics.FillRectangle(fill, inset, 9, used, 6);
+                using (var shape = UiSurface.Shape(new RectangleF(inset, 9, width, 6), 3))
+                {
+                    e.Graphics.FillPath(track, shape);
+                    var state = e.Graphics.Save(); e.Graphics.SetClip(shape);
+                    e.Graphics.FillRectangle(fill, inset, 9, used, 6);
+                    e.Graphics.Restore(state);
+                }
                 var elapsed = Period.ElapsedAt(RenderTimeUtc);
                 if (elapsed.HasValue)
                 {
@@ -362,7 +367,8 @@ namespace Taskcode.Probe
             Font = new Font("Segoe UI", 10f);
             KeyPreview = true;
             var providerColor = providerIndex == 0 ? IndicatorView.Claude : IndicatorView.Codex;
-            providerLabel = AddText(provider, 38, 14, 10, FontStyle.Bold, providerColor);
+            providerLabel = AddText(provider, 44, 11, 10, FontStyle.Bold, providerColor);
+            providerLabel.AutoSize = false; providerLabel.Size = new Size(230, 26); providerLabel.TextAlign = ContentAlignment.MiddleLeft;
             AddQuota(this.usage.Readings[providerIndex * 2], 44);
             AddQuota(this.usage.Readings[providerIndex * 2 + 1], 144);
             KeyDown += delegate(object sender, KeyEventArgs e) { if (e.KeyCode == Keys.Escape) Hide(); };
@@ -394,7 +400,7 @@ namespace Taskcode.Probe
             string provider = reading.Provider, window = reading.Window;
             int used = reading.Period.Remaining < 0 ? -1 : 100 - reading.Period.Remaining;
             var color = provider == "Claude" ? IndicatorView.Claude : IndicatorView.Codex;
-            AddText(window == "Weekly" ? "Weekly" : "5 hours", 16, y, 9, FontStyle.Regular, ForeColor);
+            AddText(window == "Weekly" ? "Weekly" : "5 hours", 20, y, 9, FontStyle.Bold, ForeColor);
             var valueCaption = AddText(used < 0 ? "--" : used + "%", 212, y - 2, 11, FontStyle.Bold, color);
             int valueWidth = Math.Max(72, TextRenderer.MeasureText("100%", valueCaption.Font).Width + 6);
             valueCaption.AutoSize = false; valueCaption.Location = new Point(284 - valueWidth, y - 2);
@@ -471,9 +477,9 @@ namespace Taskcode.Probe
             foreach (Control control in Controls)
             {
                 var bar = control as QuotaBar;
-                if (bar != null) { bar.Theme = value; bar.BackColor = value.PreviewBackground; bar.Invalidate(); continue; }
+                if (bar != null) { bar.Theme = value; bar.BackColor = UiSurface.Card(value); bar.Invalidate(); continue; }
                 string role = control.Tag as string;
-                control.BackColor = value.PreviewBackground;
+                control.BackColor = control == providerLabel ? value.PreviewBackground : UiSurface.Card(value);
                 control.ForeColor = role == "claude" ? value.Claude : role == "codex" ? value.Codex : role == "muted" ? value.Muted : value.Text;
             }
             Invalidate();
@@ -482,6 +488,12 @@ namespace Taskcode.Probe
         {
             base.OnPaint(e);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            var state = e.Graphics.Save(); e.Graphics.ScaleTransform(Width / 300f, Height / 252f);
+            foreach (int y in new[] { 40, 140 })
+                UiSurface.Draw(e.Graphics, new RectangleF(10, y, 280, 96), UiSurface.Card(theme), UiSurface.Blend(theme.PreviewBackground, theme.Text, .08), 10);
+            var accent = ProviderIndex == 0 ? theme.Claude : theme.Codex;
+            UiSurface.Draw(e.Graphics, new RectangleF(11, 10, 26, 26), UiSurface.Blend(theme.PreviewBackground, accent, .10), UiSurface.Blend(theme.PreviewBackground, accent, .18), 8);
+            e.Graphics.Restore(state);
             if (ProviderIndex == 0)
                 using (var brush = new SolidBrush(theme.Claude)) BrandMarks.DrawClaude(e.Graphics, brush, new RectangleF(16, 16, 16, 16));
             else using (var brush = new SolidBrush(theme.Codex)) BrandMarks.DrawCodex(e.Graphics, brush, new RectangleF(16, 16, 16, 16));

@@ -18,7 +18,7 @@ namespace Taskcode.Probe
         private readonly Timer animationTimer = new Timer { Interval = 33 };
         private readonly IndicatorView preview = new IndicatorView();
         private readonly Label status = new Label();
-        private readonly CheckBox enabled = new CheckBox();
+        private readonly CheckBox enabled = new SettingsToggle();
         private IndicatorWindow indicator;
         private readonly UsageDemo usage = new UsageDemo();
         private readonly DetailWindow[] providerDetails;
