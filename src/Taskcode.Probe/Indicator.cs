@@ -343,7 +343,7 @@ namespace Taskcode.Probe
             ControlBox = false;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.Manual;
-            ClientSize = new Size(300, 264);
+            ClientSize = new Size(300, 276);
             BackColor = Color.FromArgb(29, 32, 36);
             ForeColor = Color.FromArgb(238, 241, 245);
             Font = new Font("Segoe UI", 10f);
@@ -352,7 +352,7 @@ namespace Taskcode.Probe
             providerLabel = AddText(provider, 44, 11, 10, FontStyle.Bold, providerColor);
             providerLabel.AutoSize = false; providerLabel.Size = new Size(230, 26); providerLabel.TextAlign = ContentAlignment.MiddleLeft;
             AddQuota(this.usage.Readings[providerIndex * 2], 50);
-            AddQuota(this.usage.Readings[providerIndex * 2 + 1], 156);
+            AddQuota(this.usage.Readings[providerIndex * 2 + 1], 162);
             KeyDown += delegate(object sender, KeyEventArgs e) { if (e.KeyCode == Keys.Escape) Hide(); };
             FormClosing += delegate(object sender, FormClosingEventArgs e) { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } };
             periodTimer.Tick += delegate { RefreshPeriods(); };
@@ -387,13 +387,13 @@ namespace Taskcode.Probe
             int valueWidth = Math.Max(72, TextRenderer.MeasureText("100%", valueCaption.Font).Width + 6);
             valueCaption.AutoSize = false; valueCaption.Location = new Point(284 - valueWidth, y - 2);
             valueCaption.Size = new Size(valueWidth, 24); valueCaption.TextAlign = ContentAlignment.TopRight;
-            var budgetCaption = AddText("", 16, y + 36, 8, FontStyle.Regular, Color.LightGray);
-            var caption = AddText("", 16, y + 52, 8, FontStyle.Regular, Color.LightGray);
-            var speedCaption = new SpeedReadout { Location = new Point(16, y + 68), Size = new Size(268, 20), ForeColor = color, Tag = provider.ToLowerInvariant() };
+            var budgetCaption = AddText("", 16, y + 42, 8, FontStyle.Regular, Color.LightGray);
+            var caption = AddText("", 16, y + 58, 8, FontStyle.Regular, Color.LightGray);
+            var speedCaption = new SpeedReadout { Location = new Point(16, y + 74), Size = new Size(268, 20), ForeColor = color, Tag = provider.ToLowerInvariant() };
             Controls.Add(speedCaption);
             Controls.Add(new QuotaBar
             {
-                Location = new Point(10, y + 18), Size = new Size(280, 17),
+                Location = new Point(10, y + 24), Size = new Size(280, 17),
                 Period = reading.Period, Reading = reading, SpeedCaption = speedCaption, ValueCaption = valueCaption,
                 Provider = provider.ToLowerInvariant(), Theme = theme, Caption = caption, BudgetCaption = budgetCaption,
                 AccessibleName = provider + ", " + window + ", " + used + " percent used"
@@ -470,9 +470,9 @@ namespace Taskcode.Probe
         {
             base.OnPaint(e);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            var state = e.Graphics.Save(); e.Graphics.ScaleTransform(Width / 300f, Height / 264f);
-            foreach (int y in new[] { 46, 152 })
-                UiSurface.Draw(e.Graphics, new RectangleF(10, y, 280, 96), UiSurface.Card(theme), UiSurface.Blend(theme.PreviewBackground, theme.Text, .08), 10);
+            var state = e.Graphics.Save(); e.Graphics.ScaleTransform(Width / 300f, Height / 276f);
+            foreach (int y in new[] { 46, 158 })
+                UiSurface.Draw(e.Graphics, new RectangleF(10, y, 280, 102), UiSurface.Card(theme), UiSurface.Blend(theme.PreviewBackground, theme.Text, .08), 10);
             var accent = ProviderIndex == 0 ? theme.Claude : theme.Codex;
             UiSurface.Draw(e.Graphics, new RectangleF(11, 10, 26, 26), UiSurface.Blend(theme.PreviewBackground, accent, .10), UiSurface.Blend(theme.PreviewBackground, accent, .18), 8);
             e.Graphics.Restore(state);

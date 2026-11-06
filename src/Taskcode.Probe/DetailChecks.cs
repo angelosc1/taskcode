@@ -23,7 +23,7 @@ namespace Taskcode.Probe
                     Check(image.GetPixel(x, 11).ToArgb() == (x < boundary ? bar.Theme.Claude : bar.Theme.Track).ToArgb(), "Colored fill must grow with consumed quota, including empty and exhausted limits.");
             }
             foreach (int provider in new[] { 0, 1 })
-            using (var panel = new DetailWindow(new UsageDemo(), provider) { Location = new Point(-30000, -30000), HoverAnchor = new Rectangle(-30000, -29728, 150, 40) })
+            using (var panel = new DetailWindow(new UsageDemo(), provider) { Location = new Point(-30000, -30000), HoverAnchor = new Rectangle(-30000, -29716, 150, 40) })
             {
                 var foreground = Native.GetForegroundWindow();
                 panel.Show();
@@ -35,13 +35,15 @@ namespace Taskcode.Probe
                 Check(panel.TopMost && (Native.GetStyle(panel.Handle, -20).ToInt64() & 8L) != 0,
                     "Hover cards must appear above the foreground app and topmost taskbar without requiring click activation.");
                 Check(panel.FormBorderStyle == FormBorderStyle.None && !panel.ControlBox && !panel.ShowInTaskbar, "Details must be a borderless card without native title/close controls.");
-                Check(panel.ClientSize.Height <= 264, "The compact card must fit the budget and speed rows with breathing room between sections.");
+                Check(panel.ClientSize.Height <= 276, "The compact card must fit the budget and speed rows with breathing room between sections.");
                 foreach (Control control in panel.Controls)
                 {
                     var bar = control as QuotaBar;
                     if (bar != null)
                     {
                         Check(TextRenderer.MeasureText("100%", bar.ValueCaption.Font).Width <= bar.ValueCaption.Width, "The percentage must fit completely.");
+                        Check(!bar.Bounds.IntersectsWith(bar.ValueCaption.Bounds) && bar.Bottom <= bar.BudgetCaption.Top,
+                            "The full elapsed-time marker must have its own band, unobstructed by percentage or timing labels at either endpoint.");
                         Check(bar.BudgetCaption.Text.Contains("% used / ") && bar.BudgetCaption.Text.Contains("% time"), "Details must expose consumption versus elapsed time directly.");
                         Check(bar.SpeedCaption.Visible && bar.SpeedCaption.HasArrows, "Active sample histories must expose speed arrows and their time estimate.");
                         Check(panel.ClientRectangle.Contains(bar.SpeedCaption.Bounds), "The restored speed row must fit the card.");
