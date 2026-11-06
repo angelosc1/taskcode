@@ -10,23 +10,24 @@ Taskcode is a Windows taskbar companion for monitoring Claude and Codex quota wi
 
 ## Current prototype
 
-These previews are rendered by the current application with **sample data**. They show implemented controls and styles, rather than proposed designs. Indicator previews use sample light/dark backgrounds to demonstrate contrast; the actual taskbar strip is transparent.
+These previews are rendered by the current application with **sample data**. They show implemented controls and styles, rather than proposed designs. Indicator previews use sample light/dark backgrounds to demonstrate contrast; Lines, Essential, and Blocks have transparent backgrounds; Pill adds an opaque dark capsule.
 
-### Three indicator styles
+### Four indicator styles
 
-![Lines, Essential, and Blocks in both themes, with weekly readings off and on](docs/images/current-indicators.png)
+![Lines, Essential, Blocks, and Pill in both themes, with weekly readings off and on](docs/images/current-indicators.png)
 
 | Style | Indicator | Availability |
 | --- | --- | --- |
 | Lines | Names and thin bars | Default |
 | Essential | Icons and percentages | Configurable |
 | Blocks | Segmented meters | Configurable |
+| Pill | Icons and percentages inside a dark capsule | Configurable |
 
-Weekly readings are optional and disabled by default. Enabling them adds labeled `5h` and `7d` rows within the selected style. There are three display styles; placement is a separate technical setting.
+Weekly readings are optional and disabled by default. Enabling them adds labeled `5h` and `7d` rows within the selected style. There are four display styles; placement is a separate technical setting. Pill keeps its dark background and light text even on a light Windows taskbar; high-contrast mode uses the system palette.
 
 Active local turns show a subtle **Ripple** around the provider symbol, in its own accent color. This follows execution signals rather than quota polling. See [activity detection and limitations](docs/ACTIVITY.md).
 
-![Ripple phases around Claude and Codex symbols in all three styles and both themes](docs/images/current-ripple.png)
+![Ripple phases around Claude and Codex symbols in all four styles and both themes](docs/images/current-ripple.png)
 
 ### Quota details
 

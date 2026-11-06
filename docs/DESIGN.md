@@ -4,17 +4,18 @@
 
 Preferred: inside the taskbar, to the left of the hidden-icons arrow. Fallback: an overlay in that same area. Avoid covering the clock, system tray, or other applications' buttons.
 
-Integration and overlay are technical approaches to validate, independent of the three display styles.
+Integration and overlay are technical approaches to validate, independent of the four display styles.
 
 ## Approved styles
 
 1. **Lines (default):** names and thin horizontal bars.
 2. **Essential:** compact symbols and percentages.
 3. **Blocks:** horizontal segmented meters.
+4. **Pill:** compact symbols and percentages inside a dark rounded capsule, with a subtle border.
 
 Weekly readings are opt-in through **Show weekly quota in the indicator**, disabled by default. When enabled, each provider is identified by its symbol and receives two rows labeled `5h` and `7d`, using the selected style. The height stays constant; the width expands to keep both readings legible. The detail panel always retains both periods.
 
-The **Indicator style** setting provides an immediate preview and saves the selection. The indicator palette follows the Windows taskbar's light/dark mode.
+The **Indicator style** setting provides an immediate preview and saves the selection. Lines, Essential, and Blocks follow the Windows taskbar's light/dark mode. Pill keeps a dark background with light content on either taskbar theme, while retaining transparent outer corners. High-contrast mode overrides the fixed dark palette. Settings and Details continue to follow the Windows theme.
 
 Settings use a compact borderless menu with Appearance, Accounts, and General navigation. Body text uses Segoe UI 9pt; the application heading is 14pt. Settings, selectors, previews, and account windows share the taskbar palette and respond to theme changes. Verbose instructions and placement diagnostics are kept out of the primary layout; necessary context remains available in tooltips. The close control hides settings, and Exit ends the tray application.
 

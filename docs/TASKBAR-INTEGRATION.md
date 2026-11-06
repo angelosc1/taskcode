@@ -29,7 +29,7 @@ Taskbar class names are implementation details. A successful test on one Windows
 - Uses a per-pixel alpha surface for both placement modes, without painting a background rectangle.
 - Reads `SystemUsesLightTheme` for the taskbar palette and checks for changes once per second, without modifying Windows settings.
 - Uses pixel-sized indicator fonts with one DPI transform, avoiding double scaling.
-- Supports three styles, immediate preview, and local preferences.
+- Supports four styles, immediate preview, and local preferences.
 - Uses live provider connections in normal startup and explicitly simulated data in offline previews. See [account connections](ACCOUNTS.md) for authentication and privacy.
 
 The measurement is a snapshot, not a reserved slot. A newly added taskbar item could briefly overlap before the next measurement. A production host needs stronger layout coordination or faster collision handling.
@@ -46,7 +46,7 @@ Initial desktop: Windows build 26300; primary taskbar at 120 DPI. The legacy reg
 | Live alpha surface | Windows accepted the transparent Embedded surface at 120 DPI; current light-taskbar palette detected |
 | Embedded mode | Host verified that its parent handle matches the taskbar; UI reports active |
 | Overlay mode | Placement path activated; UI reports active |
-| Switch between all three styles | All three previews visually reviewed; no clipped provider values observed |
+| Switch between all four styles | All four previews visually reviewed; no clipped provider values observed |
 | Open demo details | English provider names, consumed percentages, reset times, and sample-data disclosure visually reviewed |
 | Keyboard navigation | Style selector reached with Shift+Tab and reset with Home |
 | Pause indicator | Paused state observed |
@@ -67,7 +67,7 @@ Windows passes clicks through alpha-zero pixels in layered windows. The live inp
 
 - Primary horizontal taskbar only.
 - Indicator, Details, settings menu, and connection windows adapt to the taskbar's light/dark palette.
-- The indicator is transparent rather than a separate acrylic surface. Exact blending on the actual taskbar still needs visual confirmation after this change.
+- Lines, Essential, and Blocks use transparent backgrounds. Pill adds a dark opaque capsule with transparent outer corners, without acrylic effects. Exact blending on the actual taskbar still needs visual confirmation after this change.
 - Does not reserve space or move Windows controls; may hide on a crowded taskbar.
 - Overlay does not yet suppress itself for fullscreen applications.
 - Taskbar class names and accessibility structure can change with Windows updates.

@@ -9,6 +9,8 @@ namespace Taskcode.Probe
     {
         internal static void Run(string directory)
         {
+            int styleCount = Enum.GetValues(typeof(IndicatorStyle)).Length;
+            int appearanceHeight = 72 + styleCount * 2 * 94;
             using (var animation = new Bitmap(720, 320))
             using (var canvas = Graphics.FromImage(animation))
             using (var font = new Font("Segoe UI", 10f, FontStyle.Regular, GraphicsUnit.Pixel))
@@ -25,14 +27,14 @@ namespace Taskcode.Probe
                 animation.Save(Path.Combine(directory, "animation-check.png"), ImageFormat.Png);
             }
             foreach (int pulse in new[] { 0, 121 })
-            using (var board = new Bitmap(960, 650))
+            using (var board = new Bitmap(960, appearanceHeight))
             using (var canvas = Graphics.FromImage(board))
             using (var label = new Font("Segoe UI", 11f, FontStyle.Regular, GraphicsUnit.Pixel))
             {
                 for (int column = 0; column < 2; column++)
                 {
                     var theme = TaskbarTheme.Create(column == 0);
-                    using (var background = new SolidBrush(theme.PreviewBackground)) canvas.FillRectangle(background, column * 480, 0, 480, 650);
+                    using (var background = new SolidBrush(theme.PreviewBackground)) canvas.FillRectangle(background, column * 480, 0, 480, appearanceHeight);
                     using (var text = new SolidBrush(theme.Text)) canvas.DrawString(theme.Dark ? "Dark taskbar / 125%" : "Light taskbar / 125%", label, text, column * 480 + 20, 14);
                     if (Contrast(theme.Text, theme.PreviewBackground) < 4.5 || Contrast(theme.Claude, theme.PreviewBackground) < 3 || Contrast(theme.Codex, theme.PreviewBackground) < 3)
                         throw new InvalidOperationException("Taskbar palette contrast is insufficient.");
@@ -48,13 +50,23 @@ namespace Taskcode.Probe
                             int painted = 0;
                             for (int y = 0; y < surface.Height; y++) for (int x = 0; x < surface.Width; x++) if (surface.GetPixel(x, y).A > 0) painted++;
                             if (painted < 100) throw new InvalidOperationException("Indicator content failed to render.");
-                            int top = 52 + ((int)style + (weekly ? 3 : 0)) * 94;
+                            int top = 52 + ((int)style + (weekly ? styleCount : 0)) * 94;
                             using (var text = new SolidBrush(theme.Muted)) canvas.DrawString(style + (weekly ? " / 5h + 7d" : " / 5h only"), label, text, column * 480 + 20, top);
                             canvas.DrawImageUnscaled(surface, column * 480 + 20, top + 17);
                         }
                     }
                 }
                 board.Save(Path.Combine(directory, pulse == 0 ? "appearance-check.png" : "speed-check.png"), ImageFormat.Png);
+            }
+            foreach (bool weekly in new[] { false, true })
+            using (var dark = new Bitmap(IndicatorView.LogicalWidth(IndicatorStyle.Pill, weekly), IndicatorView.LogicalHeight))
+            using (var light = new Bitmap(dark.Width, dark.Height))
+            {
+                using (var g = Graphics.FromImage(dark)) IndicatorView.Draw(g, dark.Size, IndicatorStyle.Pill, TaskbarTheme.Create(true), weekly);
+                using (var g = Graphics.FromImage(light)) IndicatorView.Draw(g, light.Size, IndicatorStyle.Pill, TaskbarTheme.Create(false), weekly);
+                if (light.GetPixel(light.Width / 2, light.Height / 2).A != 255) throw new InvalidOperationException("Pill must paint a solid background.");
+                for (int y = 0; y < light.Height; y++) for (int x = 0; x < light.Width; x++)
+                    if (dark.GetPixel(x, y) != light.GetPixel(x, y)) throw new InvalidOperationException("Pill must retain its dark background and light content on a light taskbar.");
             }
             var usage = new UsageDemo();
             using (var claude = new DetailWindow(usage, 0))

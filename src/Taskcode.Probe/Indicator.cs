@@ -6,7 +6,7 @@ using System.Windows.Forms;
 
 namespace Taskcode.Probe
 {
-    internal enum IndicatorStyle { Lines, Essential, Blocks }
+    internal enum IndicatorStyle { Lines, Essential, Blocks, Pill }
     internal enum HostMode { Embedded, Overlay }
 
     internal sealed class IndicatorView : Control
@@ -29,10 +29,11 @@ namespace Taskcode.Probe
             TabStop = true;
         }
         private const float IndicatorScale = 1.17f;
+        private static bool Compact(IndicatorStyle style) { return style == IndicatorStyle.Essential || style == IndicatorStyle.Pill; }
         private static int ContentWidth(IndicatorStyle style, bool showWeekly)
         {
-            if (showWeekly) return style == IndicatorStyle.Essential ? 184 : 268;
-            return style == IndicatorStyle.Essential ? 156 : style == IndicatorStyle.Blocks ? 246 : 262;
+            if (showWeekly) return Compact(style) ? 184 : 268;
+            return Compact(style) ? 156 : style == IndicatorStyle.Blocks ? 246 : 262;
         }
         internal static int LogicalWidth(IndicatorStyle style, bool showWeekly = false) { return (int)Math.Ceiling(ContentWidth(style, showWeekly) * IndicatorScale); }
         internal static string AccessibleText(bool weekly)
@@ -42,7 +43,7 @@ namespace Taskcode.Probe
         }
         internal static int LogicalHeight { get { return (int)Math.Ceiling(34 * IndicatorScale); } }
         private static int SecondProviderX(IndicatorStyle style, bool weekly)
-        { return weekly ? (style == IndicatorStyle.Essential ? 132 : 172) : style == IndicatorStyle.Essential ? 120 : style == IndicatorStyle.Blocks ? 162 : 172; }
+        { return weekly ? (Compact(style) ? 132 : 172) : Compact(style) ? 120 : style == IndicatorStyle.Blocks ? 162 : 172; }
         internal static Rectangle ProviderBounds(int provider, Size size, IndicatorStyle style, bool weekly)
         {
             if (provider < 0 || provider > 1 || size.Width <= 0 || size.Height <= 0) return Rectangle.Empty;
@@ -68,6 +69,22 @@ namespace Taskcode.Probe
             // Remove the former demo-label gutter while enlarging the entire content.
             g.TranslateTransform(-32, 0);
             g.SmoothingMode = SmoothingMode.AntiAlias;
+            if (style == IndicatorStyle.Pill)
+            {
+                if (!theme.HighContrast) theme = TaskbarTheme.Create(true);
+                float left = 33, top = 1, width = ContentWidth(style, showWeekly) - 2, height = 32;
+                using (var shape = new GraphicsPath())
+                using (var background = new SolidBrush(theme.PreviewBackground))
+                using (var edge = new Pen(theme.HighContrast ? theme.Text : Color.FromArgb(68, 73, 80), 0.65f))
+                {
+                    shape.AddArc(left, top, height, height, 90, 180);
+                    shape.AddArc(left + width - height, top, height, height, 270, 180);
+                    shape.CloseFigure();
+                    g.FillPath(background, shape);
+                    g.DrawPath(edge, shape);
+                }
+                style = IndicatorStyle.Essential;
+            }
             // Pixel units avoid applying the monitor's DPI twice when scaling.
             // Grayscale antialiasing works on an alpha surface without colored fringes.
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;

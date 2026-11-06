@@ -20,7 +20,7 @@ namespace Taskcode.Probe
                 var startup = control as CheckBox;
                 if (startup != null && startup.Text == "Start with Windows") { startups++; Check(startup.Checked == startupExpected, "Refactoring settings must preserve Windows startup preference."); }
                 var select = control as ComboBox;
-                if (select != null && select.AccessibleName == "Indicator style") { styles++; Check(select.Items.Count == 3, "All three indicator styles must remain available."); }
+                if (select != null && select.AccessibleName == "Indicator style") { styles++; Check(select.Items.Count == 4, "All four indicator styles must remain available."); }
                 if (control is Button && (control.AccessibleName == "Connect Claude" || control.AccessibleName == "Connect Codex")) accounts++;
                 if (control.Parent != null) Check(control.Parent.ClientRectangle.Contains(control.Bounds), "Settings control exceeds its parent: " + control.Text);
             }

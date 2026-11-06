@@ -65,14 +65,15 @@ namespace Taskcode.Probe
                 Check(monitor.Read(now, false, false) == 0, "Disconnect must clear source activity.");
             }
             finally { Environment.SetEnvironmentVariable("CODEX_HOME", originalHome); }
-            using (var board = new Bitmap(960, 360))
+            int rippleHeight = Enum.GetValues(typeof(IndicatorStyle)).Length * 115 + 15;
+            using (var board = new Bitmap(960, rippleHeight))
             using (var graphics = Graphics.FromImage(board))
             using (var font = new Font("Segoe UI", 10f, FontStyle.Regular, GraphicsUnit.Pixel))
             {
                 for (int palette = 0; palette < 2; palette++)
                 {
                     var theme = TaskbarTheme.Create(palette == 0);
-                    using (var background = new SolidBrush(theme.PreviewBackground)) graphics.FillRectangle(background, palette * 480, 0, 480, 360);
+                    using (var background = new SolidBrush(theme.PreviewBackground)) graphics.FillRectangle(background, palette * 480, 0, 480, rippleHeight);
                     foreach (IndicatorStyle style in Enum.GetValues(typeof(IndicatorStyle)))
                     for (int frame = 0; frame < 3; frame++)
                     {
