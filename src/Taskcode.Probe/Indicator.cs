@@ -297,7 +297,7 @@ namespace Taskcode.Probe
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            if (Reading != null && (!Reading.Available || Period.EndUtc <= RenderTimeUtc || (Reading.ObservedUtc != DateTime.MinValue && RenderTimeUtc - Reading.ObservedUtc > TimeSpan.FromMinutes(Reading.Provider == "Claude" ? 6 : 2)))) return;
+            if (Reading != null && (!Reading.Available || (!Period.WaitingForFirstRequest && Period.EndUtc <= RenderTimeUtc) || (Reading.ObservedUtc != DateTime.MinValue && RenderTimeUtc - Reading.ObservedUtc > TimeSpan.FromMinutes(Reading.Provider == "Claude" ? 6 : 2)))) return;
             using (var track = new SolidBrush(Theme.Track))
             using (var fill = new SolidBrush(UsageBarPalette.Resolve(Provider == "claude" ? Theme.Claude : Theme.Codex, Period.UsedFraction * 100, UsageBarColors, Theme.HighContrast)))
             using (var marker = new SolidBrush(Theme.Text))
@@ -444,10 +444,12 @@ namespace Taskcode.Probe
                 var bar = control as QuotaBar;
                 if (bar == null) continue;
                 bar.RenderTimeUtc = now;
-                int value = usage.DisplayUsed(ProviderIndex * 2 + (bar.Reading.Window == "Weekly" ? 1 : 0), now);
+                int index = ProviderIndex * 2 + (bar.Reading.Window == "Weekly" ? 1 : 0);
+                bool resetPending = usage.ResetPending(index, now);
+                int value = usage.DisplayUsed(index, now);
                 bar.ValueCaption.Text = value < 0 ? "--" : value + "%";
                 bar.AccessibleName = bar.Reading.Provider + ", " + bar.Reading.Window + ", " + (value < 0 ? "quota unavailable" : value + " percent used");
-                bar.Caption.Text = value < 0 ? "Unavailable" : bar.Period.ResetCaptionAt(now);
+                bar.Caption.Text = resetPending ? "Window reset" : value < 0 ? "Unavailable" : bar.Period.ResetCaptionAt(now);
                 var speed = usage.DetailSpeedAt(ProviderIndex * 2 + (bar.Reading.Window == "Weekly" ? 1 : 0), now);
                 bar.SpeedCaption.Estimate = speed;
                 bar.SpeedCaption.Visible = true;
@@ -457,7 +459,7 @@ namespace Taskcode.Probe
                 hasArrows |= bar.SpeedCaption.HasArrows;
                 hints.SetToolTip(bar.SpeedCaption, speed.State == SpeedState.Active ? (speed.PeriodAverage ? "Average since reset, not recent speed. " : "Recent measured speed. ") + speed.PointsPerHour.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " percentage points/hour · " + speed.WindowSeconds.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + "-second observation window. Estimate, not a guarantee." : speed.Summary);
                 var elapsed = bar.Period.ElapsedAt(now);
-                bar.BudgetCaption.Text = value < 0 ? "-- used / -- time" : value + "% used / " +
+                bar.BudgetCaption.Text = resetPending ? "Awaiting provider confirmation" : value < 0 ? "-- used / -- time" : value + "% used / " +
                     (elapsed.HasValue ? Math.Round(elapsed.Value * 100) + "% time" : "-- time");
                 string description = Math.Round(bar.Period.UsedFraction * 100) + "% quota used; " +
                     (elapsed.HasValue ? Math.Round(elapsed.Value * 100) + "% time elapsed. " : "") + bar.Period.PaceAt(now) + ".";

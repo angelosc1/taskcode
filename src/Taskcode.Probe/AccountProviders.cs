@@ -55,14 +55,22 @@ namespace Taskcode.Probe
             for (int index = 0; index < 2; index++)
             {
                 object window = AccountJson.Get(limits, index == 0 ? "five_hour" : "seven_day");
-                snapshot.Set(index, AccountJson.Get(window, "used_percentage"), AccountJson.Get(window, "resets_at"), index == 0 ? 300 : 10080);
+                snapshot.Set(index, AccountJson.Get(window, "used_percentage"), AccountJson.Get(window, "resets_at"), index == 0 ? 300 : 10080, index == 0);
             }
             return snapshot;
         }
-        private void Set(int index, object usedValue, object resetValue, double minutes)
+        private void Set(int index, object usedValue, object resetValue, double minutes, bool allowWaiting = false)
         {
             double? used = AccountJson.Number(usedValue), reset = AccountJson.Number(resetValue);
-            if (!used.HasValue || used < 0 || used > 100 || !reset.HasValue || reset < 0 || reset > 253402000000) return;
+            if (!used.HasValue || used < 0 || used > 100) return;
+            if (resetValue != null && (!reset.HasValue || reset < 0 || reset > 253402000000)) return;
+            if (allowWaiting && used.Value == 0 && (resetValue == null || AccountJson.Epoch.AddSeconds(reset.Value) <= ObservedUtc))
+            {
+                Remaining[index] = 100;
+                Periods[index] = new QuotaPeriod { Remaining = 100, WaitingForFirstRequest = true };
+                return;
+            }
+            if (!reset.HasValue) return;
             DateTime end = AccountJson.Epoch.AddSeconds(reset.Value), start = end.AddMinutes(-minutes);
             if (ObservedUtc < start || ObservedUtc >= end) return;
             Remaining[index] = 100 - used.Value;

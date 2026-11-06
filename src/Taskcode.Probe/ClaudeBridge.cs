@@ -124,7 +124,7 @@ namespace Taskcode.Probe
         private static object Window(AccountSnapshot snapshot, int index)
         {
             var period = snapshot.Periods[index];
-            return period == null ? null : new { used_percentage = 100 - snapshot.Remaining[index].Value, resets_at = (period.EndUtc - AccountJson.Epoch).TotalSeconds };
+            return period == null ? null : new { used_percentage = 100 - snapshot.Remaining[index].Value, resets_at = period.WaitingForFirstRequest ? (double?)null : (period.EndUtc - AccountJson.Epoch).TotalSeconds };
         }
         internal static int Main(string[] args)
         {

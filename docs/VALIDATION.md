@@ -1,4 +1,12 @@
-# 0.1.1 validation
+# Release validation
+
+## 0.1.2 session reset checks
+
+Deterministic tests cover explicit 0% without a next reset, a retired reset on a fresh zero-use response, indefinite waiting without clock advancement, the first timed response while usage still rounds to zero, independent weekly timing, stale/unknown data, one reset-boundary refresh, retry cooldowns, activity hints, canonical-window aliases and bridge-cache round-tripping.
+
+![Provider-confirmed session lifecycle using sample data](images/session-reset.png)
+
+## 0.1.1 installation and update validation
 
 The first release was validated locally on Windows 11 and in the Windows release workflow. Broader hardware/taskbar coverage is still pending.
 

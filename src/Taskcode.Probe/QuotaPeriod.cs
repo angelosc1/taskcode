@@ -6,14 +6,17 @@ namespace Taskcode.Probe
     {
         internal DateTime StartUtc, EndUtc;
         internal int Remaining;
+        internal bool WaitingForFirstRequest;
         internal double UsedFraction { get { return 1 - Math.Max(0, Math.Min(100, Remaining)) / 100.0; } }
         internal double? ElapsedAt(DateTime nowUtc)
         {
+            if (WaitingForFirstRequest && nowUtc.Kind == DateTimeKind.Utc) return 0;
             if (StartUtc.Kind != DateTimeKind.Utc || EndUtc.Kind != DateTimeKind.Utc || nowUtc.Kind != DateTimeKind.Utc || EndUtc <= StartUtc) return null;
             return Math.Max(0, Math.Min(1, (nowUtc - StartUtc).TotalSeconds / (EndUtc - StartUtc).TotalSeconds));
         }
         internal string PaceAt(DateTime nowUtc)
         {
+            if (WaitingForFirstRequest) return "Waiting for first request";
             var elapsed = ElapsedAt(nowUtc);
             if (!elapsed.HasValue) return "Timing unavailable";
             if (nowUtc >= EndUtc) return "Sample period ended";
@@ -22,6 +25,7 @@ namespace Taskcode.Probe
         }
         internal string CaptionAt(DateTime nowUtc)
         {
+            if (WaitingForFirstRequest) return "0% time - 5h available";
             var elapsed = ElapsedAt(nowUtc);
             if (!elapsed.HasValue) return "Timing unavailable";
             string time = Math.Floor(elapsed.Value * 100) + "% time";
@@ -34,6 +38,7 @@ namespace Taskcode.Probe
         }
         internal string ResetCaptionAt(DateTime nowUtc)
         {
+            if (WaitingForFirstRequest) return "5h available";
             if (!ElapsedAt(nowUtc).HasValue) return "Reset time unavailable";
             var remaining = EndUtc - nowUtc;
             if (remaining <= TimeSpan.Zero) return "Waiting for reset";

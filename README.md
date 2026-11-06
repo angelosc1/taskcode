@@ -36,6 +36,8 @@ A subtle **Ripple** follows observed local execution. Usage arrows appear only i
 
 Hover opens the relevant provider's card immediately. Click-only opening is also available. Cards show consumption versus elapsed time, reset countdowns, and usage projections. They close when you move away and never take focus from your current app.
 
+After a Claude session resets, a fresh zero-use reading without a new reset shows all five hours available. Time starts only from the next provider-confirmed session, not a local timer.
+
 Forecasts use recent quota observations where available, with a clearly labelled **period avg** while waiting for a measurable change. They pause when local execution stops. They are estimates, not provider guarantees. [How estimates work](docs/USAGE-SPEED.md).
 
 ## Settings and updates
@@ -54,7 +56,7 @@ Forecasts use recent quota observations where available, with a clearly labelled
 
 There is no Taskcode account, cloud backend or analytics. Official clients own authentication; Taskcode reads only the local credentials required for its documented provider connection. Quota requests go to the provider, and update checks go to GitHub. Prompts, responses and credentials are never included in release files or public preview images. [Privacy](docs/PRIVACY.md) | [Connection details](docs/ACCOUNTS.md).
 
-Claude quota checks are spaced at least five minutes apart; Codex is normally queried every ten seconds. Internal provider endpoints may change. Missing, stale or disconnected quota shows `--`. Auto-hide, Explorer restarts, multiple monitors, fullscreen and scaling need broader compatibility testing. Overlay is available if embedded placement misbehaves.
+Claude quota normally refreshes every five minutes, with targeted reset/session-start checks; Codex is normally queried every ten seconds. Internal provider endpoints may change. Missing, stale or disconnected quota shows `--`. Auto-hide, Explorer restarts, multiple monitors, fullscreen and scaling need broader compatibility testing. Overlay is available if embedded placement misbehaves.
 
 *Images are rendered by the actual application with sample quota values, without personal account data.*
 

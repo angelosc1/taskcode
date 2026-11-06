@@ -224,6 +224,7 @@ namespace Taskcode.Probe
                 DetailChecks.Run();
                 UsageColorChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 UpdateChecks.Run();
+                ResetChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 RenderChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 File.WriteAllText(output, "PASS: 7 placement assertions.\nPASS: provider routing in all 3 styles, with weekly off/on and scaled coordinates.\nPASS: 10 time-progress and budget-pace assertions.\nPASS: recent-speed, source cadence, sparse observations, projections, and sequential-fade checks.\nPASS: account parsing, missing/expired windows, fractional readings, privacy, provider isolation, stale data, and no synthetic live observations.\nPASS: activity lifecycle, multiple sessions, incremental records, hook preservation, and staggered transparent Ripple rendering.\nPASS: full-area mouse input, context-menu isolation, no host activation, visibility, and redraw in Embedded/Overlay.\nPASS: account sign-in windows, existing/new-account routing, safe CLI argument handling, and Claude API response parsing.\nPASS: clean borderless Details, complete percentages, pointer retention, gap crossing, and immediate dismissal.\nPASS: all 3 styles in light/dark palettes, transparent outer corners, fixed dark capsule in every style, visible vector/text content, and palette contrast.\n");
                 return 0;

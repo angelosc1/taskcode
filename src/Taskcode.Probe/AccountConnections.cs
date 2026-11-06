@@ -58,7 +58,7 @@ namespace Taskcode.Probe
             if (CodexSigningIn && DateTime.UtcNow >= loginDeadline) CancelCodex();
             if (DateTime.UtcNow < nextPoll || Interlocked.CompareExchange(ref busy, 1, 0) != 0) return;
             nextPoll = DateTime.UtcNow.AddSeconds(1);
-            bool readCodex = CodexEnabled, readClaude = ClaudeEnabled, privateCodex = CodexPrivateProfile, privateClaude = ClaudePrivateProfile;
+            bool readCodex = CodexEnabled, readClaude = ClaudeEnabled, privateCodex = CodexPrivateProfile, privateClaude = ClaudePrivateProfile, claudeActive = (usage.ActivityAt(DateTime.UtcNow) & 1) != 0;
             int codexVersion = codexGeneration, claudeVersion = claudeGeneration;
             ThreadPool.QueueUserWorkItem(delegate
             {
@@ -106,7 +106,7 @@ namespace Taskcode.Probe
                         AccountSnapshot snapshot;
                         try
                         {
-                            claude.UsePrivateProfile = privateClaude;
+                            claude.UsePrivateProfile = privateClaude; claude.SessionActive = claudeActive;
                             if (Interlocked.Exchange(ref claudeRefresh, 0) != 0) claude.Refresh();
                             snapshot = ClaudeAuth.Busy ? new AccountSnapshot { Status = "Complete Claude sign-in in the browser or sign-in window.", Failed = true } : claude.Read();
                         }

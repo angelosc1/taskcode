@@ -30,6 +30,8 @@ Settings group related controls in subtly elevated rounded cards. Selected navig
 
 ## Data semantics
 
+Claude's five-hour session has an explicit waiting state. A fresh 0% reading with no next reset (or only the retired reset) means all five hours are available; elapsed time stays at zero. The next valid provider reset anchors the session clock, including when usage still rounds to zero. An expired cached reading is never converted into a synthetic empty session: it shows refresh pending until confirmed. Weekly timing always comes from the provider and is not restarted with the session.
+
 Percentages represent consumed quota and must be labeled accordingly in the details panel. Claude and Codex use the same convention. Do not mix remaining and consumed percentages.
 
 Detail bars use the same fill convention as the taskbar: colored consumed quota on the left and muted available quota on the right. A downward arrow advances from left to right as the period elapses. If the colored fill extends beyond the arrow, consumption is ahead of the time budget; if it stays behind, consumption is below that pace.

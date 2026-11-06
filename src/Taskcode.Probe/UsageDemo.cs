@@ -37,7 +37,7 @@ namespace Taskcode.Probe
             for (int i = provider * 2; i < provider * 2 + 2; i++)
             {
                 Readings[i].Available = false; Readings[i].ObservedUtc = DateTime.MinValue;
-                Readings[i].Period.Remaining = -1; Readings[i].Period.StartUtc = Readings[i].Period.EndUtc = DateTime.MinValue;
+                Readings[i].Period.WaitingForFirstRequest = false; Readings[i].Period.Remaining = -1; Readings[i].Period.StartUtc = Readings[i].Period.EndUtc = DateTime.MinValue;
                 Readings[i].Speed = LiveSpeed(provider); Readings[i].PulseUntil = DateTime.MinValue;
             }
             Revision++;
@@ -51,12 +51,13 @@ namespace Taskcode.Probe
             {
                 var reading = Readings[provider * 2 + index];
                 var period = snapshot.Periods[index];
-                if (period == null) { reading.Available = false; reading.Period.Remaining = -1; reading.Speed = LiveSpeed(provider); reading.PulseUntil = DateTime.MinValue; continue; }
-                if (snapshot.ObservedUtc == reading.ObservedUtc && reading.Available && period.Remaining == reading.Period.Remaining && period.StartUtc == reading.Period.StartUtc && period.EndUtc == reading.Period.EndUtc) continue;
+                if (period == null) { reading.Available = false; reading.Period.WaitingForFirstRequest = false; reading.Period.Remaining = -1; reading.Speed = LiveSpeed(provider); reading.PulseUntil = DateTime.MinValue; continue; }
+                if (snapshot.ObservedUtc == reading.ObservedUtc && reading.Available && period.Remaining == reading.Period.Remaining && period.WaitingForFirstRequest == reading.Period.WaitingForFirstRequest && period.StartUtc == reading.Period.StartUtc && period.EndUtc == reading.Period.EndUtc) continue;
                 int previous = reading.Speed.EstimateAt(snapshot.ObservedUtc).Level;
                 reading.Available = true; reading.ObservedUtc = snapshot.ObservedUtc;
-                reading.Period.Remaining = period.Remaining; reading.Period.StartUtc = period.StartUtc; reading.Period.EndUtc = period.EndUtc;
-                reading.Speed.Observe(snapshot.ObservedUtc, snapshot.Remaining[index].Value, period.StartUtc, period.EndUtc);
+                reading.Period.WaitingForFirstRequest = period.WaitingForFirstRequest; reading.Period.Remaining = period.Remaining; reading.Period.StartUtc = period.StartUtc; reading.Period.EndUtc = period.EndUtc;
+                if (period.WaitingForFirstRequest) { reading.Speed = LiveSpeed(provider); reading.PulseUntil = DateTime.MinValue; }
+                else reading.Speed.Observe(snapshot.ObservedUtc, snapshot.Remaining[index].Value, period.StartUtc, period.EndUtc);
                 int current = reading.Speed.EstimateAt(snapshot.ObservedUtc).Level;
                 if (previous != current && current > 0) reading.PulseUntil = DateTime.UtcNow.AddSeconds(8);
             }
@@ -65,13 +66,21 @@ namespace Taskcode.Probe
         internal int DisplayValue(int index, DateTime now)
         {
             var reading = Readings[index];
-            return !IsLive ? reading.Period.Remaining : reading.Available && now < reading.Period.EndUtc && now - reading.ObservedUtc <= TimeSpan.FromMinutes(index < 2 ? 6 : 2) ? reading.Period.Remaining : -1;
+            return !IsLive ? reading.Period.Remaining : reading.Available && (reading.Period.WaitingForFirstRequest || now < reading.Period.EndUtc) && now - reading.ObservedUtc <= TimeSpan.FromMinutes(index < 2 ? 6 : 2) ? reading.Period.Remaining : -1;
+        }
+        internal bool ResetPending(int index, DateTime now)
+        {
+            var reading = Readings[index];
+            return IsLive && reading.Available && !reading.Period.WaitingForFirstRequest && reading.Period.EndUtc != DateTime.MinValue &&
+                now >= reading.Period.EndUtc && now - reading.ObservedUtc <= TimeSpan.FromMinutes(index < 2 ? 6 : 2);
         }
         private static UsageSpeed LiveSpeed(int provider)
         { return new UsageSpeed(TimeSpan.FromSeconds(provider == 0 ? 300 : 10)); }
         internal SpeedEstimate DetailSpeedAt(int index, DateTime now)
         {
+            if (ResetPending(index, now)) return new SpeedEstimate { State = SpeedState.ResetPending };
             if (DisplayValue(index, now) < 0) return new SpeedEstimate { State = SpeedState.Unavailable };
+            if (Readings[index].Period.WaitingForFirstRequest) return new SpeedEstimate { State = SpeedState.Waiting };
             bool working = (ActivityAt(now) & (1 << (index / 2))) != 0;
             var estimate = Readings[index].Speed.DisplayEstimateAt(now, working);
             if (!working &&
@@ -89,7 +98,7 @@ namespace Taskcode.Probe
             if (!IsLive) return "DEMO DATA / Simulated history";
             var reading = Readings[provider * 2].Available ? Readings[provider * 2] : Readings[provider * 2 + 1];
             if (!reading.Available) return AccountStatus[provider];
-            if (now >= reading.Period.EndUtc) return "Period ended. Waiting for fresh quota data.";
+            if (!reading.Period.WaitingForFirstRequest && now >= reading.Period.EndUtc) return "Window reset. Refreshing quota data.";
             return AccountStatus[provider] + " / Updated " + Math.Max(0, (int)(now - reading.ObservedUtc).TotalSeconds) + "s ago";
         }
         internal UsageDemo()

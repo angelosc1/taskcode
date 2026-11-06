@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.2 — 2026-11-06
+
+- Preserve a fresh zero-use Claude session without a reset as available, waiting for its first request.
+- Keep all five hours available until the provider reports the next session's reset; do not synthesize a local countdown.
+- Refresh once when a known reset is crossed, with existing network/rate-limit backoff preserved.
+- Recheck a waiting session on local execution start, with a bounded activity hint.
+- Support canonical Claude usage windows and retain the named idle-session fallback.
+
 ## 0.1.1 — 2026-11-05
 
 - Refresh the managed Claude Code hook helper during installation and updates, including migrations from a development build.
