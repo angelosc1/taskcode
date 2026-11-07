@@ -22,6 +22,7 @@ namespace Taskcode.Probe
         internal readonly List<OptionalQuota> Quotas = new List<OptionalQuota>();
         internal bool Failed;
         internal string CountText;
+        internal double? TokenCount;
         internal readonly List<string> Metrics = new List<string>();
     }
     internal sealed class OptionalProvider
@@ -34,8 +35,43 @@ namespace Taskcode.Probe
         internal int Generation;
         internal OptionalSnapshot Snapshot = new OptionalSnapshot();
         internal readonly Dictionary<string, QuotaTrend> Trends = new Dictionary<string, QuotaTrend>();
+        private int rotationLevel;
+        private DateTime rotationUntil;
+        internal void ResetRotation() { rotationLevel = 0; rotationUntil = DateTime.MinValue; }
+        internal int RotationLevel(DateTime now)
+        { return Enabled && !Snapshot.Failed && now >= Snapshot.ObservedUtc && now <= rotationUntil ? rotationLevel : 0; }
+        private void ObserveRotation(OptionalSnapshot snapshot)
+        {
+            if (snapshot.Failed) { rotationLevel = 0; return; }
+            if (snapshot.ObservedUtc <= Snapshot.ObservedUtc) return;
+            rotationLevel = 0;
+            double hours = (snapshot.ObservedUtc - Snapshot.ObservedUtc).TotalHours;
+            if (Snapshot.Failed || hours <= 0 || hours > .1) return;
+            foreach (var quota in snapshot.Quotas)
+            foreach (var previous in Snapshot.Quotas)
+            {
+                if (quota.Name != previous.Name || quota.StartUtc != previous.StartUtc || quota.ResetUtc != previous.ResetUtc || quota.Used <= previous.Used) continue;
+                if (quota.ResetUtc.HasValue && quota.ResetUtc.Value <= snapshot.ObservedUtc) continue;
+                double rate = (quota.Used - previous.Used) / hours;
+                int level;
+                if (quota.ResetUtc.HasValue)
+                {
+                    double ratio = ((100 - quota.Used) / rate) / (quota.ResetUtc.Value - snapshot.ObservedUtc).TotalHours;
+                    level = ratio < .8 ? 3 : ratio <= 1.2 ? 2 : 1;
+                }
+                else level = rate < 1 ? 1 : rate < 10 ? 2 : 3;
+                rotationLevel = Math.Max(rotationLevel, level);
+            }
+            if (snapshot.TokenCount.HasValue && Snapshot.TokenCount.HasValue && snapshot.TokenCount > Snapshot.TokenCount)
+            {
+                double perMinute = (snapshot.TokenCount.Value - Snapshot.TokenCount.Value) / (hours * 60);
+                rotationLevel = perMinute < 1000 ? 1 : perMinute < 10000 ? 2 : 3;
+            }
+            rotationUntil = snapshot.ObservedUtc.AddMinutes(6);
+        }
         internal void Apply(OptionalSnapshot snapshot)
         {
+            ObserveRotation(snapshot);
             Snapshot = snapshot;
             if (snapshot.Failed) { Trends.Clear(); return; }
             var keep = new HashSet<string>();
@@ -81,6 +117,7 @@ namespace Taskcode.Probe
         {
             var provider = Providers[index]; provider.Enabled = enabled; provider.Generation++;
             provider.Snapshot = new OptionalSnapshot { Status = enabled ? "Reading local account..." : "Monitoring disabled" };
+            provider.ResetRotation();
             provider.Trends.Clear();
             // Preserve the attempt floor when reconnecting or toggling monitoring.
         }

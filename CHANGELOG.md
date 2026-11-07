@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0 - 2026-11-07
+
+- Replace activity Ripple with rotating 3D provider logos, 15% extrusion, softer side/back shading, and a fixed-direction diagonal reflection only while active. Increase the Codex mark slightly; keep Details headers static.
+- Map Claude/Codex rotation to recent-speed levels and local activity. Animate optional providers from measured quota/token increases, stopping on unchanged, stale or disconnected readings.
+- Bound the indicator to the verified free taskbar gap and scroll excess providers right to left at normal size. Pause for hover/Details, retain correct click routing, and separate the last/first providers.
+- Remove the temporary animation tester and sample-data toggle; retain synthetic data only in excluded regression checks.
+
 ## 0.3.1 - 2026-11-06
 
 - Replace optional-provider initials with embedded vector logos in all indicator styles, the provider list and provider headers.

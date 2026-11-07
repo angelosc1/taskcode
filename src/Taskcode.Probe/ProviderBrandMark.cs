@@ -29,7 +29,7 @@ namespace Taskcode.Probe
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             float side = System.Math.Min(ClientSize.Width, ClientSize.Height);
             using (var brush = new SolidBrush(ForeColor))
-                Draw(e.Graphics, brush, provider, new RectangleF((Width - side) / 2, (Height - side) / 2, side, side));
+                BrandMarks.DrawOriginal(e.Graphics, brush, provider, new RectangleF((Width - side) / 2, (Height - side) / 2, side, side));
         }
     }
 }

@@ -213,9 +213,12 @@ namespace Taskcode.Probe
                 Assert(period.ElapsedAt(start) == null, "Invalid period bounds must hide the marker.");
                 SpeedChecks.Run();
                 AccountChecks.Run();
+                OptionalLogoChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
+                LogoMotionChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 ActivityChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 InputChecks.Run();
                 PlacementChecks.Run();
+                ScrollChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 SignInChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 DetailChecks.Run();
                 DetailOpeningChecks.Run();
@@ -227,7 +230,7 @@ namespace Taskcode.Probe
                 ResetChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 OptionalProviderChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 RenderChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
-                File.WriteAllText(output, "PASS: 7 placement assertions.\nPASS: provider routing in all 7 styles, with weekly off/on and scaled coordinates.\nPASS: 10 time-progress and budget-pace assertions.\nPASS: recent-speed, source cadence, sparse observations, projections, and sequential-fade checks.\nPASS: account parsing, missing/expired windows, fractional readings, privacy, provider isolation, stale data, and no synthetic live observations.\nPASS: activity lifecycle, multiple sessions, incremental records, hook preservation, and staggered transparent Ripple rendering.\nPASS: full-area mouse input, context-menu isolation, no host activation, visibility, and redraw in Embedded/Overlay.\nPASS: nine opt-in Windows providers, encrypted keys, issuer isolation, SDK/local counters, backoff, disconnect races, dynamic indicator routing, and connection UI fixtures.\nPASS: account sign-in windows, existing/new-account routing, safe CLI argument handling, and Claude API response parsing.\nPASS: clean borderless Details, complete percentages, pointer retention, gap crossing, and immediate dismissal.\nPASS: all 7 styles in light/dark palettes, transparent outer corners, fixed dark capsule in every style, visible vector/text content, and palette contrast.\n");
+                File.WriteAllText(output, "PASS: 7 placement assertions.\nPASS: provider routing in all 7 styles, weekly off/on, scaled coordinates, bounded viewport with eleven providers, continuous scrolling, pause, wrap and visible Details anchors.\nPASS: 10 time-progress and budget-pace assertions.\nPASS: recent-speed, source cadence, sparse observations, projections, and sequential-fade checks.\nPASS: account parsing, missing/expired windows, fractional readings, privacy, provider isolation, stale data, and no synthetic live observations.\nPASS: activity lifecycle, multiple sessions, incremental records, hook preservation, 3D logo rotation levels, idle orientation, extrusion, reflection, and transparent rendering.\nPASS: full-area mouse input, context-menu isolation, no host activation, visibility, and redraw in Embedded/Overlay.\nPASS: nine opt-in Windows providers, encrypted keys, issuer isolation, SDK/local counters, backoff, disconnect races, dynamic indicator routing, and connection UI fixtures.\nPASS: account sign-in windows, existing/new-account routing, safe CLI argument handling, and Claude API response parsing.\nPASS: clean borderless Details, complete percentages, pointer retention, gap crossing, and immediate dismissal.\nPASS: all 7 styles in light/dark palettes, transparent outer corners, fixed dark capsule in every style, visible vector/text content, and palette contrast.\n");
                 return 0;
             }
             catch (Exception ex) { File.WriteAllText(output, "FAIL: " + ex.Message); return 1; }

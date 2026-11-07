@@ -11,6 +11,7 @@ namespace Taskcode.Probe
     internal static class BrandMarks
     {
         private static readonly GraphicsPath ClaudePath = LoadSvg("Taskcode.Claude.svg");
+        private static readonly GraphicsPath CodexPath = CreateCodexPath();
         private static readonly GraphicsPath[] ProviderPaths = LoadProviders();
         private static GraphicsPath[] LoadProviders()
         {
@@ -43,13 +44,21 @@ namespace Taskcode.Probe
             }
             return result;
         }
-        internal static void DrawClaude(Graphics graphics, System.Drawing.Brush brush, RectangleF bounds)
+        internal static void DrawClaude(Graphics graphics, System.Drawing.Brush brush, RectangleF bounds, double degrees = double.NaN)
         {
-            DrawPath(graphics, brush, bounds, ClaudePath);
+            var solid = brush as SolidBrush;
+            if (solid == null) DrawPath(graphics, brush, bounds, ClaudePath);
+            else ExtrudedLogo.Draw(graphics, ClaudePath, solid.Color, bounds, double.IsNaN(degrees) ? LogoMotion.Angle(0) : degrees, !double.IsNaN(degrees) || LogoMotion.HasReflection(0));
         }
-        internal static void DrawProvider(Graphics graphics, System.Drawing.Brush brush, int index, RectangleF bounds)
+        internal static void DrawProvider(Graphics graphics, System.Drawing.Brush brush, int index, RectangleF bounds, double degrees = double.NaN)
         {
-            DrawPath(graphics, brush, bounds, ProviderPaths[index]);
+            var solid = brush as SolidBrush;
+            if (solid == null) DrawPath(graphics, brush, bounds, ProviderPaths[index]);
+            else ExtrudedLogo.Draw(graphics, ProviderPaths[index], solid.Color, bounds, double.IsNaN(degrees) ? LogoMotion.Angle(index + 2) : degrees, !double.IsNaN(degrees) || LogoMotion.HasReflection(index + 2));
+        }
+        internal static void DrawOriginal(Graphics graphics, System.Drawing.Brush brush, int provider, RectangleF bounds)
+        {
+            DrawPath(graphics, brush, bounds, provider == 0 ? ClaudePath : provider == 1 ? CodexPath : ProviderPaths[provider - 2]);
         }
         private static void DrawPath(Graphics graphics, System.Drawing.Brush brush, RectangleF bounds, GraphicsPath source)
         {
@@ -57,19 +66,21 @@ namespace Taskcode.Probe
             using (var transform = new System.Drawing.Drawing2D.Matrix(bounds.Width / 24f, 0, 0, bounds.Height / 24f, bounds.X, bounds.Y))
             { path.Transform(transform); graphics.FillPath(brush, path); }
         }
-        internal static void DrawCodex(Graphics graphics, System.Drawing.Brush brush, RectangleF bounds)
+        internal static void DrawCodex(Graphics graphics, System.Drawing.Brush brush, RectangleF bounds, double degrees = double.NaN)
         {
-            // A centered terminal mark avoids font side bearings and baseline offsets.
-            var state = graphics.Save();
-            graphics.TranslateTransform(bounds.X, bounds.Y);
-            graphics.ScaleTransform(bounds.Width / 16f, bounds.Height / 16f);
-            graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var pen = new System.Drawing.Pen(brush, 1.15f) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = System.Drawing.Drawing2D.LineJoin.Round })
-            {
-                graphics.DrawLines(pen, new[] { new PointF(2.5f, 4), new PointF(6.8f, 8), new PointF(2.5f, 12) });
-                graphics.DrawLine(pen, 9, 12, 13.5f, 12);
-            }
-            graphics.Restore(state);
+            bounds.Inflate(bounds.Width * .06f, bounds.Height * .06f);
+            var solid = brush as SolidBrush;
+            if (solid == null) DrawPath(graphics, brush, bounds, CodexPath);
+            else ExtrudedLogo.Draw(graphics, CodexPath, solid.Color, bounds, double.IsNaN(degrees) ? LogoMotion.Angle(1) : degrees, !double.IsNaN(degrees) || LogoMotion.HasReflection(1));
+        }
+        private static GraphicsPath CreateCodexPath()
+        {
+            var path = new GraphicsPath();
+            path.AddLines(new[] { new PointF(2.5f, 4), new PointF(6.8f, 8), new PointF(2.5f, 12) });
+            path.StartFigure(); path.AddLine(9, 12, 13.5f, 12);
+            using (var pen = new System.Drawing.Pen(System.Drawing.Color.White, 1.15f) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = System.Drawing.Drawing2D.LineJoin.Round }) path.Widen(pen);
+            using (var scale = new System.Drawing.Drawing2D.Matrix(1.5f, 0, 0, 1.5f, 0, 0)) path.Transform(scale);
+            return path;
         }
     }
 }

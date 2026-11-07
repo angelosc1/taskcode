@@ -76,7 +76,7 @@ namespace Taskcode.Probe
                 DrawTrend(graphics, new RectangleF(x + (weekly ? 99 : 94), weekly ? y + 3 : 7, weekly ? 35 : 40, weekly ? 9 : 20), samples, color, palette);
             }
         }
-        private static void DrawSparklines(Graphics graphics, Size size, TaskbarTheme palette, bool weekly, UsageDemo usage, int activityKey, double activitySeconds, bool usageColors)
+        private static void DrawSparklines(Graphics graphics, Size size, TaskbarTheme palette, bool weekly, UsageDemo usage, int activityKey, double activitySeconds, bool usageColors, bool shell)
         {
             var state = graphics.Save();
             try
@@ -86,7 +86,7 @@ namespace Taskcode.Probe
                 float scale = Math.Min(size.Width / (float)width, size.Height / 34f);
                 graphics.ScaleTransform(scale, scale); graphics.SmoothingMode = SmoothingMode.AntiAlias;
                 graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-                UiSurface.Draw(graphics, new RectangleF(1, 1, width - 2, 32), palette.PreviewBackground, palette.HighContrast ? palette.Text : Color.FromArgb(68, 73, 80), 16);
+                if (shell) UiSurface.Draw(graphics, new RectangleF(1, 1, width - 2, 32), palette.PreviewBackground, palette.HighContrast ? palette.Text : Color.FromArgb(68, 73, 80), 16);
                 var model = usage ?? new UsageDemo();
                 using (var font = new Font("Segoe UI", 11, FontStyle.Regular, GraphicsUnit.Pixel))
                 using (var valueFont = new Font("Segoe UI", weekly ? 10 : 11, FontStyle.Bold, GraphicsUnit.Pixel))
@@ -116,7 +116,6 @@ namespace Taskcode.Probe
                             }
                             DrawSparklineRow(graphics, x, window == 0 ? 2 : 16, used, caption, trend, weekly, accent, palette, usageColors, valueFont, smallFont, now);
                         }
-                        if (provider < 2 && (activityKey & (1 << provider)) != 0) ActivityRipple.Draw(graphics, accent, MarkCenter(x), activitySeconds);
                     }
                 }
             }

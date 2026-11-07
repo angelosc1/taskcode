@@ -28,6 +28,13 @@ namespace Taskcode.Probe
             return next;
         }
         // Pure placement rule: never force a fit over existing controls.
+        internal static bool TryViewport(Rectangle bar, Rectangle tray, int occupiedRight, int contentWidth, int height, int gap, out Rectangle slot)
+        {
+            int available = tray.Left - gap - Math.Max(bar.Left + gap, occupiedRight + gap);
+            // Keep a usable viewport without covering any existing taskbar buttons.
+            if (available < height) { slot = Rectangle.Empty; return false; }
+            return TrySlot(bar, tray, occupiedRight, Math.Min(contentWidth, available), height, gap, out slot);
+        }
         internal static bool TrySlot(Rectangle bar, Rectangle tray, int occupiedRight, int width, int height, int gap, out Rectangle slot)
         {
             slot = Rectangle.Empty;

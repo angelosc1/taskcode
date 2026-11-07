@@ -85,7 +85,7 @@ namespace Taskcode.Probe
                 }
             }
         }
-        private static void DrawCompactMeters(Graphics graphics, Size size, IndicatorStyle style, TaskbarTheme palette, bool weekly, UsageDemo usage, int activityKey, double activitySeconds, bool usageColors)
+        private static void DrawCompactMeters(Graphics graphics, Size size, IndicatorStyle style, TaskbarTheme palette, bool weekly, UsageDemo usage, int activityKey, double activitySeconds, bool usageColors, bool shell)
         {
             var state = graphics.Save();
             try
@@ -95,7 +95,7 @@ namespace Taskcode.Probe
                 float scale = Math.Min(size.Width / (float)width, size.Height / 34f);
                 graphics.ScaleTransform(scale, scale); graphics.SmoothingMode = SmoothingMode.AntiAlias;
                 graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-                UiSurface.Draw(graphics, new RectangleF(1, 1, width - 2, 32), palette.PreviewBackground, palette.HighContrast ? palette.Text : Color.FromArgb(68, 73, 80), 16);
+                if (shell) UiSurface.Draw(graphics, new RectangleF(1, 1, width - 2, 32), palette.PreviewBackground, palette.HighContrast ? palette.Text : Color.FromArgb(68, 73, 80), 16);
                 using (var font = new Font("Segoe UI", 11, FontStyle.Regular, GraphicsUnit.Pixel))
                 using (var valueFont = new Font("Segoe UI", weekly ? 10 : 11, FontStyle.Bold, GraphicsUnit.Pixel))
                 using (var captionFont = new Font("Segoe UI", 7, FontStyle.Regular, GraphicsUnit.Pixel))
@@ -122,7 +122,6 @@ namespace Taskcode.Probe
                             }
                             DrawCompactQuota(graphics, x, used, caption, window, style, weekly, accent, palette, usageColors, valueFont, captionFont);
                         }
-                        if (provider < 2 && (activityKey & (1 << provider)) != 0) ActivityRipple.Draw(graphics, accent, MarkCenter(x), activitySeconds);
                     }
                 }
             }

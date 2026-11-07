@@ -28,7 +28,7 @@ For services accepting explicit keys, the entry is masked and **Save key and con
 
 ## Display and limitations
 
-Enabled services append their own indicators. Hover/click opens the corresponding card, including additional quota rows. The cards retain provider-specific periods and model groups; missing timing does not become a fabricated five-hour or weekly countdown. Observations older than six minutes and expired quotas are not drawn as current percentages. When all selected indicators cannot fit the verified taskbar slot, reduce the enabled providers or select Essential.
+Enabled services append their own indicators. Hover/click opens the corresponding card, including additional quota rows. The cards retain provider-specific periods and model groups; missing timing does not become a fabricated five-hour or weekly countdown. Observations older than six minutes and expired quotas are not drawn as current percentages. When selected indicators exceed the verified taskbar slot, the capsule stops growing and the providers scroll from right to left at their normal size. Hovering the capsule or reading its Details pauses scrolling; the mouse wheel moves the content manually. Click and hover target the currently visible provider. The indicator still requires a verified gap at least as wide as its height and never covers Windows controls.
 
 These additions monitor allowance or local counts. Claude/Codex execution Ripple and consumption-speed forecasts are unchanged; no execution activity or forecast is invented for the new services. The DeepSeek count has no percentage denominator and never becomes a quota meter.
 

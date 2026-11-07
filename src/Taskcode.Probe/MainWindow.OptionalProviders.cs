@@ -40,11 +40,16 @@ namespace Taskcode.Probe
             if (index < 0 || index >= optionalDetails.Length) return;
             foreach (var panel in providerDetails) panel.Hide();
             for (int other = 0; other < optionalDetails.Length; other++) if (other != index && optionalDetails[other] != null) optionalDetails[other].Hide();
-            if (optionalDetails[index] == null || optionalDetails[index].IsDisposed) optionalDetails[index] = new OptionalProviderDetails(optionalConnections.Providers[index]);
+            if (optionalDetails[index] == null || optionalDetails[index].IsDisposed) optionalDetails[index] = new OptionalProviderDetails(usage.OptionalProviders[index]);
             var view = optionalDetails[index];
             view.UsageBarColors = settings.UsageBarColors;
             if (view.Visible) { if (explicitOpen) view.SetInteraction(true); view.RefreshUsage(); return; }
             Rectangle anchor = accountsAnchor ?? (fromPreview ? preview.RectangleToScreen(preview.ClientRectangle) : indicatorBounds);
+            if (!fromPreview && !accountsAnchor.HasValue && indicator != null)
+            {
+                var visible = indicator.ProviderBounds(index + 2);
+                if (!visible.IsEmpty) anchor = new Rectangle(anchor.X + visible.X, anchor.Y, visible.Width, anchor.Height);
+            }
             if (anchor.IsEmpty) anchor = Bounds;
             var area = Screen.FromRectangle(anchor).WorkingArea;
             view.Location = new Point(Math.Max(area.Left, Math.Min(anchor.Right - view.Width, area.Right - view.Width)), Math.Max(area.Top, anchor.Top - view.Height - 8));

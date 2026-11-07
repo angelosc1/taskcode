@@ -69,3 +69,9 @@ The repository uses previews rendered by the current application:
 - [Settings window](images/current-settings.png), including interaction, weekly quota, and opt-in startup controls.
 
 These are offscreen application renders with illustrative data, not photographs of an installed taskbar or live provider readings.
+
+## Provider motion and overflow
+
+Provider marks use 15% extrusion and rotate around their own vertical axis with the right edge passing in front. Idle marks face forward without a reflection. Active marks use a fixed-direction diagonal glint, light side/back shading and three increasing rotation speeds. Claude/Codex follow local activity and recent-speed levels; optional providers use increases between actual quota/token observations. Details headers remain static. Windows reduced-motion and high-contrast preferences remain respected.
+
+The taskbar capsule is bounded by the verified free gap. Overflow scrolls right to left at normal size with a spaced separator between cycles. Hovering or reading indicator Details pauses the scroll, and hit testing/anchors follow the visible provider. An unusable or unverified gap still hides the indicator rather than covering Windows controls.

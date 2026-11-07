@@ -123,12 +123,12 @@ namespace Taskcode.Probe
             base.OnPaint(e);
             Draw(e.Graphics, ClientSize, Style, Theme, ShowWeekly, PulseKey, Usage, ActivityKey, -1, UsageBarColors);
         }
-        internal static void Draw(Graphics g, Size size, IndicatorStyle style, TaskbarTheme theme, bool showWeekly = false, int pulseKey = 0, UsageDemo usage = null, int activityKey = 0, double activitySeconds = -1, bool usageBarColors = false)
+        internal static void Draw(Graphics g, Size size, IndicatorStyle style, TaskbarTheme theme, bool showWeekly = false, int pulseKey = 0, UsageDemo usage = null, int activityKey = 0, double activitySeconds = -1, bool usageBarColors = false, bool shell = true)
         {
             if (ContentWidth(style, showWeekly, usage) <= 0 || size.Width <= 0 || size.Height <= 0) return;
-            if (style == IndicatorStyle.DotMatrix || style == IndicatorStyle.ColorStrip) { DrawCompactMeters(g, size, style, theme, showWeekly, usage, activityKey, activitySeconds, usageBarColors); return; }
-            if (style == IndicatorStyle.Sparkline) { DrawSparklines(g, size, theme, showWeekly, usage, activityKey, activitySeconds, usageBarColors); return; }
-            if (style == IndicatorStyle.Donuts) { DrawDonuts(g, size, theme, showWeekly, usage, activityKey, activitySeconds, usageBarColors); return; }
+            if (style == IndicatorStyle.DotMatrix || style == IndicatorStyle.ColorStrip) { DrawCompactMeters(g, size, style, theme, showWeekly, usage, activityKey, activitySeconds, usageBarColors, shell); return; }
+            if (style == IndicatorStyle.Sparkline) { DrawSparklines(g, size, theme, showWeekly, usage, activityKey, activitySeconds, usageBarColors, shell); return; }
+            if (style == IndicatorStyle.Donuts) { DrawDonuts(g, size, theme, showWeekly, usage, activityKey, activitySeconds, usageBarColors, shell); return; }
             var state = g.Save();
             float scale = Math.Min(size.Width / (float)ContentWidth(style, showWeekly, usage), size.Height / 34f);
             g.ScaleTransform(scale, scale);
@@ -138,7 +138,7 @@ namespace Taskcode.Probe
             {
                 theme = TaskbarTheme.AppPalette(theme);
                 float left = 33, top = 1, width = ContentWidth(style, showWeekly, usage) - 2, height = 32;
-                using (var shape = new GraphicsPath())
+                if (shell) using (var shape = new GraphicsPath())
                 using (var background = new SolidBrush(theme.PreviewBackground))
                 using (var edge = new Pen(theme.HighContrast ? theme.Text : Color.FromArgb(68, 73, 80), 0.65f))
                 {
@@ -169,7 +169,6 @@ namespace Taskcode.Probe
                             string name = provider == 0 ? "Claude" : "Codex"; Color accent = provider == 0 ? theme.Claude : theme.Codex;
                             if (showWeekly) DrawWeeklyProvider(g, font, bold, text, name, Value(usage, provider * 2), Value(usage, provider * 2 + 1), accent, x, style, theme, usageBarColors);
                             else DrawProvider(g, font, bold, text, name, Value(usage, provider * 2), accent, x, style, theme, usageBarColors);
-                            if ((activityKey & (1 << provider)) != 0) ActivityRipple.Draw(g, accent, MarkCenter(x), activitySeconds);
                         }
                         else
                         {
@@ -193,8 +192,6 @@ namespace Taskcode.Probe
                     DrawProvider(g, font, bold, text, "Codex", Value(usage, 2), theme.Codex, second, style, theme, usageBarColors);
                     using (var pen = new Pen(theme.Divider, 0.6f)) g.DrawLine(pen, second - 11, 9, second - 11, 25);
                 }
-                if ((activityKey & 1) != 0) ActivityRipple.Draw(g, theme.Claude, MarkCenter(36), activitySeconds);
-                if ((activityKey & 2) != 0) ActivityRipple.Draw(g, theme.Codex, MarkCenter(SecondProviderX(style, showWeekly)), activitySeconds);
                 if (usage != null)
                 {
                     int slot = 0;
@@ -307,7 +304,7 @@ namespace Taskcode.Probe
         }
     }
 
-    internal sealed class IndicatorWindow : Form
+    internal sealed partial class IndicatorWindow : Form
     {
         private Size renderedSize;
         private IntPtr renderedHandle;
@@ -329,6 +326,7 @@ namespace Taskcode.Probe
         internal event EventHandler ContextRequested;
         internal IndicatorWindow()
         {
+            InitializeScrolling();
             Text = "Taskcode indicator";
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
@@ -378,16 +376,16 @@ namespace Taskcode.Probe
         }
         internal bool RenderAlpha()
         {
-            bool motion = ActivityKey != 0 && SpeedArrows.IsAnimated;
+            bool motion = LogoMotion.IsMoving;
             int frame = motion ? SpeedArrows.Frame : 0;
             string values = IndicatorView.LiveAccessibleText(Usage, ShowWeekly);
             if ((DisplayStyle == IndicatorStyle.Donuts || DisplayStyle == IndicatorStyle.DotMatrix || DisplayStyle == IndicatorStyle.ColorStrip) && Usage != null) values += IndicatorView.DonutDataKey(Usage, DateTime.UtcNow);
             if (DisplayStyle == IndicatorStyle.Sparkline && Usage != null) values += IndicatorView.SparklineDataKey(Usage, DateTime.UtcNow);
-            if (renderedHandle == Handle && renderedSize == Size && renderedStyle == DisplayStyle && renderedTheme == Theme && renderedWeekly == ShowWeekly && renderedUsageBarColors == UsageBarColors && renderedPulse == PulseKey && renderedActivity == ActivityKey && renderedFrame == frame && renderedMotion == motion && renderedValues == values) return true;
+            if (renderedHandle == Handle && renderedScroll == ScrollOffset && renderedSize == Size && renderedStyle == DisplayStyle && renderedTheme == Theme && renderedWeekly == ShowWeekly && renderedUsageBarColors == UsageBarColors && renderedPulse == PulseKey && renderedActivity == ActivityKey && renderedFrame == frame && renderedMotion == motion && renderedValues == values) return true;
             if (Width <= 0 || Height <= 0) return false;
             using (var bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppPArgb))
             {
-                using (var graphics = Graphics.FromImage(bitmap)) DrawInputSurface(graphics, bitmap.Size, DisplayStyle, Theme, ShowWeekly, PulseKey, Usage, ActivityKey, UsageBarColors);
+                using (var graphics = Graphics.FromImage(bitmap)) DrawViewport(graphics);
                 IntPtr screen = Native.GetDC(IntPtr.Zero), memory = Native.CreateCompatibleDC(screen);
                 IntPtr image = bitmap.GetHbitmap(Color.FromArgb(0));
                 IntPtr previous = Native.SelectObject(memory, image);
@@ -397,7 +395,7 @@ namespace Taskcode.Probe
                     var source = new Native.Point();
                     var blend = new Native.Blend { SourceConstantAlpha = 255, AlphaFormat = 1 };
                     if (!Native.UpdateLayeredWindow(Handle, screen, IntPtr.Zero, ref size, memory, ref source, 0, ref blend, 2)) return false;
-                    renderedHandle = Handle; renderedSize = Size; renderedStyle = DisplayStyle; renderedTheme = Theme; renderedWeekly = ShowWeekly; renderedUsageBarColors = UsageBarColors; renderedPulse = PulseKey; renderedActivity = ActivityKey; renderedFrame = frame; renderedMotion = motion; renderedValues = values;
+                    renderedScroll = ScrollOffset; renderedHandle = Handle; renderedSize = Size; renderedStyle = DisplayStyle; renderedTheme = Theme; renderedWeekly = ShowWeekly; renderedUsageBarColors = UsageBarColors; renderedPulse = PulseKey; renderedActivity = ActivityKey; renderedFrame = frame; renderedMotion = motion; renderedValues = values;
                     return true;
                 }
                 finally
@@ -629,8 +627,8 @@ namespace Taskcode.Probe
             UiSurface.Draw(e.Graphics, new RectangleF(11, 10, 26, 26), UiSurface.Blend(theme.PreviewBackground, accent, .10), UiSurface.Blend(theme.PreviewBackground, accent, .18), 8);
             e.Graphics.Restore(state);
             if (ProviderIndex == 0)
-                using (var brush = new SolidBrush(theme.Claude)) BrandMarks.DrawClaude(e.Graphics, brush, new RectangleF(16, 16, 16, 16));
-            else using (var brush = new SolidBrush(theme.Codex)) BrandMarks.DrawCodex(e.Graphics, brush, new RectangleF(16, 16, 16, 16));
+                using (var brush = new SolidBrush(theme.Claude)) BrandMarks.DrawOriginal(e.Graphics, brush, 0, new RectangleF(16, 16, 16, 16));
+            else using (var brush = new SolidBrush(theme.Codex)) BrandMarks.DrawOriginal(e.Graphics, brush, 1, new RectangleF(16, 16, 16, 16));
             using (var border = new Pen(theme.Divider, 1)) e.Graphics.DrawRectangle(border, 0, 0, Width - 1, Height - 1);
         }
         protected override CreateParams CreateParams

@@ -28,6 +28,9 @@ namespace Taskcode.Probe
                 if (control.Parent != null) Check(control.Parent.ClientRectangle.Contains(control.Bounds), "Settings control exceeds its parent: " + control.Text);
             }
             Check(startups == 1 && styles == 1 && accounts == 2, "Navigation must retain the original functional settings and both account connections.");
+            CheckBox sampleToggle = null;
+            foreach (Control control in Descendants(window)) if (control.AccessibleName == "Fill optional providers with sample data") sampleToggle = control as CheckBox;
+            Check(sampleToggle == null, "Settings must not expose temporary sample data or animation controls.");
             Check(weeklyToggle != null, "The weekly switch must remain available.");
             bool weeklyBefore = weeklyToggle.Checked;
             try

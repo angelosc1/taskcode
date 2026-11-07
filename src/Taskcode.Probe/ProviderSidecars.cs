@@ -77,6 +77,7 @@ namespace Taskcode.Probe
             var result = SubscriptionUsage.Connected(8, now);
             var tokens = AccountJson.Number(AccountJson.Get(data, "tokens"));
             if (!tokens.HasValue || tokens < 0) return SubscriptionUsage.Missing("No DeepSeek Harness token counts available.");
+            result.TokenCount = tokens;
             result.CountText = tokens >= 1000000 ? (tokens.Value / 1000000).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + "M" : tokens >= 1000 ? (tokens.Value / 1000).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + "k" : tokens.Value.ToString("0");
             result.Metrics.Add("Tokens today: " + tokens.Value.ToString("N0"));
             result.Metrics.Add("Sessions today: " + (AccountJson.Number(AccountJson.Get(data, "sessions")) ?? 0).ToString("0"));

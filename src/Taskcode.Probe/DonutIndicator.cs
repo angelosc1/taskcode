@@ -81,7 +81,7 @@ namespace Taskcode.Probe
             }
             return offset + graphics.MeasureString(value, font, PointF.Empty, StringFormat.GenericTypographic).Width;
         }
-        private static void DrawDonuts(Graphics graphics, Size size, TaskbarTheme palette, bool weekly, UsageDemo usage, int activityKey, double activitySeconds, bool usageColors)
+        private static void DrawDonuts(Graphics graphics, Size size, TaskbarTheme palette, bool weekly, UsageDemo usage, int activityKey, double activitySeconds, bool usageColors, bool shell)
         {
             var state = graphics.Save();
             try
@@ -91,7 +91,7 @@ namespace Taskcode.Probe
                 float scale = Math.Min(size.Width / (float)width, size.Height / 34f);
                 graphics.ScaleTransform(scale, scale); graphics.SmoothingMode = SmoothingMode.AntiAlias;
                 graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-                UiSurface.Draw(graphics, new RectangleF(1, 1, width - 2, 32), palette.PreviewBackground, palette.HighContrast ? palette.Text : Color.FromArgb(68, 73, 80), 16);
+                if (shell) UiSurface.Draw(graphics, new RectangleF(1, 1, width - 2, 32), palette.PreviewBackground, palette.HighContrast ? palette.Text : Color.FromArgb(68, 73, 80), 16);
                 using (var font = new Font("Segoe UI", 11, FontStyle.Regular, GraphicsUnit.Pixel))
                 using (var bold = new Font("Segoe UI", 10.5f, FontStyle.Bold, GraphicsUnit.Pixel))
                 using (var caption = new Font("Segoe UI", 7, FontStyle.Regular, GraphicsUnit.Pixel))
@@ -109,7 +109,6 @@ namespace Taskcode.Probe
                         {
                             DrawDonutValue(graphics, x + 25, Value(usage, provider * 2), "5h", accent, palette, bold, caption, usageColors);
                             if (weekly) DrawDonutValue(graphics, x + 87, Value(usage, provider * 2 + 1), "7d", accent, palette, bold, caption, usageColors);
-                            if ((activityKey & (1 << provider)) != 0) ActivityRipple.Draw(graphics, accent, MarkCenter(x), activitySeconds);
                         }
                         else
                         {

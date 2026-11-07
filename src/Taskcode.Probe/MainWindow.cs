@@ -14,6 +14,7 @@ namespace Taskcode.Probe
         private readonly TaskbarWatcher watcher = new TaskbarWatcher();
         private readonly Timer timer = new Timer { Interval = 250 };
         private readonly Timer hoverTimer = new Timer { Interval = 16 };
+        private double lastLogoFrame = SpeedArrows.Seconds;
         private readonly Timer animationTimer = new Timer { Interval = 33 };
         private readonly IndicatorView preview = new IndicatorView();
         private readonly Label status = new Label();
@@ -194,14 +195,18 @@ namespace Taskcode.Probe
             preview.MouseMove += delegate { UpdateHover(); };
             animationTimer.Tick += delegate
             {
+                double nowSeconds = SpeedArrows.Seconds;
+                LogoMotion.Update(usage, DateTime.UtcNow);
+                LogoMotion.Advance(nowSeconds - lastLogoFrame); lastLogoFrame = nowSeconds;
                 int key = 0;
                 int activity = CurrentActivity;
+                InvalidateLogoControls(this);
                 preview.PulseKey = key;
                 preview.ActivityKey = activity;
                 preview.Invalidate();
                 if (indicator != null && !indicator.IsDisposed && indicator.Visible)
                 { indicator.PulseKey = key; indicator.ActivityKey = activity; indicator.RenderAlpha(); }
-                if (activity == 0) animationTimer.Stop();
+                if (!LogoMotion.IsMoving) animationTimer.Stop();
             };
             trayImage = TrayArtwork.Create();
             Icon = trayImage;
@@ -282,6 +287,15 @@ namespace Taskcode.Probe
             Activate();
         }
         internal void RequestExit() { Program.RecordLifecycle("Exit requested"); exiting = true; Close(); }
+        private static void InvalidateLogoControls(Control root)
+        {
+            foreach (Control control in root.Controls)
+            {
+                if (!control.Visible) continue;
+                if (control is ProviderMenuMark) control.Invalidate();
+                if (control.HasChildren) InvalidateLogoControls(control);
+            }
+        }
         private void Save()
         {
             try { settings.Save(); saveError = null; }
@@ -302,7 +316,7 @@ namespace Taskcode.Probe
             indicator.MouseClick += delegate(object sender, MouseEventArgs e)
             {
                 if (e.Button != MouseButtons.Left) return;
-                int provider = IndicatorView.ProviderAt(e.Location, indicator.ClientSize, settings.Style, settings.ShowWeekly, usage);
+                int provider = indicator.ProviderAt(e.Location);
                 if (provider >= 0) ShowDetails(true, false, provider);
             };
             indicator.MouseEnter += delegate
@@ -363,9 +377,13 @@ namespace Taskcode.Probe
                 preview.Invalidate();
             }
             usage.Tick(DateTime.UtcNow);
+            preview.Usage = usage;
             int pulse = 0;
             int activityKey = CurrentActivity;
-            animationTimer.Enabled = activityKey != 0 && enabled.Checked && SpeedArrows.IsAnimated;
+            LogoMotion.Update(usage, DateTime.UtcNow);
+            bool animateLogos = LogoMotion.IsMoving && enabled.Checked;
+            if (animateLogos && !animationTimer.Enabled) lastLogoFrame = SpeedArrows.Seconds;
+            animationTimer.Enabled = animateLogos;
             if (preview.ActivityKey != activityKey)
             {
                 preview.ActivityKey = activityKey; preview.Invalidate();
@@ -400,9 +418,10 @@ namespace Taskcode.Probe
             int width = (int)Math.Round(IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly, usage) * scale);
             int height = (int)Math.Round(IndicatorView.LogicalHeight * scale);
             Rectangle slot;
-            if (!Placement.TrySlot(layout.Bar, layout.Tray, layout.OccupiedRight, width, height, (int)Math.Round(8 * scale), out slot))
+            if (!Placement.TryViewport(layout.Bar, layout.Tray, layout.OccupiedRight, width, height, (int)Math.Round(8 * scale), out slot))
             { PauseIndicator("Not enough verified space before the system tray.\nTry Essential or reduce the number of taskbar buttons."); return; }
             if (indicator == null || indicator.IsDisposed || (attachedParent != IntPtr.Zero && !Native.IsWindow(indicator.Handle))) RecreateIndicator();
+            indicator.ContentWidth = width;
             indicator.DisplayStyle = settings.Style;
             indicator.ShowWeekly = settings.ShowWeekly;
             indicator.UsageBarColors = settings.UsageBarColors;
@@ -435,12 +454,19 @@ namespace Taskcode.Probe
         }
         private void UpdateHover()
         {
-            if (settings.DetailsTrigger != DetailsTrigger.Hover || trayMenu.Visible) return;
             var pointer = Cursor.Position;
+            if (indicator != null && !indicator.IsDisposed)
+            {
+                bool readingDetails = false;
+                foreach (var panel in providerDetails) readingDetails |= panel.Visible && panel.RequiresIndicator;
+                foreach (var panel in optionalDetails) readingDetails |= panel != null && panel.Visible && panel.RequiresIndicator;
+                indicator.ScrollPaused = trayMenu.Visible || readingDetails || (indicator.Visible && indicatorBounds.Contains(pointer));
+            }
+            if (settings.DetailsTrigger != DetailsTrigger.Hover || trayMenu.Visible) return;
             bool fromPreview = Visible && preview.Visible && preview.RectangleToScreen(preview.ClientRectangle).Contains(pointer);
             var bounds = fromPreview ? preview.RectangleToScreen(preview.ClientRectangle) : indicatorBounds;
             if (!fromPreview && (indicator == null || !indicator.Visible)) return;
-            int provider = IndicatorView.ProviderAt(new Point(pointer.X - bounds.X, pointer.Y - bounds.Y), bounds.Size, settings.Style, settings.ShowWeekly, usage);
+            int provider = fromPreview ? IndicatorView.ProviderAt(new Point(pointer.X - bounds.X, pointer.Y - bounds.Y), bounds.Size, settings.Style, settings.ShowWeekly, usage) : indicator.ProviderAt(new Point(pointer.X - bounds.X, pointer.Y - bounds.Y));
             if (provider >= 0) ShowDetails(false, fromPreview, provider);
         }
         internal void OpenDetailsFromSettings(int provider)
@@ -476,7 +502,7 @@ namespace Taskcode.Probe
             Rectangle anchor = sourceAnchor ?? (fromPreview || indicatorBounds.IsEmpty ? preview.RectangleToScreen(preview.ClientRectangle) : indicatorBounds);
             if (!sourceAnchor.HasValue)
             {
-                var providerAnchor = IndicatorView.ProviderBounds(provider, anchor.Size, settings.Style, settings.ShowWeekly, usage);
+                var providerAnchor = !fromPreview && indicator != null ? indicator.ProviderBounds(provider) : IndicatorView.ProviderBounds(provider, anchor.Size, settings.Style, settings.ShowWeekly, usage);
                 anchor = new Rectangle(anchor.X + providerAnchor.X, anchor.Y, providerAnchor.Width, anchor.Height);
             }
             var area = Screen.FromRectangle(anchor).WorkingArea;
