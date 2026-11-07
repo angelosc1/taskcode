@@ -505,7 +505,7 @@ namespace Taskcode.Probe
             var providerColor = providerIndex == 0 ? IndicatorView.Claude : IndicatorView.Codex;
             providerLabel = AddText(provider, 44, 11, 10, FontStyle.Bold, providerColor);
             providerLabel.AutoSize = false; providerLabel.Size = new Size(230, 26); providerLabel.TextAlign = ContentAlignment.MiddleLeft;
-            closeDetails = new Button { Text = "×", AccessibleName = "Close details", Location = new Point(275, 10), Size = new Size(19, 23), FlatStyle = FlatStyle.Flat, TabStop = false, Visible = false, Tag = "muted", Font = new Font("Segoe UI", 10f) };
+            closeDetails = new DetailCloseButton { AccessibleName = "Close details", Location = new Point(270, 12), Size = new Size(24, 24), FlatStyle = FlatStyle.Flat, TabStop = false, Visible = false, Tag = "muted", Font = new Font("Segoe UI", 10f) };
             closeDetails.FlatAppearance.BorderSize = 0; closeDetails.Click += delegate { Hide(); }; Controls.Add(closeDetails);
             AddQuota(this.usage.Readings[providerIndex * 2], 50);
             AddQuota(this.usage.Readings[providerIndex * 2 + 1], 162);

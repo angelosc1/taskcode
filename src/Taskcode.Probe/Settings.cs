@@ -49,7 +49,6 @@ namespace Taskcode.Probe
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("codexEnabled"), out connected)) value.CodexEnabled = connected;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("claudeEnabled"), out connected)) value.ClaudeEnabled = connected;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("codexPrivateProfile"), out connected)) value.CodexPrivateProfile = connected;
-                if (bool.TryParse(doc.DocumentElement.GetAttribute("claudePrivateProfile"), out connected)) value.ClaudePrivateProfile = connected;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("cursorEnabled"), out connected)) value.CursorEnabled = connected;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("antigravityEnabled"), out connected)) value.AntigravityEnabled = connected;
                 for (int index = 2; index < ProviderCatalog.Count; index++)

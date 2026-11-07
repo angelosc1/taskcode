@@ -11,7 +11,7 @@ namespace Taskcode.Probe
     internal sealed class ProviderCredential
     {
         internal string Token, Host = "https://api.z.ai", Identity = "", Org;
-        internal bool OAuth;
+        internal bool OAuth, Expired;
     }
     internal static class ProviderCredentials
     {
@@ -124,6 +124,17 @@ namespace Taskcode.Probe
             }
             return null;
         }
+        // An xAI session exists but has expired: the official CLI renews it the next time it runs.
+        internal static bool GrokExpired(object data, DateTime now)
+        {
+            foreach (var item in AccountJson.Map(data))
+            {
+                if (item.Key.Split(new[] { "::" }, StringSplitOptions.None)[0] != "https://auth.x.ai" && Text(AccountJson.Get(item.Value, "oidc_issuer")) != "https://auth.x.ai") continue;
+                var expiry = OptionalHttp.Date(AccountJson.Get(item.Value, "expires_at"));
+                if (Text(AccountJson.Get(item.Value, "key")) != null && expiry.HasValue && expiry <= now) return true;
+            }
+            return false;
+        }
         internal static ProviderCredential Copilot()
         {
             var manual = Manual(4); if (manual != null) return manual;
@@ -165,7 +176,8 @@ namespace Taskcode.Probe
                 string token = Text(AccountJson.Get(entry, "access")); if (token == null) return null;
                 var server = Text(AccountJson.Get(AccountJson.Get(entry, "metadata"), "server")); Uri uri;
                 if (server != null && (!Uri.TryCreate(server, UriKind.Absolute, out uri) || uri.Scheme != "https" || uri.Host != "opencode.ai")) return null;
-                return new ProviderCredential { Token = token, OAuth = true, Org = Text(AccountJson.Get(AccountJson.Get(entry, "metadata"), "orgID")) };
+                var expires = SubscriptionUsage.Timestamp(AccountJson.Get(entry, "expires"));
+                return new ProviderCredential { Token = token, OAuth = true, Expired = expires.HasValue && expires <= DateTime.UtcNow, Org = Text(AccountJson.Get(AccountJson.Get(entry, "metadata"), "orgID")) };
             }
             string key = Key(entry); return key == null ? null : new ProviderCredential { Token = key };
         }

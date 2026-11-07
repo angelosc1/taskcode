@@ -28,7 +28,7 @@ namespace Taskcode.Probe
             var mark = new ProviderBrandMark { Location = new Point(16, 16), Size = new Size(18, 18) };
             mark.SetProvider(provider.Index + 2, provider.Color, provider.Name); Controls.Add(mark);
             status = new Label { Location = new Point(44, 12), Size = new Size(300, 62) }; Controls.Add(status);
-            closeDetails = new Button { Text = "×", AccessibleName = "Close details", Location = new Point(350, 10), Size = new Size(22, 24), FlatStyle = FlatStyle.Flat, ForeColor = ForeColor, BackColor = BackColor, TabStop = false, Visible = false };
+            closeDetails = new DetailCloseButton { AccessibleName = "Close details", Location = new Point(350, 13), Size = new Size(22, 24), FlatStyle = FlatStyle.Flat, ForeColor = ForeColor, BackColor = BackColor, TabStop = false, Visible = false };
             closeDetails.FlatAppearance.BorderSize = 0; closeDetails.Click += delegate { Hide(); }; Controls.Add(closeDetails);
             rows = new FlowLayoutPanel { Location = new Point(12, 80), Size = new Size(356, 328), AutoScroll = true, FlowDirection = FlowDirection.TopDown, WrapContents = false }; Controls.Add(rows);
             timer.Tick += delegate { RefreshUsage(); };

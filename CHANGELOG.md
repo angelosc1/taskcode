@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1 - 2026-11-07
+
+- Fix Claude quota disappearing hours after connecting: Claude now uses only the existing Claude Code account, which the CLI keeps refreshed. Existing installs switch automatically without signing in again.
+- Report expired Grok and OpenCode sessions as expired, with renewal instructions.
+- Use a new close button on Details cards.
+
 ## 0.4.0 - 2026-11-07
 
 - Replace activity Ripple with rotating 3D provider logos, 15% extrusion, softer side/back shading, and a fixed-direction diagonal reflection only while active. Increase the Codex mark slightly; keep Details headers static.

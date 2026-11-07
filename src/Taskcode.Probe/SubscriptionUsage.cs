@@ -47,8 +47,9 @@ namespace Taskcode.Probe
             }
             if (index == 3)
             {
-                credential = ProviderCredentials.Grok(ProviderCredentials.ReadJson(Path.Combine(ProviderCredentials.Home, @".grok\auth.json")), now);
-                if (credential == null) return Missing("Sign in with the official Grok CLI to read usage.");
+                var grokAuth = ProviderCredentials.ReadJson(Path.Combine(ProviderCredentials.Home, @".grok\auth.json"));
+                credential = ProviderCredentials.Grok(grokAuth, now);
+                if (credential == null) return Missing(ProviderCredentials.GrokExpired(grokAuth, now) ? "Grok session expired. Run grok in a terminal to renew it." : "Sign in with the official Grok CLI to read usage.");
                 var result = ParseGrok(Get("https://cli-chat-proxy.grok.com/v1/billing?format=credits", credential, grok: true), now);
                 result.Identity = credential.Identity; return result;
             }
@@ -62,6 +63,7 @@ namespace Taskcode.Probe
             {
                 credential = ProviderCredentials.OpenCode();
                 if (credential == null) return Missing("Sign in to OpenCode or connect an OpenCode Go key.");
+                if (credential.Expired) return Missing("OpenCode session expired. Open OpenCode to renew it.");
                 try { return ParseOpenCode(Get(credential.OAuth ? "https://opencode.ai/inference/go/v1/usage" : "https://opencode.ai/zen/go/v1/usage", credential), now); }
                 catch (WebException error)
                 {

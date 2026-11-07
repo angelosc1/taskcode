@@ -2,22 +2,24 @@
 
 Cursor, Antigravity, GLM, Grok, GitHub Copilot, OpenCode Go, Command Code, Qoder and DeepSeek Harness are available under **Accounts > Manage providers**. All are opt-in. See [connection controls, requirements and endpoints](OPTIONAL-PROVIDERS.md).
 
-Click **Connect Claude** or **Connect Codex** in settings. Each button opens a connection window with two explicit choices:
+Click **Connect Claude** or **Connect Codex** in settings. Claude uses your existing Claude Code account (see below). The Codex window offers two explicit choices:
 
-- **Sign in with Claude / ChatGPT** opens the official sign-in flow so you can choose your account. These logins use a separate Taskcode profile; they do not replace your normal CLI account.
+- **Sign in with ChatGPT** opens the official sign-in flow so you can choose your account. These logins use a separate Taskcode profile; they do not replace your normal CLI account.
 - **Use existing CLI account** reuses the account already stored by the corresponding local tool.
 
 The window shows progress, errors, and the signed-in email when the source supplies it. Use **Cancel sign-in** to cancel an owned login process or Codex browser request. Closing the window leaves sign-in running so you can finish in the browser and reopen it. If the official CLI is absent, **Install official CLI** opens its installation in a visible window; then choose Sign in.
 
-![Claude connection window with sign-in and existing-account choices](images/current-connect-claude.png)
+![Claude connection window using the existing Claude Code account](images/current-connect-claude.png)
 
 ![Codex connection window with browser sign-in and existing-account choices](images/current-connect-codex.png)
 
 ## Claude
 
-Taskcode finds the standalone Claude Code CLI in its native, npm, pnpm, Volta, or PATH location. It excludes Desktop-owned bundled copies because those can use a different credential store. **Sign in with Claude** runs the official `claude auth login --claudeai` in a visible window. Complete the browser sign-in; if Claude asks for a code, paste it into that official sign-in window. Passwords and authorization codes are not entered into Taskcode. See the [official CLI reference](https://code.claude.com/docs/en/cli-reference).
+Taskcode finds the standalone Claude Code CLI in its native, npm, pnpm, Volta, or PATH location. It excludes Desktop-owned bundled copies because those can use a different credential store. Claude has a single connection option, **Use existing CLI account**: Taskcode reads the account you already use in Claude Code. Claude Code keeps that session refreshed while you use it, so the quota keeps updating. If Claude Code is not signed in yet, run `claude` in a terminal and sign in first. See the [official CLI reference](https://code.claude.com/docs/en/cli-reference).
 
-New Claude sign-ins use `%LOCALAPPDATA%/Taskcode/accounts/claude` through `CLAUDE_CONFIG_DIR`. The official CLI manages the credential file. Taskcode reads its access token into memory to authenticate a GET to `https://api.anthropic.com/api/oauth/usage`, following [Codenotch's Windows approach](https://github.com/vinzdg/codenotch/blob/main/windows/codenotch/src/usage.rs). It never logs the token, copies it to Taskcode settings, sends it to a Taskcode server, or reads browser cookies. This is an internal provider endpoint and may change or reject third-party access.
+Earlier versions offered a separate Taskcode sign-in profile for Claude. Its access token was never refreshed, so the quota disappeared a few hours after signing in. Existing installations switch to the regular CLI account automatically.
+
+Taskcode reads the access token into memory to authenticate a GET to `https://api.anthropic.com/api/oauth/usage`, following [Codenotch's Windows approach](https://github.com/vinzdg/codenotch/blob/main/windows/codenotch/src/usage.rs). It never logs the token, copies it to Taskcode settings, sends it to a Taskcode server, or reads browser cookies. This is an internal provider endpoint and may change or reject third-party access.
 
 The request uses TLS 1.2 with strong cryptography, disables redirects, times out after fifteen seconds, and reads only the five-hour and weekly usage windows. The shipped `.exe.config` enables modern .NET Framework networking; keep it with the executable. Normal checks are five minutes apart. Crossing a known reset triggers one immediate recheck; a local execution-start hint while the session is waiting can also request a targeted check, capped at one such hint per minute. These exceptions never bypass network retry or server rate-limit cooldowns. Rate-limit responses trigger exponential backoff starting at sixty seconds, capped at fifteen minutes unless the server requests a longer wait. Manual refresh does not bypass that server cooldown. Expired or rejected sessions show an explicit message and can be signed in again.
 
@@ -37,7 +39,7 @@ The strip shows consumed subscription quota, not context size or API spending. U
 
 Only provider-reported 300-minute and 10,080-minute Codex windows are assigned to five-hour and weekly quota. Reset timestamps anchor time markers. Fractional percentages are retained for speed estimates; displayed values are rounded. Repainting, polling an unchanged cache, and signing in do not fabricate consumption samples.
 
-Taskcode currently monitors one selected account per provider. You can switch between the separate Taskcode sign-in and the existing CLI account. Independent account switching does not switch the account inside an already-running coding tool. Account identities are displayed locally when available and are not included in public preview images.
+Taskcode currently monitors one selected account per provider. For Codex, you can switch between the separate Taskcode sign-in and the existing CLI account. Independent account switching does not switch the account inside an already-running coding tool. Account identities are displayed locally when available and are not included in public preview images.
 
 ## Removal and development
 

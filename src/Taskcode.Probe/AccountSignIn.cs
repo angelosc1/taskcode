@@ -40,7 +40,7 @@ namespace Taskcode.Probe
         private Process process;
         private int generation;
         internal volatile bool Busy;
-        internal string Message = "Choose Sign in to open the official Claude login.";
+        internal string Message = "Taskcode uses your Claude Code account.";
         private const string LoginScript = "$Host.UI.RawUI.WindowTitle = 'Taskcode - Claude sign-in'; Write-Host 'Complete Claude sign-in in your browser. If a code is requested, paste it in this window.'; & $env:TASKCODE_AUTH_CLI auth login --claudeai; $result = $LASTEXITCODE; if ($result -eq 0) { Write-Host 'Signed in. Return to Taskcode.' } else { Write-Host 'Sign-in failed or was cancelled. Return to Taskcode to retry.' }; Start-Sleep -Seconds 2; exit $result";
         internal static ProcessStartInfo LoginInfo(string executable, string directory)
         {

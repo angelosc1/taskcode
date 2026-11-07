@@ -20,11 +20,13 @@ namespace Taskcode.Probe
             ClientSize = new Size(540, 432); FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = MinimizeBox = false;
             BackColor = Color.FromArgb(25, 28, 33); ForeColor = Color.FromArgb(237, 240, 244); Font = new Font("Segoe UI", 9);
             Controls.Add(new Label { Text = "Connect " + name, Location = new Point(22, 20), Size = new Size(496, 36), Font = new Font("Segoe UI", 14, FontStyle.Bold) });
-            Controls.Add(new Label { Text = provider == 0 ? "Sign in with your Claude subscription in the official Claude Code window. It opens your browser; paste a code there if requested." : "Sign in with ChatGPT in your browser. You can choose your account without replacing your regular Codex CLI login.", Location = new Point(22, 67), Size = new Size(496, 62) });
+            Controls.Add(new Label { Text = provider == 0 ? "Taskcode reads the account you already use in Claude Code, so it stays signed in automatically. If Claude Code is not signed in yet, run claude in a terminal first." :"Sign in with ChatGPT in your browser. You can choose your account without replacing your regular Codex CLI login.", Location = new Point(22, 67), Size = new Size(496, 62) });
             progress.Location = new Point(22, 141); progress.Size = new Size(496, 66); progress.ForeColor = provider == 0 ? IndicatorView.Claude : IndicatorView.Codex; Controls.Add(progress);
             identity.Location = new Point(22, 212); identity.Size = new Size(496, 28); identity.AutoEllipsis = true; Controls.Add(identity);
             signIn.Text = provider == 0 ? "Sign in with Claude" : "Sign in with ChatGPT"; signIn.Location = new Point(22, 254); signIn.Size = new Size(238, 36);
             local.Text = "Use existing CLI account"; local.Location = new Point(276, 254); local.Size = new Size(242, 36);
+            // Claude only uses the regular CLI account: a separate Taskcode profile is never refreshed, so its token expires.
+            if (provider == 0) { signIn.Visible = false; local.Location = new Point(22, 254); local.Size = new Size(496, 36); }
             install.Text = "Install official CLI"; install.Location = new Point(22, 305); install.Size = new Size(238, 34);
             reopen.Text = "Open sign-in page again"; reopen.Location = new Point(276, 305); reopen.Size = new Size(242, 34); reopen.Visible = provider == 1;
             cancel.Text = "Cancel sign-in"; cancel.Location = new Point(22, 370); cancel.Size = new Size(180, 34);

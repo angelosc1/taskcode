@@ -28,7 +28,8 @@ namespace Taskcode.Probe
                         }
                         Check(local != null && signIn != null && window.Visible, "Each provider must open a visible connection window with explicit account choices.");
                         local.PerformClick(); Check(requested == false, "Existing-account choice must route to local credentials.");
-                        signIn.PerformClick(); Check(requested == true, "Sign-in choice must route to the browser/official CLI flow even if an existing account is present.");
+                        if (provider == 0) Check(!signIn.Visible && local.Visible, "Claude must offer only the existing CLI account, whose token Claude Code keeps refreshed.");
+                        else { signIn.PerformClick(); Check(requested == true, "Sign-in choice must route to the browser/official CLI flow even if an existing account is present."); }
                         using (var bitmap = new Bitmap(window.Width, window.Height))
                         { window.DrawToBitmap(bitmap, new Rectangle(Point.Empty, bitmap.Size)); bitmap.Save(Path.Combine(directory, provider == 0 ? "claude-connect-check.png" : "codex-connect-check.png"), System.Drawing.Imaging.ImageFormat.Png); }
                         window.Close();

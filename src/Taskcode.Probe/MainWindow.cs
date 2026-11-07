@@ -269,8 +269,8 @@ namespace Taskcode.Probe
                     usage.ClearProvider(provider, signIn ? "Preparing sign-in..." : "Reading local account...");
                     if (provider == 0)
                     {
-                        ClaudeBridge.Install(); settings.ClaudeEnabled = true; settings.ClaudePrivateProfile = signIn;
-                        connections.ConnectClaude(signIn);
+                        ClaudeBridge.Install(); settings.ClaudeEnabled = true; settings.ClaudePrivateProfile = false;
+                        connections.ConnectClaude(false);
                     }
                     else { settings.CodexEnabled = true; settings.CodexPrivateProfile = signIn; connections.ConnectCodex(signIn); }
                     usage.CoreEnabled[provider] = true;
