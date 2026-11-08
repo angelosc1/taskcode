@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.2 - 2026-11-07
+
+- Never send expired Claude tokens, which the usage service answers with a one-hour rate limit. Renew shortly before expiry by briefly starting the official CLI, clear cooldowns when the token changes, and retry once after a rejected token.
+- Keep the last Claude reading visible for up to an hour while checks fail or are rate limited.
+- Start on the taskbar only; settings open on first run, on a second launch or from the icon.
+
 ## 0.4.1 - 2026-11-07
 
 - Fix Claude quota disappearing hours after connecting: Claude now uses only the existing Claude Code account, which the CLI keeps refreshed. Existing installs switch automatically without signing in again.

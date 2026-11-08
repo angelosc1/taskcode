@@ -72,6 +72,13 @@ namespace Taskcode.Probe
             Check(login.EnvironmentVariables["CLAUDE_CONFIG_DIR"] == @"C:\private account" && !login.CreateNoWindow, "Claude sign-in must use the selected profile and a visible interactive official login.");
             Check(AccountPaths.PrivateHome("codex") != Environment.GetEnvironmentVariable("CODEX_HOME"), "Taskcode sign-in must have its own Codex credential directory.");
             Check(!AccountJson.Encode(api).Contains("Bearer"), "Snapshots must not retain authentication headers.");
+            var credential = ClaudeCredential.Parse("{\"claudeAiOauth\":{\"accessToken\":\"fixture\",\"expiresAt\":" + (long)(now.AddMinutes(-1) - AccountJson.Epoch).TotalMilliseconds + "}}");
+            Check(credential != null && credential.Expired(now) && !credential.Expired(now.AddMinutes(-2)), "Expired Claude tokens must be detected locally so they are never sent.");
+            Check(ClaudeCredential.Parse("{\"claudeAiOauth\":{\"accessToken\":\"\"}}") == null && !ClaudeCredential.Parse("{\"claudeAiOauth\":{\"accessToken\":\"fixture\"}}").Expired(now), "Empty tokens are ignored; tokens without expiry stay usable.");
+            var held = new UsageDemo(); held.BeginLive(); held.Apply(0, api);
+            held.Apply(0, new AccountSnapshot { Failed = true, Status = "Claude usage checks are rate limited. Waiting before retrying." });
+            Check(held.DisplayValue(0, now.AddMinutes(30)) == 74 || held.DisplayValue(0, now.AddMinutes(30)) == 75, "A rate-limited Claude check must keep showing the last reading.");
+            Check(held.DisplayValue(0, now.AddMinutes(61)) == -1, "Claude readings older than an hour must not be shown as current.");
         }
         internal static int Probe(bool installClaude)
         {

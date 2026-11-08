@@ -75,13 +75,13 @@ namespace Taskcode.Probe
         internal int DisplayValue(int index, DateTime now)
         {
             var reading = Readings[index];
-            return !IsLive ? reading.Period.Remaining : reading.Available && (reading.Period.WaitingForFirstRequest || now < reading.Period.EndUtc) && now - reading.ObservedUtc <= TimeSpan.FromMinutes(index < 2 ? 6 : 2) ? reading.Period.Remaining : -1;
+            return !IsLive ? reading.Period.Remaining : reading.Available && (reading.Period.WaitingForFirstRequest || now < reading.Period.EndUtc) && now - reading.ObservedUtc <= TimeSpan.FromMinutes(index < 2 ? 60 : 2) ? reading.Period.Remaining : -1;
         }
         internal bool ResetPending(int index, DateTime now)
         {
             var reading = Readings[index];
             return IsLive && reading.Available && !reading.Period.WaitingForFirstRequest && reading.Period.EndUtc != DateTime.MinValue &&
-                now >= reading.Period.EndUtc && now - reading.ObservedUtc <= TimeSpan.FromMinutes(index < 2 ? 6 : 2);
+                now >= reading.Period.EndUtc && now - reading.ObservedUtc <= TimeSpan.FromMinutes(index < 2 ? 60 : 2);
         }
         private static UsageSpeed LiveSpeed(int provider)
         { return new UsageSpeed(TimeSpan.FromSeconds(provider == 0 ? 300 : 10)); }

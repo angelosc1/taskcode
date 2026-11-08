@@ -126,6 +126,8 @@
   "Waiting for the next Claude quota check.": "Waiting for the next Claude quota check.",
   "Not signed in. Open Connect Claude and choose Sign in.": "Not signed in. Open Connect Claude and choose Sign in.",
   "Claude session expired. Sign in again.": "Claude session expired. Sign in again.",
+  "Claude session expired. Run claude once in a terminal to renew it.": "Claude session expired. Run claude once in a terminal to renew it.",
+  "Claude session expired. Renewing it with Claude Code...": "Claude session expired. Renewing it with Claude Code...",
   "Claude denied access to usage data for this session.": "Claude denied access to usage data for this session.",
   "Claude usage checks are rate limited. Waiting before retrying.": "Claude usage checks are rate limited. Waiting before retrying.",
   "Claude connection: {0}. Retrying automatically.": "Claude connection: {0}. Retrying automatically.",

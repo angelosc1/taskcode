@@ -40,14 +40,17 @@ namespace Taskcode.Probe
                 if (running != IntPtr.Zero) Native.PostMessage(running, MainWindow.ExitMessage, IntPtr.Zero, IntPtr.Zero);
                 return 0;
             }
-            bool startInTray = Array.IndexOf(args, "--tray") >= 0;
+            // Launching only shows the taskbar indicator. Settings open on first run (nothing saved yet)
+            // or when Taskcode is opened again while already running.
+            bool startInTray = Array.IndexOf(args, "--tray") >= 0 || File.Exists(Settings.Path) || File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.xml"));
+            bool reopenSettings = Array.IndexOf(args, "--tray") < 0;
             bool created;
             using (var instance = new Mutex(true, "Local\\Taskcode.PositioningProbe", out created))
             {
                 if (!created)
                 {
                     var running = Native.FindWindow(null, MainWindow.WindowTitle);
-                    if (!startInTray && running != IntPtr.Zero) Native.PostMessage(running, MainWindow.OpenSettingsMessage, IntPtr.Zero, IntPtr.Zero);
+                    if (reopenSettings && running != IntPtr.Zero) Native.PostMessage(running, MainWindow.OpenSettingsMessage, IntPtr.Zero, IntPtr.Zero);
                     return 0;
                 }
                 Application.EnableVisualStyles();

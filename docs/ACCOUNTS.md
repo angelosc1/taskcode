@@ -15,7 +15,7 @@ The window shows progress, errors, and the signed-in email when the source suppl
 
 ## Claude
 
-Taskcode finds the standalone Claude Code CLI in its native, npm, pnpm, Volta, or PATH location. It excludes Desktop-owned bundled copies because those can use a different credential store. Claude has a single connection option, **Use existing CLI account**: Taskcode reads the account you already use in Claude Code. Claude Code keeps that session refreshed while you use it, so the quota keeps updating. If Claude Code is not signed in yet, run `claude` in a terminal and sign in first. See the [official CLI reference](https://code.claude.com/docs/en/cli-reference).
+Taskcode finds the standalone Claude Code CLI in its native, npm, pnpm, Volta, or PATH location. It excludes Desktop-owned bundled copies because those can use a different credential store. Claude has a single connection option, **Use existing CLI account**: Taskcode reads the account you already use in Claude Code. Claude Code keeps that session refreshed while you use it. Shortly before the token expires, Taskcode also starts the official CLI in the background for a moment (`claude -p` with no prompt) so it renews its own sign-in; Taskcode never sends an expired token, because the usage endpoint answers those with a long rate limit. If Claude Code is not signed in yet, run `claude` in a terminal and sign in first. See the [official CLI reference](https://code.claude.com/docs/en/cli-reference).
 
 Earlier versions offered a separate Taskcode sign-in profile for Claude. Its access token was never refreshed, so the quota disappeared a few hours after signing in. Existing installations switch to the regular CLI account automatically.
 
@@ -35,7 +35,7 @@ Windows discovery supports the standard npm x64 installation, `.local/bin/codex.
 
 ## Freshness and identity
 
-The strip shows consumed subscription quota, not context size or API spending. Unknown, missing, expired, disconnected, and stale readings appear as `--`. Codex readings expire after two minutes; Claude readings after six minutes to allow its five-minute usage interval. Hover the provider identity or percentage in Details for source/freshness information; connection messages remain in settings. Successful responses with missing windows clear them; temporary failures preserve recent readings until they expire.
+The strip shows consumed subscription quota, not context size or API spending. Unknown, missing, expired, disconnected, and stale readings appear as `--`. Codex readings expire after two minutes; Claude keeps its last reading for up to an hour while a check fails or the server rate-limits requests, as long as the period has not reset. Hover the provider identity or percentage in Details for source/freshness information; connection messages remain in settings. Successful responses with missing windows clear them; temporary failures preserve recent readings until they expire.
 
 Only provider-reported 300-minute and 10,080-minute Codex windows are assigned to five-hour and weekly quota. Reset timestamps anchor time markers. Fractional percentages are retained for speed estimates; displayed values are rounded. Repainting, polling an unchanged cache, and signing in do not fabricate consumption samples.
 

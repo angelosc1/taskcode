@@ -126,6 +126,8 @@
   "Waiting for the next Claude quota check.": "Aguardando a próxima consulta de cota do Claude.",
   "Not signed in. Open Connect Claude and choose Sign in.": "Você não está conectado. Abra Conectar Claude e escolha Entrar.",
   "Claude session expired. Sign in again.": "A sessão do Claude expirou. Entre novamente.",
+  "Claude session expired. Run claude once in a terminal to renew it.": "A sessão do Claude expirou. Rode claude uma vez em um terminal para renová-la.",
+  "Claude session expired. Renewing it with Claude Code...": "A sessão do Claude expirou. Renovando pelo Claude Code...",
   "Claude denied access to usage data for this session.": "O Claude negou acesso aos dados de consumo desta sessão.",
   "Claude usage checks are rate limited. Waiting before retrying.": "As consultas de consumo do Claude foram limitadas. Aguardando para tentar novamente.",
   "Claude connection: {0}. Retrying automatically.": "Conexão do Claude: {0}. Tentando novamente automaticamente.",
