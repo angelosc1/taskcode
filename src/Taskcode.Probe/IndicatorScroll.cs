@@ -52,13 +52,20 @@ namespace Taskcode.Probe
             var contentPoint = new Point(x, point.Y);
             return IndicatorView.ProviderAt(contentPoint, new Size(ContentWidth, Height), DisplayStyle, ShowWeekly, Usage);
         }
-        internal Rectangle ProviderBounds(int provider)
+        internal Rectangle ProviderBounds(int provider, Point? pointer = null)
         {
             var bounds = IndicatorView.ProviderBounds(provider, new Size(ContentWidth, Height), DisplayStyle, ShowWeekly, Usage);
             bounds.Offset(-ScrollOffset, 0);
             var visible = Rectangle.Intersect(bounds, ClientRectangle);
             bounds.Offset(ScrollCycleWidth, 0);
             var repeated = Rectangle.Intersect(bounds, ClientRectangle);
+            // While scrolling, a provider can be split across both edges. Prefer the piece under
+            // the pointer so hover dismissal and hover opening agree (otherwise Details blinks).
+            if (pointer.HasValue)
+            {
+                if (visible.Contains(pointer.Value)) return visible;
+                if (repeated.Contains(pointer.Value)) return repeated;
+            }
             return repeated.Width > visible.Width ? repeated : visible;
         }
         internal void DrawViewport(Graphics graphics)

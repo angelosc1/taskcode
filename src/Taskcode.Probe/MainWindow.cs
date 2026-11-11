@@ -328,6 +328,7 @@ namespace Taskcode.Probe
         private void PauseIndicator(string reason)
         {
             RecordIndicatorState("Paused: " + reason);
+            transientSince = DateTime.MinValue;
             if (indicator != null && !indicator.IsDisposed) indicator.Hide();
             foreach (var panel in optionalDetails) if (panel != null && panel.RequiresIndicator && !panel.Pinned) panel.Hide();
             if (details.RequiresIndicator && !details.Pinned) details.Hide();
@@ -403,14 +404,18 @@ namespace Taskcode.Probe
             if (usage.VisibleProviderCount == 0) { PauseIndicator("No providers enabled."); return; }
             var layout = watcher.Latest;
             if (layout == null) { PauseIndicator("Measuring available taskbar space..."); return; }
-            if (DateTime.UtcNow - layout.MeasuredAt > Placement.MeasurementLifetime) { PauseIndicator("Waiting for a fresh taskbar measurement."); return; }
-            if (layout.Error != null) { PauseIndicator(layout.Error); return; }
+            // Slow or failed UI Automation reads are usually momentary. Keep the indicator where it
+            // is for a short grace period instead of hiding it (it used to blink on and off).
+            if (DateTime.UtcNow - layout.MeasuredAt > Placement.MeasurementLifetime) { if (!HoldIndicator(pulse, activityKey)) PauseIndicator("Waiting for a fresh taskbar measurement."); return; }
+            if (layout.Error != null) { if (!HoldIndicator(pulse, activityKey)) PauseIndicator(layout.Error); return; }
             if (!Native.IsWindow(layout.Taskbar)) { PauseIndicator("Waiting for Explorer to recreate the taskbar."); return; }
             Native.Rect liveBar, liveTray;
             var liveTrayHandle = Native.FindWindowEx(layout.Taskbar, IntPtr.Zero, "TrayNotifyWnd", null);
-            if (!Native.GetWindowRect(layout.Taskbar, out liveBar) || liveBar.Bounds != layout.Bar ||
-                !Native.GetWindowRect(liveTrayHandle, out liveTray) || liveTray.Bounds != layout.Tray)
-            { PauseIndicator("Taskbar layout changed; measuring again."); return; }
+            if (!Native.GetWindowRect(layout.Taskbar, out liveBar) || liveBar.Bounds != layout.Bar || !Native.GetWindowRect(liveTrayHandle, out liveTray))
+            { if (!HoldIndicator(pulse, activityKey)) PauseIndicator("Taskbar layout changed; measuring again."); return; }
+            // Only the tray resized (a tray icon appeared, the clock changed width...): follow the live
+            // tray edge right away. TryViewport below still refuses to cover taskbar buttons.
+            var trayBounds = liveTray.Bounds;
             var screen = Screen.FromRectangle(layout.Bar);
             if (Rectangle.Intersect(screen.Bounds, layout.Bar).Height < layout.Bar.Height / 2)
             { PauseIndicator("Taskbar is hidden."); return; }
@@ -418,18 +423,11 @@ namespace Taskcode.Probe
             int width = (int)Math.Round(IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly, usage) * scale);
             int height = (int)Math.Round(IndicatorView.LogicalHeight * scale);
             Rectangle slot;
-            if (!Placement.TryViewport(layout.Bar, layout.Tray, layout.OccupiedRight, width, height, (int)Math.Round(8 * scale), out slot))
+            if (!Placement.TryViewport(layout.Bar, trayBounds, layout.OccupiedRight, width, height, (int)Math.Round(8 * scale), out slot))
             { PauseIndicator("Not enough verified space before the system tray.\nTry Essential or reduce the number of taskbar buttons."); return; }
             if (indicator == null || indicator.IsDisposed || (attachedParent != IntPtr.Zero && !Native.IsWindow(indicator.Handle))) RecreateIndicator();
             indicator.ContentWidth = width;
-            indicator.DisplayStyle = settings.Style;
-            indicator.ShowWeekly = settings.ShowWeekly;
-            indicator.UsageBarColors = settings.UsageBarColors;
-            indicator.PulseKey = pulse;
-            indicator.ActivityKey = activityKey;
-            indicator.Usage = usage;
-            indicator.AccessibleName = IndicatorView.LiveAccessibleText(usage, settings.ShowWeekly);
-            indicator.Theme = theme;
+            SyncIndicator(pulse, activityKey);
             IntPtr expected = settings.Mode == HostMode.Embedded ? layout.Taskbar : IntPtr.Zero;
             bool parentChanged = attachedParent != expected || Native.GetParent(indicator.Handle) != expected;
             if (parentChanged)
@@ -448,9 +446,35 @@ namespace Taskcode.Probe
             if (!indicator.RenderAlpha())
             { PauseIndicator("Windows rejected the transparent surface. Try the other placement mode."); return; }
             indicatorBounds = indicator.RectangleToScreen(indicator.ClientRectangle);
+            transientSince = DateTime.MinValue;
             RecordIndicatorState(expected == IntPtr.Zero ? "Overlay active" : "Embedded active");
             SetSettingsStatus((expected == IntPtr.Zero ? "Overlay active" : "Embedded child window active") + " · " + layout.Dpi + " DPI" + (saveError == null ? "" : "\n" + saveError), saveError != null);
             UpdateHover();
+        }
+        private static readonly TimeSpan TransientGrace = TimeSpan.FromSeconds(15);
+        private DateTime transientSince = DateTime.MinValue;
+        private void SyncIndicator(int pulse, int activityKey)
+        {
+            indicator.DisplayStyle = settings.Style;
+            indicator.ShowWeekly = settings.ShowWeekly;
+            indicator.UsageBarColors = settings.UsageBarColors;
+            indicator.PulseKey = pulse;
+            indicator.ActivityKey = activityKey;
+            indicator.Usage = usage;
+            indicator.AccessibleName = IndicatorView.LiveAccessibleText(usage, settings.ShowWeekly);
+            indicator.Theme = theme;
+        }
+        // Keeps a visible indicator in its last verified place while the taskbar measurement catches up.
+        private bool HoldIndicator(int pulse, int activityKey)
+        {
+            if (indicator == null || indicator.IsDisposed || !indicator.Visible || indicatorBounds.IsEmpty) return false;
+            var now = DateTime.UtcNow;
+            if (transientSince == DateTime.MinValue) transientSince = now;
+            if (now - transientSince > TransientGrace) return false;
+            SyncIndicator(pulse, activityKey);
+            indicator.RenderAlpha();
+            UpdateHover();
+            return true;
         }
         private void UpdateHover()
         {
@@ -492,7 +516,8 @@ namespace Taskcode.Probe
             foreach (var panel in optionalDetails) if (panel != null) panel.Hide();
             // Native entry and frame-rate pointer tracking share this guard.
             if (provider < 0 || provider > 1) return;
-            if (!explicitOpen && (settings.DetailsTrigger != DetailsTrigger.Hover || (details.Visible && selectedProvider == provider))) return;
+            if (!explicitOpen && settings.DetailsTrigger != DetailsTrigger.Hover) return;
+            bool alreadyShown = !explicitOpen && details.Visible && selectedProvider == provider;
             if (selectedProvider != provider)
             {
                 details.Hide();
@@ -502,9 +527,12 @@ namespace Taskcode.Probe
             Rectangle anchor = sourceAnchor ?? (fromPreview || indicatorBounds.IsEmpty ? preview.RectangleToScreen(preview.ClientRectangle) : indicatorBounds);
             if (!sourceAnchor.HasValue)
             {
-                var providerAnchor = !fromPreview && indicator != null ? indicator.ProviderBounds(provider) : IndicatorView.ProviderBounds(provider, anchor.Size, settings.Style, settings.ShowWeekly, usage);
+                var providerAnchor = !fromPreview && indicator != null && !indicator.IsDisposed ? indicator.ProviderBounds(provider, indicator.PointToClient(Cursor.Position)) : IndicatorView.ProviderBounds(provider, anchor.Size, settings.Style, settings.ShowWeekly, usage);
                 anchor = new Rectangle(anchor.X + providerAnchor.X, anchor.Y, providerAnchor.Width, anchor.Height);
             }
+            // Already open for this provider: keep the card still, but follow the indicator if it
+            // moved or scrolled, so the hover area never drifts away from the pointer.
+            if (alreadyShown) { details.HoverAnchor = anchor; return; }
             var area = Screen.FromRectangle(anchor).WorkingArea;
             int x = Math.Max(area.Left, Math.Min(anchor.Right - details.Width, area.Right - details.Width));
             int y = anchor.Top - details.Height - 8;
@@ -514,6 +542,8 @@ namespace Taskcode.Probe
             details.RequiresIndicator = !sourceAnchor.HasValue && !fromPreview && !indicatorBounds.IsEmpty;
             details.SetInteraction(explicitOpen);
             details.Show();
+            // Show() does not raise a window that is already visible; keep the card above the taskbar and other topmost windows.
+            Native.SetWindowPos(details.Handle, Native.TopMost, 0, 0, 0, 0, Native.NoMove | Native.NoSize | Native.NoActivate);
         }
     }
 }

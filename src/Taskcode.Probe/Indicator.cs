@@ -502,6 +502,7 @@ namespace Taskcode.Probe
             ForeColor = Color.FromArgb(238, 241, 245);
             Font = new Font("Segoe UI", 10f);
             KeyPreview = true;
+            DoubleBuffered = true;
             var providerColor = providerIndex == 0 ? IndicatorView.Claude : IndicatorView.Codex;
             providerLabel = AddText(provider, 44, 11, 10, FontStyle.Bold, providerColor);
             providerLabel.AutoSize = false; providerLabel.Size = new Size(230, 26); providerLabel.TextAlign = ContentAlignment.MiddleLeft;
@@ -602,7 +603,8 @@ namespace Taskcode.Probe
         internal void ApplyTheme(TaskbarTheme value)
         {
             value = TaskbarTheme.AppPalette(value);
-            if (theme == value && BackColor == value.PreviewBackground) return;
+            // Repainting every second made the card border and logo flicker.
+            if (theme.SameAs(value) && BackColor == value.PreviewBackground) return;
             theme = value;
             BackColor = value.PreviewBackground;
             ForeColor = value.Text;

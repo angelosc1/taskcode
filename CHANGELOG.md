@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.3 - 2026-11-11
+
+- Stop the Details card border and logo from flickering: the card was fully repainted every second because unchanged themes compared as different. The card is now double-buffered.
+- Keep the indicator in place for up to 15 seconds while a taskbar measurement is late or briefly fails, instead of hiding it. When only the system tray resizes, follow its new edge immediately; taskbar buttons are still never covered.
+- Keep hover Details working: the hover area follows the indicator while it moves or scrolls, a provider split across the scrolling edge uses the piece under the pointer, and the card is raised above other topmost windows when shown.
+
 ## 0.4.2 - 2026-11-07
 
 - Never send expired Claude tokens, which the usage service answers with a one-hour rate limit. Renew shortly before expiry by briefly starting the official CLI, clear cooldowns when the token changes, and retry once after a rejected token.

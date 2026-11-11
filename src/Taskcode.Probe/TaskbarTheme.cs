@@ -22,6 +22,12 @@ namespace Taskcode.Probe
                 PreviewBackground = dark ? Color.FromArgb(36, 38, 41) : Color.FromArgb(242, 243, 245)
             };
         }
+        // Read() and AppPalette() build a new object each time, so compare colors, not references.
+        internal bool SameAs(TaskbarTheme other)
+        {
+            return other != null && Dark == other.Dark && HighContrast == other.HighContrast && Text == other.Text && Muted == other.Muted &&
+                Track == other.Track && Divider == other.Divider && Claude == other.Claude && Codex == other.Codex && PreviewBackground == other.PreviewBackground;
+        }
         internal static TaskbarTheme AppPalette(TaskbarTheme palette)
         { return palette.HighContrast ? palette : Create(true); }
         internal static TaskbarTheme Read()
