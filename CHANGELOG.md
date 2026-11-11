@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.5 - 2026-11-11
+
+- Add the usage atom: while a provider works, 2, 4 or 6 small spheres orbit its spinning logo for light, medium or heavy usage pace (the same levels as the Details speed arrows). Each sphere has its own tilted path, neighbours run in opposite directions, and a comet tail in the provider color trails behind. With Windows animations off the spheres stay still and still show the level. Turn it off in Appearance > Usage atom to keep only the spinning logo; the choice is kept across updates.
+- Make the settings window slightly taller to fit the new switch, and shorten the Portuguese time marker label so it is no longer cut off.
+
 ## 0.4.4 - 2026-11-11
 
 - Add a time marker to every indicator style, showing how much of each quota period has passed: arrows between the bars (default), arrows outside the bars, a line, or a lighter trail. Donuts gain a start mark at 12 o'clock. Optional pace colors turn the marker green while usage stays within the elapsed time and white once it gets ahead. The choice is saved and kept across updates.

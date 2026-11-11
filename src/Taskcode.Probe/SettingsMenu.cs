@@ -13,7 +13,7 @@ namespace Taskcode.Probe
         private sealed class MenuControls
         {
             internal ComboBox Style, Placement, Trigger, Language, TimeMarker;
-            internal CheckBox Weekly, UsageColors, PaceColors, Startup, AutomaticUpdates;
+            internal CheckBox Weekly, UsageColors, PaceColors, UsageAtom, Startup, AutomaticUpdates;
             internal Button Details, Close, Refresh, Claude, Codex, Disconnect;
         }
         private MenuControls BuildSettingsMenu(bool live)
@@ -21,7 +21,7 @@ namespace Taskcode.Probe
             AutoScaleMode = AutoScaleMode.Dpi;
             AutoScaleDimensions = new SizeF(96, 96);
             FormBorderStyle = FormBorderStyle.None;
-            ClientSize = new Size(520, 440);
+            ClientSize = new Size(520, 470);
             MinimumSize = Size;
             SizeGripStyle = SizeGripStyle.Hide;
             Font = new Font("Segoe UI", 9f);
@@ -45,7 +45,7 @@ namespace Taskcode.Probe
                 settingsNavigation[index].TextAlign = ContentAlignment.MiddleLeft;
                 settingsNavigation[index].Padding = new Padding(18, 0, 0, 0);
                 settingsNavigation[index].Click += delegate { ShowSettingsPage(page); };
-                settingsPages[index] = new Panel { Location = new Point(152, 80), Size = new Size(352, 312), AccessibleName = titles[index] + " settings" };
+                settingsPages[index] = new Panel { Location = new Point(152, 80), Size = new Size(352, 342), AccessibleName = titles[index] + " settings" };
                 Controls.Add(settingsPages[index]);
                 settingsPages[index].Paint += delegate(object sender, PaintEventArgs e) { PaintSettingsCards((Panel)sender, e.Graphics); };
                 var heading = MenuLabel(settingsPages[index], titles[index], 0, 0, 230, 24, "heading"); heading.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
@@ -76,6 +76,9 @@ namespace Taskcode.Probe
             result.PaceColors = new SettingsToggle { Text = "Pace colors", Location = new Point(12, 272), Size = new Size(316, 26), Checked = settings.PaceAlert, AccessibleName = "Pace colors for the time marker" };
             appearance.Controls.Add(result.PaceColors);
             L10n.Hint(settingsHints, result.PaceColors, "The time marker turns green while usage stays within the elapsed time, and white once usage gets ahead.");
+            result.UsageAtom = new SettingsToggle { Text = "Usage atom", Location = new Point(12, 298), Size = new Size(316, 26), Checked = settings.UsageAtom, AccessibleName = "Usage atom around working logos" };
+            appearance.Controls.Add(result.UsageAtom);
+            L10n.Hint(settingsHints, result.UsageAtom, "While a provider works, 2, 4 or 6 spheres orbit its spinning logo for light, medium or heavy usage pace. Off keeps only the spinning logo.");
             result.Details = MenuButton(appearance, "Details", 240, 0, 100, 26, "action");
             var accounts = settingsPages[1];
             for (int provider = 0; provider < 2; provider++)
@@ -117,9 +120,9 @@ namespace Taskcode.Probe
             result.AutomaticUpdates = new SettingsToggle { Text = "Check automatically", Location = new Point(12, 276), Size = new Size(316, 26), Checked = settings.AutomaticUpdateChecks, AccessibleName = "Check for updates automatically" };
             general.Controls.Add(result.AutomaticUpdates);
             L10n.Hint(settingsHints, result.AutomaticUpdates, "Checks GitHub Releases once a day. Installs only when you choose Install.");
-            AddDivider(this, 16, 400, 488);
-            status.Location = new Point(18, 411); status.Size = new Size(365, 20); status.AutoEllipsis = true; status.Tag = "muted"; status.Font = new Font("Segoe UI", 8f); status.Text = "Starting..."; Controls.Add(status);
-            result.Close = MenuButton(this, "Close", 414, 406, 90, 26, "ghost");
+            AddDivider(this, 16, 430, 488);
+            status.Location = new Point(18, 441); status.Size = new Size(365, 20); status.AutoEllipsis = true; status.Tag = "muted"; status.Font = new Font("Segoe UI", 8f); status.Text = "Starting..."; Controls.Add(status);
+            result.Close = MenuButton(this, "Close", 414, 436, 90, 26, "ghost");
             result.Close.AccessibleName = "Close settings panel";
             Disposed += delegate { settingsHints.Dispose(); };
             ApplySettingsTheme(theme); ShowSettingsPage(0);
@@ -184,15 +187,15 @@ namespace Taskcode.Probe
         private static bool IsSettingsCard(Control root, Control control)
         {
             string page = root.AccessibleName ?? "";
-            float top = control.Top * 312f / Math.Max(1, root.Height);
-            return page == "Appearance settings" ? top >= 112 && top < 302 :
+            float top = control.Top * 342f / Math.Max(1, root.Height);
+            return page == "Appearance settings" ? top >= 112 && top < 330 :
                 page == "Accounts settings" ? top >= 40 && top < 208 :
                 page == "General settings" && top >= 40 && top < 308;
         }
         private void PaintSettingsCards(Panel page, Graphics graphics)
         {
-            var saved = graphics.Save(); graphics.ScaleTransform(page.Width / 352f, page.Height / 312f);
-            RectangleF[] cards = page == settingsPages[0] ? new[] { new RectangleF(0, 112, 340, 190) } :
+            var saved = graphics.Save(); graphics.ScaleTransform(page.Width / 352f, page.Height / 342f);
+            RectangleF[] cards = page == settingsPages[0] ? new[] { new RectangleF(0, 112, 340, 218) } :
                 page == settingsPages[1] ? new[] { new RectangleF(0, 40, 340, 80), new RectangleF(0, 128, 340, 80) } :
                 new[] { new RectangleF(0, 40, 340, 72), new RectangleF(0, 120, 340, 88), new RectangleF(0, 220, 340, 88) };
             foreach (var rect in cards) UiSurface.Draw(graphics, rect, UiSurface.Card(theme), Mix(BackColor, ForeColor, .07), 10);
@@ -226,9 +229,9 @@ namespace Taskcode.Probe
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            var saved = e.Graphics.Save(); e.Graphics.ScaleTransform(Width / 520f, Height / 440f);
-            using (var sidebar = new SolidBrush(Mix(BackColor, Color.Black, .10))) e.Graphics.FillRectangle(sidebar, 0, 64, 140, 336);
-            using (var line = new Pen(Mix(BackColor, ForeColor, .045))) e.Graphics.DrawLine(line, 140, 78, 140, 386);
+            var saved = e.Graphics.Save(); e.Graphics.ScaleTransform(Width / 520f, Height / 470f);
+            using (var sidebar = new SolidBrush(Mix(BackColor, Color.Black, .10))) e.Graphics.FillRectangle(sidebar, 0, 64, 140, 366);
+            using (var line = new Pen(Mix(BackColor, ForeColor, .045))) e.Graphics.DrawLine(line, 140, 78, 140, 416);
             e.Graphics.Restore(saved);
             using (var pen = new Pen(Mix(BackColor, ForeColor, .12))) e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
         }

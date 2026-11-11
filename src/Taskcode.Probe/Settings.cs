@@ -16,6 +16,7 @@ namespace Taskcode.Probe
         // Arrows are the default only until the user picks something; the saved choice always wins after that.
         internal TimeMarker TimeMarker = TimeMarker.ArrowsBetween;
         internal bool PaceAlert = false;
+        internal bool UsageAtom = true;
         internal bool AutomaticUpdateChecks = true;
         internal string Language = "auto";
         internal DateTime LastUpdateCheckUtc;
@@ -48,6 +49,7 @@ namespace Taskcode.Probe
                 TimeMarker marker;
                 if (Enum.TryParse(doc.DocumentElement.GetAttribute("timeMarker"), out marker) && Enum.IsDefined(typeof(TimeMarker), marker)) value.TimeMarker = marker;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("paceAlert"), out showWeekly)) value.PaceAlert = showWeekly;
+                if (bool.TryParse(doc.DocumentElement.GetAttribute("usageAtom"), out showWeekly)) value.UsageAtom = showWeekly;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("automaticUpdateChecks"), out showWeekly)) value.AutomaticUpdateChecks = showWeekly;
                 DateTime lastCheck;
                 if (DateTime.TryParse(doc.DocumentElement.GetAttribute("lastUpdateCheckUtc"), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind, out lastCheck)) value.LastUpdateCheckUtc = lastCheck.ToUniversalTime();
@@ -79,6 +81,7 @@ namespace Taskcode.Probe
                 writer.WriteAttributeString("usageBarColors", UsageBarColors.ToString());
                 writer.WriteAttributeString("timeMarker", TimeMarker.ToString());
                 writer.WriteAttributeString("paceAlert", PaceAlert.ToString());
+                writer.WriteAttributeString("usageAtom", UsageAtom.ToString());
                 writer.WriteAttributeString("automaticUpdateChecks", AutomaticUpdateChecks.ToString());
                 writer.WriteAttributeString("lastUpdateCheckUtc", LastUpdateCheckUtc.ToString("o"));
                 writer.WriteAttributeString("codexEnabled", CodexEnabled.ToString());

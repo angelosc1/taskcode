@@ -9,8 +9,16 @@ namespace Taskcode.Probe
     {
         private static readonly int[] levels = new int[2 + ProviderCatalog.Count];
         private static readonly double[] angles = new double[2 + ProviderCatalog.Count];
+        private static readonly double[] orbits = new double[2 + ProviderCatalog.Count];
         internal static double DegreesPerSecond(int level)
         { return level <= 0 ? 0 : level == 1 ? 60 : level == 2 ? 155 : 280; }
+        internal static double OrbitRadiansPerSecond(int level)
+        { return level <= 0 ? 0 : level == 1 ? 1.7 : level == 2 ? 2.6 : 3.8; }
+        // Levels are kept even when Windows animations are off, so the electron count still shows.
+        internal static int Level(int provider) { return provider >= 0 && provider < levels.Length ? levels[provider] : 0; }
+        internal static double Orbit(int provider) { return SpeedArrows.IsAnimated && provider >= 0 && provider < orbits.Length ? orbits[provider] : 0; }
+        internal static string Key { get { return "|o" + string.Join("", Array.ConvertAll(levels, level => level.ToString())); } }
+        internal static void SetLevelForChecks(int provider, int level) { levels[provider] = level; orbits[provider] = 0; }
         internal static int LevelAt(UsageDemo usage, int provider, DateTime now)
         {
             if (provider >= 2) return provider - 2 < usage.OptionalProviders.Length ? usage.OptionalProviders[provider - 2].RotationLevel(now) : 0;
@@ -28,7 +36,7 @@ namespace Taskcode.Probe
             for (int provider = 0; provider < levels.Length; provider++)
             {
                 levels[provider] = LevelAt(usage, provider, now);
-                if (levels[provider] == 0 || !SpeedArrows.IsAnimated) angles[provider] = 0;
+                if (levels[provider] == 0 || !SpeedArrows.IsAnimated) angles[provider] = orbits[provider] = 0;
             }
         }
         internal static bool IsMoving
@@ -40,8 +48,11 @@ namespace Taskcode.Probe
         internal static void Advance(double seconds)
         {
             for (int provider = 0; provider < levels.Length; provider++)
-                angles[provider] = levels[provider] == 0 || !SpeedArrows.IsAnimated ? 0 :
-                    (angles[provider] + Math.Max(0, Math.Min(.1, seconds)) * DegreesPerSecond(levels[provider])) % 360;
+            {
+                bool still = levels[provider] == 0 || !SpeedArrows.IsAnimated; double step = Math.Max(0, Math.Min(.1, seconds));
+                angles[provider] = still ? 0 : (angles[provider] + step * DegreesPerSecond(levels[provider])) % 360;
+                orbits[provider] = still ? 0 : (orbits[provider] + step * OrbitRadiansPerSecond(levels[provider])) % (2 * Math.PI);
+            }
         }
     }
 

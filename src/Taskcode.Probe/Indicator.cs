@@ -297,14 +297,18 @@ namespace Taskcode.Probe
         private static void DrawMark(Graphics g, Font font, Brush accent, string name, int x)
         {
             var bounds = MarkBounds(x);
+            int optional = Array.IndexOf(ProviderCatalog.Names, name);
+            int provider = name == "Claude" ? 0 : name == "Codex" ? 1 : optional >= 0 ? optional + 2 : -1;
+            var solid = accent as SolidBrush;
+            int level = !ShowAtom || provider < 0 || solid == null ? 0 : LogoMotion.Level(provider);
+            // While a provider works, electrons orbit its logo: 2, 4 or 6 for usage levels 1, 2 and 3.
+            // The logo shrinks a little so the orbits stay inside the capsule.
+            if (level > 0) { DrawAtom(g, solid.Color, level, LogoMotion.Orbit(provider), MarkCenter(x), true); bounds.Inflate(-1.5f, -1.5f); }
             if (name == "Claude") BrandMarks.DrawClaude(g, accent, bounds);
             else if (name == "Codex") BrandMarks.DrawCodex(g, accent, bounds);
-            else
-            {
-                int index = Array.IndexOf(ProviderCatalog.Names, name);
-                if (index >= 0) BrandMarks.DrawProvider(g, accent, index, bounds);
-                else g.DrawString("?", font, accent, bounds.X, bounds.Y + 1);
-            }
+            else if (optional >= 0) BrandMarks.DrawProvider(g, accent, optional, bounds);
+            else g.DrawString("?", font, accent, bounds.X, bounds.Y + 1);
+            if (level > 0) DrawAtom(g, solid.Color, level, LogoMotion.Orbit(provider), MarkCenter(x), false);
         }
         internal static RectangleF MarkBounds(int x) { return new RectangleF(x, 9, 16, 16); }
         internal static PointF MarkCenter(int x) { var bounds = MarkBounds(x); return new PointF(bounds.X + bounds.Width / 2, bounds.Y + bounds.Height / 2); }
@@ -392,7 +396,7 @@ namespace Taskcode.Probe
             string values = IndicatorView.LiveAccessibleText(Usage, ShowWeekly);
             if ((DisplayStyle == IndicatorStyle.Donuts || DisplayStyle == IndicatorStyle.DotMatrix || DisplayStyle == IndicatorStyle.ColorStrip) && Usage != null) values += IndicatorView.DonutDataKey(Usage, DateTime.UtcNow);
             if (DisplayStyle == IndicatorStyle.Sparkline && Usage != null) values += IndicatorView.SparklineDataKey(Usage, DateTime.UtcNow);
-            values += IndicatorView.MarkerKey(DateTime.UtcNow);
+            values += IndicatorView.MarkerKey(DateTime.UtcNow) + LogoMotion.Key + (IndicatorView.ShowAtom ? "|atom" : "");
             if (renderedHandle == Handle && renderedScroll == ScrollOffset && renderedSize == Size && renderedStyle == DisplayStyle && renderedTheme == Theme && renderedWeekly == ShowWeekly && renderedUsageBarColors == UsageBarColors && renderedPulse == PulseKey && renderedActivity == ActivityKey && renderedFrame == frame && renderedMotion == motion && renderedValues == values) return true;
             if (Width <= 0 || Height <= 0) return false;
             using (var bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppPArgb))

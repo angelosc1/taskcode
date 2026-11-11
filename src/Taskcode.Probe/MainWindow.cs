@@ -70,7 +70,7 @@ namespace Taskcode.Probe
                 usage.CoreEnabled[0] = settings.ClaudeEnabled; usage.CoreEnabled[1] = settings.CodexEnabled;
             }
             providerDetails = new[] { new DetailWindow(usage, 0) { UsageBarColors = settings.UsageBarColors }, new DetailWindow(usage, 1) { UsageBarColors = settings.UsageBarColors } };
-            IndicatorView.Marker = settings.TimeMarker; IndicatorView.PaceAlert = settings.PaceAlert;
+            IndicatorView.Marker = settings.TimeMarker; IndicatorView.PaceAlert = settings.PaceAlert; IndicatorView.ShowAtom = settings.UsageAtom;
             details = providerDetails[0];
             Text = WindowTitle;
             ShowInTaskbar = false;
@@ -187,6 +187,11 @@ namespace Taskcode.Probe
             menu.TimeMarker.SelectedIndexChanged += delegate
             {
                 settings.TimeMarker = IndicatorView.Marker = (TimeMarker)menu.TimeMarker.SelectedIndex;
+                preview.Invalidate(); Save(); TickLayout();
+            };
+            menu.UsageAtom.CheckedChanged += delegate
+            {
+                settings.UsageAtom = IndicatorView.ShowAtom = menu.UsageAtom.Checked;
                 preview.Invalidate(); Save(); TickLayout();
             };
             menu.PaceColors.CheckedChanged += delegate
