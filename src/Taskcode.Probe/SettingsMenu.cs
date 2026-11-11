@@ -12,8 +12,8 @@ namespace Taskcode.Probe
         private int settingsPage;
         private sealed class MenuControls
         {
-            internal ComboBox Style, Placement, Trigger, Language;
-            internal CheckBox Weekly, UsageColors, Startup, AutomaticUpdates;
+            internal ComboBox Style, Placement, Trigger, Language, TimeMarker;
+            internal CheckBox Weekly, UsageColors, PaceColors, Startup, AutomaticUpdates;
             internal Button Details, Close, Refresh, Claude, Codex, Disconnect;
         }
         private MenuControls BuildSettingsMenu(bool live)
@@ -48,7 +48,7 @@ namespace Taskcode.Probe
                 settingsPages[index] = new Panel { Location = new Point(152, 80), Size = new Size(352, 312), AccessibleName = titles[index] + " settings" };
                 Controls.Add(settingsPages[index]);
                 settingsPages[index].Paint += delegate(object sender, PaintEventArgs e) { PaintSettingsCards((Panel)sender, e.Graphics); };
-                var heading = MenuLabel(settingsPages[index], titles[index], 0, 0, 340, 24, "heading"); heading.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+                var heading = MenuLabel(settingsPages[index], titles[index], 0, 0, 230, 24, "heading"); heading.Font = new Font("Segoe UI", 10.5f, FontStyle.Bold);
             }
             var appearance = settingsPages[0];
             var previewPanel = new Panel { Location = new Point(0, 40), Size = new Size(340, 64), Tag = "surface", AccessibleName = "Indicator preview" };
@@ -66,12 +66,17 @@ namespace Taskcode.Probe
             var result = new MenuControls();
             result.Style = MenuSelect(appearance, "Style", 120, new[] { "Essential", "Lines", "Blocks", "Donuts", "Sparkline", "Dot Matrix", "Color Strip" }, (int)settings.Style, "Indicator style");
             L10n.Hint(settingsHints, result.Style, "Sparkline shows measured quota history and change in percentage points over the visible samples (up to 30 minutes). The vertical scale adjusts; history starts after fresh readings arrive.");
-            result.Trigger = MenuSelect(appearance, "Open details", 158, new[] { "On hover", "On click" }, (int)settings.DetailsTrigger, "Open details");
-            result.Weekly = new SettingsToggle { Text = "Weekly quota", Location = new Point(12, 196), Size = new Size(316, 26), Checked = settings.ShowWeekly, AccessibleName = "Show weekly quota in the indicator" }; appearance.Controls.Add(result.Weekly);
-            result.UsageColors = new SettingsToggle { Text = "Usage-based bar colors", Location = new Point(12, 226), Size = new Size(316, 26), Checked = settings.UsageBarColors, AccessibleName = "Usage-based bar colors" };
+            result.TimeMarker = MenuSelect(appearance, "Time marker", 154, new[] { "Off", "Arrows between bars", "Arrows outside bars", "Line", "Trail" }, (int)settings.TimeMarker, "Time marker");
+            L10n.Hint(settingsHints, result.TimeMarker, "Shows how much of each quota period has passed, like the white arrow in Details.");
+            result.Trigger = MenuSelect(appearance, "Open details", 188, new[] { "On hover", "On click" }, (int)settings.DetailsTrigger, "Open details");
+            result.Weekly = new SettingsToggle { Text = "Weekly quota", Location = new Point(12, 220), Size = new Size(316, 26), Checked = settings.ShowWeekly, AccessibleName = "Show weekly quota in the indicator" }; appearance.Controls.Add(result.Weekly);
+            result.UsageColors = new SettingsToggle { Text = "Usage-based bar colors", Location = new Point(12, 246), Size = new Size(316, 26), Checked = settings.UsageBarColors, AccessibleName = "Usage-based bar colors" };
             appearance.Controls.Add(result.UsageColors);
             L10n.Hint(settingsHints, result.UsageColors, "Green at 0%, yellow at 50%, red at 100% used. Applies to all meters and charts; provider logos keep their colors.");
-            result.Details = MenuButton(appearance, "Details", 180, 276, 160, 30, "action");
+            result.PaceColors = new SettingsToggle { Text = "Pace colors", Location = new Point(12, 272), Size = new Size(316, 26), Checked = settings.PaceAlert, AccessibleName = "Pace colors for the time marker" };
+            appearance.Controls.Add(result.PaceColors);
+            L10n.Hint(settingsHints, result.PaceColors, "The time marker turns green while usage stays within the elapsed time, and white once usage gets ahead.");
+            result.Details = MenuButton(appearance, "Details", 240, 0, 100, 26, "action");
             var accounts = settingsPages[1];
             for (int provider = 0; provider < 2; provider++)
             {
@@ -180,14 +185,14 @@ namespace Taskcode.Probe
         {
             string page = root.AccessibleName ?? "";
             float top = control.Top * 312f / Math.Max(1, root.Height);
-            return page == "Appearance settings" ? top >= 112 && top < 262 :
+            return page == "Appearance settings" ? top >= 112 && top < 302 :
                 page == "Accounts settings" ? top >= 40 && top < 208 :
                 page == "General settings" && top >= 40 && top < 308;
         }
         private void PaintSettingsCards(Panel page, Graphics graphics)
         {
             var saved = graphics.Save(); graphics.ScaleTransform(page.Width / 352f, page.Height / 312f);
-            RectangleF[] cards = page == settingsPages[0] ? new[] { new RectangleF(0, 112, 340, 150) } :
+            RectangleF[] cards = page == settingsPages[0] ? new[] { new RectangleF(0, 112, 340, 190) } :
                 page == settingsPages[1] ? new[] { new RectangleF(0, 40, 340, 80), new RectangleF(0, 128, 340, 80) } :
                 new[] { new RectangleF(0, 40, 340, 72), new RectangleF(0, 120, 340, 88), new RectangleF(0, 220, 340, 88) };
             foreach (var rect in cards) UiSurface.Draw(graphics, rect, UiSurface.Card(theme), Mix(BackColor, ForeColor, .07), 10);

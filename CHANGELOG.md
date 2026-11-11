@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.4 - 2026-11-11
+
+- Add a time marker to every indicator style, showing how much of each quota period has passed: arrows between the bars (default), arrows outside the bars, a line, or a lighter trail. Donuts gain a start mark at 12 o'clock. Optional pace colors turn the marker green while usage stays within the elapsed time and white once it gets ahead. The choice is saved and kept across updates.
+- Move the Details button beside the Appearance heading to make room for the new options.
+- Fix Claude quotas showing as unavailable right after a reset, when the service still reports the retired window: show the window as reset and check again after 30 seconds instead of five minutes.
+
 ## 0.4.3 - 2026-11-11
 
 - Stop the Details card border and logo from flickering: the card was fully repainted every second because unchanged themes compared as different. The card is now double-buffered.

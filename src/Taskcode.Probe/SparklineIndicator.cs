@@ -62,7 +62,7 @@ namespace Taskcode.Probe
             double delta = samples[samples.Length - 1].Used - samples[0].Used;
             return delta.ToString("+0.#;-0.#;0", CultureInfo.CurrentCulture) + " pp";
         }
-        private static void DrawSparklineRow(Graphics graphics, int x, int y, int used, string period, QuotaTrend trend, bool weekly, Color accent, TaskbarTheme palette, bool usageColors, Font valueFont, Font smallFont, DateTime now)
+        private static void DrawSparklineRow(Graphics graphics, int x, int y, int used, string period, QuotaTrend trend, bool weekly, Color accent, TaskbarTheme palette, bool usageColors, Font valueFont, Font smallFont, DateTime now, double? elapsed = null)
         {
             var samples = used < 0 || trend == null ? new TrendPoint[0] : trend.PointsAt(now);
             Color color = UsageBarPalette.Resolve(accent, used, usageColors, palette.HighContrast);
@@ -73,7 +73,10 @@ namespace Taskcode.Probe
                 graphics.DrawString(period, smallFont, muted, x + 22, weekly ? y + 2 : 1);
                 graphics.DrawString(Percentage(used), valueFont, ink, x + (weekly ? 36 : 23), weekly ? y : 10);
                 graphics.DrawString(used < 0 ? "--" : TrendDelta(samples), smallFont, variation, x + (weekly ? 70 : 58), weekly ? y + 2 : 12);
-                DrawTrend(graphics, new RectangleF(x + (weekly ? 99 : 94), weekly ? y + 3 : 7, weekly ? 35 : 40, weekly ? 9 : 20), samples, color, palette);
+                var chart = new RectangleF(x + (weekly ? 99 : 94), weekly ? y + 3 : 7, weekly ? 35 : 40, weekly ? 9 : 20);
+                DrawTrend(graphics, chart, samples, color, palette);
+                // The chart shows recent history, not the period, so time gets its own rule underneath.
+                DrawTimeRule(graphics, chart.Left, chart.Right, chart.Bottom + (weekly ? 1.3f : 1.6f), used, elapsed, palette);
             }
         }
         private static void DrawSparklines(Graphics graphics, Size size, TaskbarTheme palette, bool weekly, UsageDemo usage, int activityKey, double activitySeconds, bool usageColors, bool shell)
@@ -102,19 +105,19 @@ namespace Taskcode.Probe
                         using (var mark = new SolidBrush(accent)) DrawMark(graphics, font, mark, name, x);
                         for (int window = 0; window < (weekly ? 2 : 1); window++)
                         {
-                            int used; string caption; QuotaTrend trend = null;
+                            int used; string caption; QuotaTrend trend = null; double? elapsed;
                             if (provider < 2)
-                            { int index = provider * 2 + window; used = Value(model, index); caption = window == 0 ? "5h" : "7d"; trend = model.Readings[index].Trend; }
+                            { int index = provider * 2 + window; used = Value(model, index); caption = window == 0 ? "5h" : "7d"; trend = model.Readings[index].Trend; elapsed = Elapsed(usage, index, now); }
                             else
                             {
                                 var optional = model.OptionalProviders[provider - 2];
                                 if (optional.Snapshot.CountText != null)
                                 { if (window == 0) using (var text = new SolidBrush(palette.Text)) graphics.DrawString(optional.DisplayText(now), valueFont, text, x + 25, 10); break; }
                                 if (window > 0 && window >= optional.Snapshot.Quotas.Count) break;
-                                used = DonutQuotaUsed(optional, window, now); caption = DonutQuotaCaption(optional, window);
+                                used = DonutQuotaUsed(optional, window, now); caption = DonutQuotaCaption(optional, window); elapsed = OptionalElapsed(optional, window, now);
                                 if (window < optional.Snapshot.Quotas.Count) optional.Trends.TryGetValue(optional.Snapshot.Quotas[window].Name, out trend);
                             }
-                            DrawSparklineRow(graphics, x, window == 0 ? 2 : 16, used, caption, trend, weekly, accent, palette, usageColors, valueFont, smallFont, now);
+                            DrawSparklineRow(graphics, x, window == 0 ? 2 : 16, used, caption, trend, weekly, accent, palette, usageColors, valueFont, smallFont, now, elapsed);
                         }
                     }
                 }

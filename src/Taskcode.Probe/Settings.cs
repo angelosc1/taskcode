@@ -13,6 +13,9 @@ namespace Taskcode.Probe
         internal DetailsTrigger DetailsTrigger = DetailsTrigger.Hover;
         internal bool ShowWeekly;
         internal bool UsageBarColors = false;
+        // Arrows are the default only until the user picks something; the saved choice always wins after that.
+        internal TimeMarker TimeMarker = TimeMarker.ArrowsBetween;
+        internal bool PaceAlert = false;
         internal bool AutomaticUpdateChecks = true;
         internal string Language = "auto";
         internal DateTime LastUpdateCheckUtc;
@@ -42,6 +45,9 @@ namespace Taskcode.Probe
                 if (Enum.TryParse(doc.DocumentElement.GetAttribute("detailsTrigger"), out detailsTrigger) && Enum.IsDefined(typeof(DetailsTrigger), detailsTrigger)) value.DetailsTrigger = detailsTrigger;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("showWeekly"), out showWeekly)) value.ShowWeekly = showWeekly;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("usageBarColors"), out showWeekly)) value.UsageBarColors = showWeekly;
+                TimeMarker marker;
+                if (Enum.TryParse(doc.DocumentElement.GetAttribute("timeMarker"), out marker) && Enum.IsDefined(typeof(TimeMarker), marker)) value.TimeMarker = marker;
+                if (bool.TryParse(doc.DocumentElement.GetAttribute("paceAlert"), out showWeekly)) value.PaceAlert = showWeekly;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("automaticUpdateChecks"), out showWeekly)) value.AutomaticUpdateChecks = showWeekly;
                 DateTime lastCheck;
                 if (DateTime.TryParse(doc.DocumentElement.GetAttribute("lastUpdateCheckUtc"), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind, out lastCheck)) value.LastUpdateCheckUtc = lastCheck.ToUniversalTime();
@@ -71,6 +77,8 @@ namespace Taskcode.Probe
                 writer.WriteAttributeString("detailsTrigger", DetailsTrigger.ToString());
                 writer.WriteAttributeString("showWeekly", ShowWeekly.ToString());
                 writer.WriteAttributeString("usageBarColors", UsageBarColors.ToString());
+                writer.WriteAttributeString("timeMarker", TimeMarker.ToString());
+                writer.WriteAttributeString("paceAlert", PaceAlert.ToString());
                 writer.WriteAttributeString("automaticUpdateChecks", AutomaticUpdateChecks.ToString());
                 writer.WriteAttributeString("lastUpdateCheckUtc", LastUpdateCheckUtc.ToString("o"));
                 writer.WriteAttributeString("codexEnabled", CodexEnabled.ToString());

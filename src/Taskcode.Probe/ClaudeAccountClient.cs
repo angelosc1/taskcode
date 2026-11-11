@@ -116,7 +116,11 @@ namespace Taskcode.Probe
             {
                 char[] buffer = new char[1048577]; int count = reader.ReadBlock(buffer, 0, buffer.Length);
                 if (count > 1048576) throw new InvalidDataException();
-                last = ParseUsage(AccountJson.Parse(new string(buffer, 0, count)), now);
+                var parsed = ParseUsage(AccountJson.Parse(new string(buffer, 0, count)), now);
+                // Right at a reset the service can still return the retired window. Show "window reset"
+                // instead of "unavailable" and check again soon rather than in five minutes.
+                if (KeepEndedPeriods(last, parsed, now)) nextRead = now.AddSeconds(30);
+                last = parsed;
                 string metadata = UsePrivateProfile || Environment.GetEnvironmentVariable("CLAUDE_CONFIG_DIR") != null ? Path.Combine(lastHome, ".claude.json") : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude.json");
                 if (File.Exists(metadata))
                     try { last.Identity = AccountJson.Get(AccountJson.Get(AccountJson.Parse(File.ReadAllText(metadata)), "oauthAccount"), "emailAddress") as string; } catch (ArgumentException) { } catch (IOException) { } catch (UnauthorizedAccessException) { }
@@ -202,6 +206,21 @@ namespace Taskcode.Probe
             foreach (var period in snapshot.Periods)
                 if (period != null && !period.WaitingForFirstRequest && period.EndUtc > lastAttempt && period.EndUtc <= now) return true;
             return active && snapshot.Periods[0] != null && snapshot.Periods[0].WaitingForFirstRequest && now >= nextIdleProbe;
+        }
+        internal static readonly TimeSpan RolloverGrace = TimeSpan.FromMinutes(15);
+        // Carries a window that just ended into a reading that lacks it. The old window's end is in the
+        // past, so Details shows it as reset pending; no new value is invented.
+        internal static bool KeepEndedPeriods(AccountSnapshot previous, AccountSnapshot next, DateTime now)
+        {
+            if (previous == null || next == null) return false;
+            bool kept = false;
+            for (int index = 0; index < 2; index++)
+            {
+                var old = previous.Periods[index];
+                if (next.Periods[index] != null || old == null || old.WaitingForFirstRequest || old.EndUtc > now || now - old.EndUtc > RolloverGrace) continue;
+                next.Periods[index] = old; next.Remaining[index] = previous.Remaining[index]; kept = true;
+            }
+            return kept;
         }
         private static object NormalizeWindow(object used, object reset)
         {

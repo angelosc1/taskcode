@@ -30,10 +30,11 @@ namespace Taskcode.Probe
                 else { fill.StartCap = fill.EndCap = LineCap.Round; graphics.DrawArc(fill, bounds, -90, (float)(used * 3.6)); }
             }
         }
-        private static void DrawDonutValue(Graphics graphics, int x, int used, string caption, Color accent, TaskbarTheme palette, Font valueFont, Font captionFont, bool usageColors)
+        private static void DrawDonutValue(Graphics graphics, int x, int used, string caption, Color accent, TaskbarTheme palette, Font valueFont, Font captionFont, bool usageColors, double? elapsed = null)
         {
             var bounds = new RectangleF(x, 6, 22, 22);
             DrawDonutMeter(graphics, bounds, used, UsageBarPalette.Resolve(accent, used, usageColors, palette.HighContrast), palette.Track);
+            DrawDonutTime(graphics, bounds, 3.2f, used, elapsed, palette);
             using (var center = new SolidBrush(used < 0 ? palette.Muted : palette.Text))
             using (var text = new SolidBrush(palette.Text))
             using (var format = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
@@ -107,16 +108,16 @@ namespace Taskcode.Probe
                         using (var mark = new SolidBrush(accent)) DrawMark(graphics, font, mark, name, x);
                         if (provider < 2)
                         {
-                            DrawDonutValue(graphics, x + 25, Value(usage, provider * 2), "5h", accent, palette, bold, caption, usageColors);
-                            if (weekly) DrawDonutValue(graphics, x + 87, Value(usage, provider * 2 + 1), "7d", accent, palette, bold, caption, usageColors);
+                            DrawDonutValue(graphics, x + 25, Value(usage, provider * 2), "5h", accent, palette, bold, caption, usageColors, Elapsed(usage, provider * 2, now));
+                            if (weekly) DrawDonutValue(graphics, x + 87, Value(usage, provider * 2 + 1), "7d", accent, palette, bold, caption, usageColors, Elapsed(usage, provider * 2 + 1, now));
                         }
                         else
                         {
                             var optional = usage.OptionalProviders[provider - 2];
                             if (optional.Snapshot.CountText != null)
                             { using (var text = new SolidBrush(palette.Text)) graphics.DrawString(optional.DisplayText(now), bold, text, x + 31, 10, StringFormat.GenericTypographic); continue; }
-                            DrawDonutValue(graphics, x + 25, DonutQuotaUsed(optional, 0, now), DonutQuotaCaption(optional, 0), accent, palette, bold, caption, usageColors);
-                            if (weekly && optional.Snapshot.Quotas.Count > 1) DrawDonutValue(graphics, x + 87, DonutQuotaUsed(optional, 1, now), DonutQuotaCaption(optional, 1), accent, palette, bold, caption, usageColors);
+                            DrawDonutValue(graphics, x + 25, DonutQuotaUsed(optional, 0, now), DonutQuotaCaption(optional, 0), accent, palette, bold, caption, usageColors, OptionalElapsed(optional, 0, now));
+                            if (weekly && optional.Snapshot.Quotas.Count > 1) DrawDonutValue(graphics, x + 87, DonutQuotaUsed(optional, 1, now), DonutQuotaCaption(optional, 1), accent, palette, bold, caption, usageColors, OptionalElapsed(optional, 1, now));
                         }
                     }
                 }

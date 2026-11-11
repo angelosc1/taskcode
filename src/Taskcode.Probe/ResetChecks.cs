@@ -31,6 +31,23 @@ namespace Taskcode.Probe
                 "Missing or malformed timing must not invent a zero-use session from nonzero or invalid readings.");
             Check(ClaudeAccountClient.ParseUsage(AccountJson.Parse("{\"five_hour\":null,\"seven_day\":null}"), now).Periods[0] == null,
                 "An absent window is distinct from an explicitly reported idle window.");
+            // Weekly rollover: the service still reports the retired window right after the reset.
+            var beforeReset = Snapshot(now.AddMinutes(-3), 10, now.AddHours(2).ToString("o"));
+            var retired = ClaudeAccountClient.ParseUsage(AccountJson.Parse(AccountJson.Encode(new {
+                five_hour = new { utilization = 10, resets_at = now.AddHours(2).ToString("o") },
+                seven_day = new { utilization = 50, resets_at = now.AddMinutes(-3).AddDays(5).ToString("o") }
+            })), now.AddMinutes(-3).AddDays(5).AddSeconds(1));
+            var reading = beforeReset; reading.Periods[1].EndUtc = now.AddMinutes(-3).AddDays(5); reading.Periods[1].StartUtc = reading.Periods[1].EndUtc.AddDays(-7);
+            var atReset = now.AddMinutes(-3).AddDays(5).AddSeconds(1);
+            Check(retired.Periods[1] == null, "A retired weekly window must not parse as current.");
+            Check(ClaudeAccountClient.KeepEndedPeriods(reading, retired, atReset) && retired.Periods[1] == reading.Periods[1],
+                "A window that just ended must be kept as reset pending instead of becoming unavailable.");
+            var rollover = new UsageDemo(); rollover.BeginLive(); rollover.Apply(0, retired);
+            Check(rollover.ResetPending(1, atReset) && rollover.DetailSpeedAt(1, atReset).State == SpeedState.ResetPending,
+                "Details must say the window reset while waiting for the provider.");
+            var late = ClaudeAccountClient.ParseUsage(AccountJson.Parse("{\"five_hour\":null,\"seven_day\":null}"), atReset);
+            Check(!ClaudeAccountClient.KeepEndedPeriods(reading, late, atReset.Add(ClaudeAccountClient.RolloverGrace).AddSeconds(1)) && late.Periods[1] == null,
+                "An ended window must not be kept beyond the rollover grace.");
             var roundTrip = AccountSnapshot.Claude(AccountJson.Parse(ClaudeBridge.SerializeSnapshot(waiting)), now);
             Check(roundTrip.Periods[0].WaitingForFirstRequest, "The local bridge must preserve idle windows without a fake reset timestamp.");
             var usage = new UsageDemo(); usage.BeginLive(); usage.Apply(0, waiting);
