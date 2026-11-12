@@ -10,6 +10,7 @@ namespace Taskcode.Probe
     {
         internal IndicatorStyle Style = IndicatorStyle.Essential;
         internal HostMode Mode = HostMode.Embedded;
+        internal IndicatorAnchor Anchor = IndicatorAnchor.End;
         internal DetailsTrigger DetailsTrigger = DetailsTrigger.Hover;
         internal bool ShowWeekly;
         internal bool UsageBarColors = false;
@@ -42,6 +43,8 @@ namespace Taskcode.Probe
                 value.Language = L10n.Normalize(doc.DocumentElement.GetAttribute("language"));
                 if (savedStyle == "Pill") savedStyle = "Essential";
                 if (Enum.TryParse(savedStyle, out style) && Enum.IsDefined(typeof(IndicatorStyle), style)) value.Style = style;
+                IndicatorAnchor anchor;
+                if (Enum.TryParse(doc.DocumentElement.GetAttribute("anchor"), out anchor) && Enum.IsDefined(typeof(IndicatorAnchor), anchor)) value.Anchor = anchor;
                 if (Enum.TryParse(doc.DocumentElement.GetAttribute("mode"), out mode) && Enum.IsDefined(typeof(HostMode), mode)) value.Mode = mode;
                 if (Enum.TryParse(doc.DocumentElement.GetAttribute("detailsTrigger"), out detailsTrigger) && Enum.IsDefined(typeof(DetailsTrigger), detailsTrigger)) value.DetailsTrigger = detailsTrigger;
                 if (bool.TryParse(doc.DocumentElement.GetAttribute("showWeekly"), out showWeekly)) value.ShowWeekly = showWeekly;
@@ -76,6 +79,7 @@ namespace Taskcode.Probe
                 writer.WriteAttributeString("style", Style.ToString());
                 writer.WriteAttributeString("language", Language);
                 writer.WriteAttributeString("mode", Mode.ToString());
+                writer.WriteAttributeString("anchor", Anchor.ToString());
                 writer.WriteAttributeString("detailsTrigger", DetailsTrigger.ToString());
                 writer.WriteAttributeString("showWeekly", ShowWeekly.ToString());
                 writer.WriteAttributeString("usageBarColors", UsageBarColors.ToString());

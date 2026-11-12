@@ -23,6 +23,14 @@ namespace Taskcode.Probe
                     anchor.Bottom <= card.Top ? Rectangle.FromLTRB(left, anchor.Bottom, right, card.Top) : Rectangle.Empty;
                 if (bridge.Contains(pointer)) return false;
             }
+            // Vertical taskbars open the card beside the indicator; bridge the horizontal gap too.
+            int top = System.Math.Max(card.Top, anchor.Top), bottom = System.Math.Min(card.Bottom, anchor.Bottom);
+            if (top < bottom)
+            {
+                var bridge = card.Right <= anchor.Left ? Rectangle.FromLTRB(card.Right, top, anchor.Left, bottom) :
+                    anchor.Right <= card.Left ? Rectangle.FromLTRB(anchor.Right, top, card.Left, bottom) : Rectangle.Empty;
+                if (bridge.Contains(pointer)) return false;
+            }
             return true;
         }
     }

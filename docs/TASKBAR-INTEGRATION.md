@@ -67,7 +67,7 @@ Right-click is handled by Taskcode and opens its own settings/exit menu, includi
 
 Windows passes clicks through alpha-zero pixels in layered windows. The live input surface therefore uses a minimum alpha of 1/255 in otherwise empty pixels, tinted to the taskbar palette. This preserves the whole indicator's mouse area outside the opaque capsule without adding a visible rectangular background. Offscreen artwork retains alpha-zero backgrounds. Regression checks cover the input surface across all styles/themes and context-menu routing in Embedded and Overlay using an isolated host window. See [Microsoft's layered-window hit-testing documentation](https://learn.microsoft.com/en-us/windows/win32/winmsg/window-features#layered-windows).
 
-- Primary horizontal taskbar only.
+- Primary taskbar only. Vertical (left/right) taskbars use a stacked pill limited to Essential, Donuts and Color Strip.
 - Indicator, Details, settings menu, and connection windows use a fixed dark palette regardless of the Windows light/dark setting.
 - Essential is the default and first style, followed by Lines and Blocks. All styles share a dark opaque capsule with transparent outer corners, without acrylic effects. Exact blending on the actual taskbar still needs visual confirmation after this change.
 - Does not reserve space or move Windows controls; may hide on a crowded taskbar.

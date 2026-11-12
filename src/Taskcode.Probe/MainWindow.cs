@@ -20,6 +20,10 @@ namespace Taskcode.Probe
         private readonly Label status = new Label();
         private readonly CheckBox enabled = new SettingsToggle();
         private IndicatorWindow indicator;
+        private ComboBox styleSelect;
+        // Dragging the pill along the taskbar picks which end it sticks to.
+        private Point dragOrigin;
+        private bool dragArmed, dragging, suppressClick;
         private readonly UsageDemo usage = new UsageDemo();
         private readonly DetailWindow[] providerDetails;
         private DetailWindow details;
@@ -78,6 +82,7 @@ namespace Taskcode.Probe
             MaximizeBox = false;
             var menu = BuildSettingsMenu(connectAccounts);
             var style = menu.Style; var mode = menu.Placement; var trigger = menu.Trigger;
+            styleSelect = style;
             var weekly = menu.Weekly; var startup = menu.Startup;
             var detailsButton = menu.Details; var closeSettings = menu.Close; var simulate = menu.Refresh;
             providerDetailsButton = detailsButton;
@@ -323,7 +328,30 @@ namespace Taskcode.Probe
             if (indicator != null && !indicator.IsDisposed) indicator.Dispose();
             attachedParent = IntPtr.Zero;
             indicator = new IndicatorWindow();
-            indicator.MouseMove += delegate { UpdateHover(); };
+            indicator.MouseMove += delegate(object sender, MouseEventArgs e) { if (!DragIndicator(e)) UpdateHover(); };
+            indicator.MouseDown += delegate(object sender, MouseEventArgs e)
+            {
+                if (e.Button != MouseButtons.Left) return;
+                dragOrigin = Cursor.Position; dragArmed = true; dragging = false;
+            };
+            indicator.MouseUp += delegate(object sender, MouseEventArgs e)
+            {
+                if (e.Button != MouseButtons.Left) return;
+                dragArmed = false;
+                if (!dragging) return;
+                dragging = false; suppressClick = true;
+                var layout = watcher.Latest;
+                if (layout != null && layout.Error == null)
+                {
+                    var pointer = Cursor.Position;
+                    int along = layout.Vertical ? pointer.Y : pointer.X;
+                    int middle = layout.Vertical ? layout.Bar.Top + layout.Bar.Height / 2 : layout.Bar.Left + layout.Bar.Width / 2;
+                    settings.Anchor = along < middle ? IndicatorAnchor.Start : IndicatorAnchor.End;
+                    Save();
+                }
+                Program.RecordLifecycle("Indicator dragged to " + settings.Anchor);
+                TickLayout();
+            };
             indicator.ContextRequested += delegate
             {
                 details.Hide();
@@ -332,14 +360,31 @@ namespace Taskcode.Probe
             indicator.MouseClick += delegate(object sender, MouseEventArgs e)
             {
                 if (e.Button != MouseButtons.Left) return;
+                if (suppressClick) { suppressClick = false; return; }
                 int provider = indicator.ProviderAt(e.Location);
                 if (provider >= 0) ShowDetails(true, false, provider);
             };
             indicator.MouseEnter += delegate
             {
-                int provider = IndicatorView.ProviderAt(indicator.PointToClient(Cursor.Position), indicator.ClientSize, settings.Style, settings.ShowWeekly, usage);
+                if (dragging) return;
+                int provider = indicator.ProviderAt(indicator.PointToClient(Cursor.Position));
                 if (provider >= 0) ShowDetails(false, false, provider);
             };
+        }
+        // Moves the pill under the pointer along the taskbar while the left button is held.
+        private bool DragIndicator(MouseEventArgs e)
+        {
+            if (!dragArmed || (e.Button & MouseButtons.Left) == 0 || indicator == null || indicator.IsDisposed || indicatorBounds.IsEmpty) return false;
+            var layout = watcher.Latest; if (layout == null) return false;
+            var pointer = Cursor.Position;
+            int delta = layout.Vertical ? pointer.Y - dragOrigin.Y : pointer.X - dragOrigin.X;
+            if (!dragging && Math.Abs(delta) < SystemInformation.DragSize.Width) return false;
+            if (!dragging) { dragging = true; foreach (var panel in providerDetails) panel.Hide(); foreach (var panel in optionalDetails) if (panel != null) panel.Hide(); }
+            var bounds = indicatorBounds;
+            if (layout.Vertical) bounds.Y = Math.Max(layout.Bar.Top, Math.Min(layout.Bar.Bottom - bounds.Height, bounds.Y + delta));
+            else bounds.X = Math.Max(layout.Bar.Left, Math.Min(layout.Bar.Right - bounds.Width, bounds.X + delta));
+            indicator.Place(bounds, attachedParent, false);
+            return true;
         }
         private void PauseIndicator(string reason)
         {
@@ -416,6 +461,7 @@ namespace Taskcode.Probe
                 preview.Invalidate();
                 foreach (var panel in providerDetails) panel.ApplyTheme(theme);
             }
+            if (dragging) return;
             if (!enabled.Checked) { PauseIndicator("Indicator paused. The preview is still available."); return; }
             if (usage.VisibleProviderCount == 0) { PauseIndicator("No providers enabled."); return; }
             var layout = watcher.Latest;
@@ -433,16 +479,22 @@ namespace Taskcode.Probe
             // tray edge right away. TryViewport below still refuses to cover taskbar buttons.
             var trayBounds = liveTray.Bounds;
             var screen = Screen.FromRectangle(layout.Bar);
-            if (Rectangle.Intersect(screen.Bounds, layout.Bar).Height < layout.Bar.Height / 2)
+            bool vertical = layout.Vertical;
+            var onScreen = Rectangle.Intersect(screen.Bounds, layout.Bar);
+            if (vertical ? onScreen.Width < layout.Bar.Width / 2 : onScreen.Height < layout.Bar.Height / 2)
             { PauseIndicator("Taskbar is hidden."); return; }
             float scale = Math.Max(96, layout.Dpi) / 96f;
-            int width = (int)Math.Round(IndicatorView.LogicalWidth(settings.Style, settings.ShowWeekly, usage) * scale);
-            int height = (int)Math.Round(IndicatorView.LogicalHeight * scale);
+            verticalBar = vertical;
+            UpdateStyleAvailability();
+            var style = EffectiveStyle;
+            int length = (int)Math.Round((vertical ? IndicatorView.VerticalLogicalHeight(style, settings.ShowWeekly, usage) : IndicatorView.LogicalWidth(style, settings.ShowWeekly, usage)) * scale);
+            int thickness = (int)Math.Round(IndicatorView.LogicalHeight * scale);
             Rectangle slot;
-            if (!Placement.TryViewport(layout.Bar, trayBounds, layout.OccupiedRight, width, height, (int)Math.Round(8 * scale), out slot))
+            if (!Placement.TryPlace(layout.Bar, trayBounds, layout.Occupied, length, thickness, (int)Math.Round(8 * scale), out slot, settings.Anchor))
             { PauseIndicator("Not enough verified space before the system tray.\nTry Essential or reduce the number of taskbar buttons."); return; }
             if (indicator == null || indicator.IsDisposed || (attachedParent != IntPtr.Zero && !Native.IsWindow(indicator.Handle))) RecreateIndicator();
-            indicator.ContentWidth = width;
+            indicator.Vertical = vertical;
+            indicator.ContentWidth = length;
             SyncIndicator(pulse, activityKey);
             IntPtr expected = settings.Mode == HostMode.Embedded ? layout.Taskbar : IntPtr.Zero;
             bool parentChanged = attachedParent != expected || Native.GetParent(indicator.Handle) != expected;
@@ -464,14 +516,18 @@ namespace Taskcode.Probe
             indicatorBounds = indicator.RectangleToScreen(indicator.ClientRectangle);
             transientSince = DateTime.MinValue;
             RecordIndicatorState(expected == IntPtr.Zero ? "Overlay active" : "Embedded active");
-            SetSettingsStatus((expected == IntPtr.Zero ? "Overlay active" : "Embedded child window active") + " · " + layout.Dpi + " DPI" + (saveError == null ? "" : "\n" + saveError), saveError != null);
+            SetSettingsStatus((expected == IntPtr.Zero ? "Overlay active" : "Embedded child window active") + " · " + layout.Dpi + " DPI" +
+                (vertical && style != settings.Style ? "\nVertical taskbar: showing Essential. Donuts and Color Strip also fit." : "") + (saveError == null ? "" : "\n" + saveError), saveError != null);
             UpdateHover();
         }
         private static readonly TimeSpan TransientGrace = TimeSpan.FromSeconds(15);
         private DateTime transientSince = DateTime.MinValue;
+        private bool verticalBar;
+        // Long styles do not fit a vertical taskbar; there only Essential and Donuts stack.
+        private IndicatorStyle EffectiveStyle { get { return verticalBar ? IndicatorView.VerticalStyle(settings.Style) : settings.Style; } }
         private void SyncIndicator(int pulse, int activityKey)
         {
-            indicator.DisplayStyle = settings.Style;
+            indicator.DisplayStyle = EffectiveStyle;
             indicator.ShowWeekly = settings.ShowWeekly;
             indicator.UsageBarColors = settings.UsageBarColors;
             indicator.PulseKey = pulse;
@@ -502,7 +558,7 @@ namespace Taskcode.Probe
                 foreach (var panel in optionalDetails) readingDetails |= panel != null && panel.Visible && panel.RequiresIndicator;
                 indicator.ScrollPaused = trayMenu.Visible || readingDetails || (indicator.Visible && indicatorBounds.Contains(pointer));
             }
-            if (settings.DetailsTrigger != DetailsTrigger.Hover || trayMenu.Visible) return;
+            if (settings.DetailsTrigger != DetailsTrigger.Hover || trayMenu.Visible || dragging) return;
             bool fromPreview = Visible && preview.Visible && preview.RectangleToScreen(preview.ClientRectangle).Contains(pointer);
             var bounds = fromPreview ? preview.RectangleToScreen(preview.ClientRectangle) : indicatorBounds;
             if (!fromPreview && (indicator == null || !indicator.Visible)) return;
@@ -541,18 +597,32 @@ namespace Taskcode.Probe
                 details = providerDetails[provider];
             }
             Rectangle anchor = sourceAnchor ?? (fromPreview || indicatorBounds.IsEmpty ? preview.RectangleToScreen(preview.ClientRectangle) : indicatorBounds);
+            bool beside = !fromPreview && !sourceAnchor.HasValue && verticalBar && !indicatorBounds.IsEmpty;
             if (!sourceAnchor.HasValue)
             {
                 var providerAnchor = !fromPreview && indicator != null && !indicator.IsDisposed ? indicator.ProviderBounds(provider, indicator.PointToClient(Cursor.Position)) : IndicatorView.ProviderBounds(provider, anchor.Size, settings.Style, settings.ShowWeekly, usage);
-                anchor = new Rectangle(anchor.X + providerAnchor.X, anchor.Y, providerAnchor.Width, anchor.Height);
+                anchor = beside ? new Rectangle(anchor.X, anchor.Y + providerAnchor.Y, anchor.Width, providerAnchor.Height)
+                    : new Rectangle(anchor.X + providerAnchor.X, anchor.Y, providerAnchor.Width, anchor.Height);
             }
             // Already open for this provider: keep the card still, but follow the indicator if it
             // moved or scrolled, so the hover area never drifts away from the pointer.
             if (alreadyShown) { details.HoverAnchor = anchor; return; }
             var area = Screen.FromRectangle(anchor).WorkingArea;
-            int x = Math.Max(area.Left, Math.Min(anchor.Right - details.Width, area.Right - details.Width));
-            int y = anchor.Top - details.Height - 8;
-            if (y < area.Top) y = Math.Min(area.Bottom - details.Height, anchor.Bottom + 8);
+            int x, y;
+            if (beside)
+            {
+                // Vertical taskbar: open the card next to the bar, aligned with the provider cell.
+                bool leftEdge = anchor.Left - area.Left < area.Right - anchor.Right;
+                x = leftEdge ? anchor.Right + 8 : anchor.Left - details.Width - 8;
+                x = Math.Max(area.Left, Math.Min(x, area.Right - details.Width));
+                y = Math.Max(area.Top, Math.Min(anchor.Bottom - details.Height, area.Bottom - details.Height));
+            }
+            else
+            {
+                x = Math.Max(area.Left, Math.Min(anchor.Right - details.Width, area.Right - details.Width));
+                y = anchor.Top - details.Height - 8;
+                if (y < area.Top) y = Math.Min(area.Bottom - details.Height, anchor.Bottom + 8);
+            }
             details.Location = new Point(x, y);
             details.HoverAnchor = anchor;
             details.RequiresIndicator = !sourceAnchor.HasValue && !fromPreview && !indicatorBounds.IsEmpty;

@@ -220,7 +220,7 @@ namespace Taskcode.Probe
                 LogoMotionChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 ActivityChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 InputChecks.Run();
-                PlacementChecks.Run();
+                PlacementChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 ScrollChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 SignInChecks.Run(AppDomain.CurrentDomain.BaseDirectory);
                 DetailChecks.Run();

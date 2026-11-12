@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.6 - 2026-11-12
+
+- Keep the indicator visible with Widgets on: every free gap between taskbar items is now measured, so the Widgets button next to the tray no longer leaves "no space".
+- On centered taskbars, move the indicator to the larger left gap when it does not fit before the tray, instead of shrinking it into a scrolling strip. The tray-side gap stays preferred whenever the whole indicator fits there.
+- Support taskbars docked on the left or right: a vertical pill stacks each logo above its numbers. Essential, Donuts and Color Strip are available there; the longer styles are grayed out in the style list and show as Essential. Details open beside the bar.
+- Drag the indicator along the taskbar to stick it to the left (top) or right (bottom) side. The choice is saved.
+
 ## 0.4.5 - 2026-11-11
 
 - Add the usage atom: while a provider works, 2, 4 or 6 small spheres orbit its spinning logo for light, medium or heavy usage pace (the same levels as the Details speed arrows). Each sphere has its own tilted path, neighbours run in opposite directions, and a comet tail in the provider color trails behind. With Windows animations off the spheres stay still and still show the level. Turn it off in Appearance > Usage atom to keep only the spinning logo; the choice is kept across updates.

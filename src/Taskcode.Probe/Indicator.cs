@@ -397,6 +397,7 @@ namespace Taskcode.Probe
             if ((DisplayStyle == IndicatorStyle.Donuts || DisplayStyle == IndicatorStyle.DotMatrix || DisplayStyle == IndicatorStyle.ColorStrip) && Usage != null) values += IndicatorView.DonutDataKey(Usage, DateTime.UtcNow);
             if (DisplayStyle == IndicatorStyle.Sparkline && Usage != null) values += IndicatorView.SparklineDataKey(Usage, DateTime.UtcNow);
             values += IndicatorView.MarkerKey(DateTime.UtcNow) + LogoMotion.Key + (IndicatorView.ShowAtom ? "|atom" : "");
+            values += Vertical ? "|vertical" : "";
             if (renderedHandle == Handle && renderedScroll == ScrollOffset && renderedSize == Size && renderedStyle == DisplayStyle && renderedTheme == Theme && renderedWeekly == ShowWeekly && renderedUsageBarColors == UsageBarColors && renderedPulse == PulseKey && renderedActivity == ActivityKey && renderedFrame == frame && renderedMotion == motion && renderedValues == values) return true;
             if (Width <= 0 || Height <= 0) return false;
             using (var bitmap = new Bitmap(Width, Height, PixelFormat.Format32bppPArgb))

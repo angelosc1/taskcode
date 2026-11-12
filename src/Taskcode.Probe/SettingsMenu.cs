@@ -133,6 +133,16 @@ namespace Taskcode.Probe
         private static Button MenuButton(Control parent, string text, int x, int y, int width, int height, string role)
         { var button = new SurfaceButton { Text = text, Location = new Point(x, y), Size = new Size(width, height), Tag = role, FlatStyle = FlatStyle.Flat, UseVisualStyleBackColor = false }; button.FlatAppearance.BorderSize = role == "action" ? 1 : 0; button.SizeChanged += delegate { UiSurface.Round(button, 7); }; UiSurface.Round(button, 7); parent.Controls.Add(button); return button; }
         private static void AddDivider(Control parent, int x, int y, int width) { parent.Controls.Add(new Panel { Location = new Point(x, y), Size = new Size(width, 1), Tag = "divider" }); }
+        // Grays out the styles a vertical taskbar cannot show, so only the stacked ones can be picked.
+        private void UpdateStyleAvailability()
+        {
+            var select = styleSelect as SettingsSelect;
+            if (select == null) return;
+            if (!verticalBar) { select.SetDisabled(null); return; }
+            var off = new bool[select.Items.Count];
+            for (int index = 0; index < off.Length; index++) off[index] = !IndicatorView.SupportsVertical((IndicatorStyle)index);
+            select.SetDisabled(off);
+        }
         private static ComboBox MenuSelect(Control parent, string label, int y, string[] choices, int selected, string accessibleName)
         {
             MenuLabel(parent, label, 12, y + 4, 112, 24, "text");
@@ -291,12 +301,29 @@ namespace Taskcode.Probe
         private sealed class SettingsSelect : ComboBox
         {
             internal SettingsSelect() { DropDownStyle = ComboBoxStyle.DropDownList; FlatStyle = FlatStyle.Flat; DrawMode = DrawMode.OwnerDrawFixed; ItemHeight = 22; }
+            // Items that cannot be picked right now (e.g. long styles on a vertical taskbar): drawn muted and skipped.
+            private bool[] disabled;
+            private int lastIndex = -1;
+            internal bool ItemDisabled(int index) { return disabled != null && index >= 0 && index < disabled.Length && disabled[index]; }
+            internal void SetDisabled(bool[] value)
+            {
+                bool changed = (disabled == null) != (value == null) || (value != null && !System.Linq.Enumerable.SequenceEqual(disabled, value));
+                disabled = value == null ? null : (bool[])value.Clone();
+                if (changed) Invalidate();
+            }
+            protected override void OnSelectedIndexChanged(EventArgs e)
+            {
+                if (ItemDisabled(SelectedIndex) && lastIndex >= 0 && lastIndex != SelectedIndex) { SelectedIndex = lastIndex; return; }
+                lastIndex = SelectedIndex;
+                base.OnSelectedIndexChanged(e);
+            }
             protected override void OnDrawItem(DrawItemEventArgs e)
             {
                 if (e.Index < 0) return;
-                bool selected = (e.State & DrawItemState.Selected) != 0;
+                bool off = ItemDisabled(e.Index);
+                bool selected = (e.State & DrawItemState.Selected) != 0 && !off;
                 using (var background = new SolidBrush(selected ? Mix(BackColor, ForeColor, .12) : BackColor)) e.Graphics.FillRectangle(background, e.Bounds);
-                TextRenderer.DrawText(e.Graphics, GetItemText(Items[e.Index]), Font, new Rectangle(e.Bounds.X + 8, e.Bounds.Y, e.Bounds.Width - 16, e.Bounds.Height), ForeColor, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+                TextRenderer.DrawText(e.Graphics, GetItemText(Items[e.Index]), Font, new Rectangle(e.Bounds.X + 8, e.Bounds.Y, e.Bounds.Width - 16, e.Bounds.Height), off ? Mix(BackColor, ForeColor, .38) : ForeColor, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
                 if ((e.State & DrawItemState.Focus) != 0) e.DrawFocusRectangle();
             }
             protected override void WndProc(ref Message message)
